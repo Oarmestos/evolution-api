@@ -34,7 +34,7 @@ export class InstanceController {
 
   private readonly logger = new Logger('InstanceController');
 
-  public async createInstance(instanceData: InstanceDto) {
+  public async createInstance(instanceData: InstanceDto, user?: any) {
     try {
       const instance = channelController.init(instanceData, {
         configService: this.configService,
@@ -70,6 +70,7 @@ export class InstanceController {
         number: instanceData.number,
         businessId: instanceData.businessId,
         status: instanceData.status,
+        userId: user?.id,
       });
 
       instance.setInstance({
@@ -399,10 +400,22 @@ export class InstanceController {
     };
   }
 
-  public async fetchInstances({ instanceName, instanceId, number }: InstanceDto, key: string) {
+  public async fetchInstances({ instanceName, instanceId, number }: InstanceDto, key: string, user?: any) {
     const env = this.configService.get<Auth>('AUTHENTICATION').API_KEY;
 
-    if (env.KEY !== key) {
+    if (user && user.role !== 'ADMIN') {
+      const userInstances = await this.prismaRepository.instance.findMany({
+        where: {
+          userId: user.id,
+          name: instanceName || undefined,
+          id: instanceId || undefined,
+        },
+      });
+      const names = userInstances.map((instance) => instance.name);
+      return this.waMonitor.instanceInfo(names);
+    }
+
+    if (env.KEY !== key && (!user || user.role !== 'ADMIN')) {
       const instancesByKey = await this.prismaRepository.instance.findMany({
         where: {
           token: key,

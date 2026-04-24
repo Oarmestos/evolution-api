@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-avri-gradient text-white font-outfit min-h-screen overflow-x-hidden;
+  }
+
+  :root {
+    --primary: #00f2ff;
+    --secondary: #7000ff;
+    --dark: #0a0a0f;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card-bg backdrop-blur-md border border-white/5 rounded-[32px] transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary to-secondary text-black font-bold px-8 py-3 rounded-full shadow-[0_10px_30px_rgba(0,242,255,0.3)] hover:scale-105 hover:shadow-[0_15px_40px_rgba(0,242,255,0.5)] transition-all;
+  }
+
+  .btn-outline {
+    @apply border border-white/10 bg-white/5 text-white font-semibold px-8 py-3 rounded-full hover:bg-white/10 hover:border-primary transition-all;
+  }
+}

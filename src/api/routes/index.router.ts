@@ -7,7 +7,6 @@ import { EventRouter } from '@api/integrations/event/event.router';
 import { StorageRouter } from '@api/integrations/storage/storage.router';
 import { waMonitor } from '@api/server.module';
 import { configService, Database, Facebook } from '@config/env.config';
-import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
 import { NextFunction, Request, Response, Router } from 'express';
 import fs from 'fs';
 import mimeTypes from 'mime-types';
@@ -23,7 +22,7 @@ import { ProxyRouter } from './proxy.router';
 import { MessageRouter } from './sendMessage.router';
 import { SettingsRouter } from './settings.router';
 import { TemplateRouter } from './template.router';
-import { ViewsRouter } from './view.router';
+import { UserRouter } from './user.router';
 
 enum HttpStatus {
   OK = 200,
@@ -74,7 +73,7 @@ const metricsBasicAuth = (req: Request, res: Response, next: NextFunction) => {
 
   const auth = req.get('Authorization');
   if (!auth || !auth.startsWith('Basic ')) {
-    res.set('WWW-Authenticate', 'Basic realm="Evolution API Metrics"');
+    res.set('WWW-Authenticate', 'Basic realm="Avri API Metrics"');
     return res.status(401).send('Authentication required');
   }
 
@@ -119,10 +118,10 @@ if (metricsConfig.ENABLED) {
     const serverUrl = serverConfig.URL || '';
 
     // environment info
-    lines.push('# HELP evolution_environment_info Environment information');
-    lines.push('# TYPE evolution_environment_info gauge');
+    lines.push('# HELP avri_environment_info Environment information');
+    lines.push('# TYPE avri_environment_info gauge');
     lines.push(
-      `evolution_environment_info{version="${escapeLabel(packageJson.version)}",clientName="${escapeLabel(
+      `avri_environment_info{version="${escapeLabel(packageJson.version)}",clientName="${escapeLabel(
         clientName,
       )}",serverUrl="${escapeLabel(serverUrl)}"} 1`,
     );
@@ -131,26 +130,24 @@ if (metricsConfig.ENABLED) {
     const instanceEntries = Object.entries(instances);
 
     // total instances
-    lines.push('# HELP evolution_instances_total Total number of instances');
-    lines.push('# TYPE evolution_instances_total gauge');
-    lines.push(`evolution_instances_total ${instanceEntries.length}`);
+    lines.push('# HELP avri_instances_total Total number of instances');
+    lines.push('# TYPE avri_instances_total gauge');
+    lines.push(`avri_instances_total ${instanceEntries.length}`);
 
     // per-instance status
-    lines.push('# HELP evolution_instance_up 1 if instance state is open, else 0');
-    lines.push('# TYPE evolution_instance_up gauge');
-    lines.push('# HELP evolution_instance_state Instance state as a labelled metric');
-    lines.push('# TYPE evolution_instance_state gauge');
+    lines.push('# HELP avri_instance_up 1 if instance state is open, else 0');
+    lines.push('# TYPE avri_instance_up gauge');
+    lines.push('# HELP avri_instance_state Instance state as a labelled metric');
+    lines.push('# TYPE avri_instance_state gauge');
 
     for (const [name, instance] of instanceEntries) {
       const state = instance?.connectionStatus?.state || 'unknown';
       const integration = instance?.integration || '';
       const up = state === 'open' ? 1 : 0;
 
+      lines.push(`avri_instance_up{instance="${escapeLabel(name)}",integration="${escapeLabel(integration)}"} ${up}`);
       lines.push(
-        `evolution_instance_up{instance="${escapeLabel(name)}",integration="${escapeLabel(integration)}"} ${up}`,
-      );
-      lines.push(
-        `evolution_instance_state{instance="${escapeLabel(name)}",integration="${escapeLabel(
+        `avri_instance_state{instance="${escapeLabel(name)}",integration="${escapeLabel(
           integration,
         )}",state="${escapeLabel(state)}"} 1`,
       );
@@ -159,8 +156,6 @@ if (metricsConfig.ENABLED) {
     res.send(lines.join('\n') + '\n');
   });
 }
-
-if (!serverConfig.DISABLE_MANAGER) router.use('/manager', new ViewsRouter().router);
 
 router.get('/assets/*', (req, res) => {
   const fileName = req.params[0];
@@ -193,17 +188,20 @@ router.get('/assets/*', (req, res) => {
 router
   .use((req, res, next) => telemetry.collectTelemetry(req, res, next))
 
+  // Route disabled to allow serving index.html from public folder
+  /*
   .get('/', async (req, res) => {
     res.status(HttpStatus.OK).json({
       status: HttpStatus.OK,
-      message: 'Welcome to the Evolution API, it is working!',
+      message: 'Welcome to the Avri Platform, it is working!',
       version: packageJson.version,
       clientName: databaseConfig.CONNECTION.CLIENT_NAME,
       manager: !serverConfig.DISABLE_MANAGER ? `${req.protocol}://${req.get('host')}/manager` : undefined,
-      documentation: `https://doc.evolution-api.com`,
+      documentation: `https://doc.avri.com`,
       whatsappWebVersion: (await fetchLatestWaWebVersion({})).version.join('.'),
     });
   })
+  */
   .post('/verify-creds', authGuard['apikey'], async (req, res) => {
     const facebookConfig = configService.get<Facebook>('FACEBOOK');
     return res.status(HttpStatus.OK).json({
@@ -227,6 +225,7 @@ router
   .use('', new ChannelRouter(configService, ...guards).router)
   .use('', new EventRouter(configService, ...guards).router)
   .use('', new ChatbotRouter(...guards).router)
-  .use('', new StorageRouter(...guards).router);
+  .use('', new StorageRouter(...guards).router)
+  .use('/user', new UserRouter().router);
 
 export { HttpStatus, router };

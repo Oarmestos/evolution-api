@@ -22,6 +22,7 @@ import * as Sentry from '@sentry/node';
 import { ServerUP } from '@utils/server-up';
 import axios from 'axios';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { json, NextFunction, Request, Response, urlencoded } from 'express';
 import { join } from 'path';
@@ -61,12 +62,15 @@ async function bootstrap() {
     }),
     urlencoded({ extended: true, limit: '136mb' }),
     json({ limit: '136mb' }),
+    cookieParser(),
     compression(),
   );
 
   app.set('view engine', 'hbs');
   app.set('views', join(ROOT_DIR, 'views'));
-  app.use(express.static(join(ROOT_DIR, 'public')));
+
+  // app.use(express.static(join(ROOT_DIR, 'public')));
+  app.use(express.static(join(ROOT_DIR, 'frontend', 'dist')));
 
   app.use('/store', express.static(join(ROOT_DIR, 'store')));
 
@@ -132,6 +136,27 @@ async function bootstrap() {
       next();
     },
   );
+
+  // SPA fallback for React Router
+  app.get('*', (req, res, next) => {
+    const isApiRequest =
+      req.url.startsWith('/api') ||
+      req.url.startsWith('/instance') ||
+      req.url.startsWith('/webhook') ||
+      req.url.startsWith('/chatwoot') ||
+      req.url.startsWith('/store');
+
+    if (isApiRequest) {
+      return next();
+    }
+
+    res.sendFile(join(ROOT_DIR, 'frontend', 'dist', 'index.html'), (err) => {
+      if (err) {
+        // If dist/index.html doesn't exist (e.g. in dev), fallback to old public or just continue
+        next();
+      }
+    });
+  });
 
   const httpServer = configService.get<HttpServer>('SERVER');
 

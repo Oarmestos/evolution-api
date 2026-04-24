@@ -13,6 +13,7 @@ import { ProxyController } from './controllers/proxy.controller';
 import { SendMessageController } from './controllers/sendMessage.controller';
 import { SettingsController } from './controllers/settings.controller';
 import { TemplateController } from './controllers/template.controller';
+import { UserController } from './controllers/user.controller';
 import { ChannelController } from './integrations/channel/channel.controller';
 import { EvolutionController } from './integrations/channel/evolution/evolution.controller';
 import { MetaController } from './integrations/channel/meta/meta.controller';
@@ -44,6 +45,7 @@ import { WAMonitoringService } from './services/monitor.service';
 import { ProxyService } from './services/proxy.service';
 import { SettingsService } from './services/settings.service';
 import { TemplateService } from './services/template.service';
+import { UserService } from './services/user.service';
 
 const logger = new Logger('WA MODULE');
 
@@ -137,5 +139,8 @@ export const n8nController = new N8nController(n8nService, prismaRepository, waM
 
 const evoaiService = new EvoaiService(waMonitor, prismaRepository, configService, openaiService);
 export const evoaiController = new EvoaiController(evoaiService, prismaRepository, waMonitor);
+
+const userService = new UserService(prismaRepository);
+export const userController = new UserController(userService);
 
 logger.info('Module - ON');
