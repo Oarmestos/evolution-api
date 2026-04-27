@@ -18,6 +18,7 @@ import { ChatRouter } from './chat.router';
 import { GroupRouter } from './group.router';
 import { InstanceRouter } from './instance.router';
 import { LabelRouter } from './label.router';
+import { LeadRouter } from './lead.router';
 import { ProxyRouter } from './proxy.router';
 import { MessageRouter } from './sendMessage.router';
 import { SettingsRouter } from './settings.router';
@@ -226,6 +227,7 @@ router
   .use('', new EventRouter(configService, ...guards).router)
   .use('', new ChatbotRouter(...guards).router)
   .use('', new StorageRouter(...guards).router)
-  .use('/user', new UserRouter().router);
+  .use('/user', new UserRouter().router)
+  .use('/lead', new LeadRouter(...guards).router);
 
 export { HttpStatus, router };

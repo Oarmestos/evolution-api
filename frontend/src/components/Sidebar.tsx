@@ -8,14 +8,17 @@ import {
   CreditCard, 
   LogOut,
   Zap,
-  Code2
+  Code2,
+  Users
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuthStore } from '../store/useAuthStore';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: MessageSquare, label: 'Instancias', path: '/channels' },
+  { icon: MessageSquare, label: 'Chat', path: '/chat-hub' },
+  { icon: Users, label: 'Ventas', path: '/sales' },
+  { icon: Zap, label: 'Instancias', path: '/channels' },
   { icon: Bot, label: 'IA & Agentes', path: '/ai' },
   { icon: Zap, label: 'Flujos', path: '/flows' },
   { icon: Code2, label: 'Desarrollador', path: '/dev' },

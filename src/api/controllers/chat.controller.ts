@@ -113,4 +113,19 @@ export class ChatController {
   public async blockUser({ instanceName }: InstanceDto, data: BlockUserDto) {
     return await this.waMonitor.waInstances[instanceName].blockUser(data);
   }
+
+  public async updateControlMode({ instanceName }: InstanceDto, data: { remoteJid: string; mode: 'AI' | 'HUMAN' }) {
+    return await this.waMonitor.waInstances[instanceName].updateControlMode(data.remoteJid, data.mode);
+  }
+
+  public async createInternalNote(
+    { instanceName }: InstanceDto,
+    data: { remoteJid: string; content: string; userId: string },
+  ) {
+    return await this.waMonitor.waInstances[instanceName].createInternalNote(data.remoteJid, data.content, data.userId);
+  }
+
+  public async fetchInternalNotes({ instanceName }: InstanceDto, { remoteJid }: { remoteJid: string }) {
+    return await this.waMonitor.waInstances[instanceName].fetchInternalNotes(remoteJid);
+  }
 }

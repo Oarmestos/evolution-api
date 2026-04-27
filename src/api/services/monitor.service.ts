@@ -7,7 +7,6 @@ import { CacheConf, Chatwoot, ConfigService, Database, DelInstance, ProviderSess
 import { Logger } from '@config/logger.config';
 import { INSTANCE_DIR, STORE_DIR } from '@config/path.config';
 import { NotFoundException } from '@exceptions';
-import { execFileSync } from 'child_process';
 import EventEmitter2 from 'eventemitter2';
 import { rmSync } from 'fs';
 import { join } from 'path';
@@ -191,7 +190,7 @@ export class WAMonitoringService {
   public async cleaningStoreData(instanceName: string) {
     if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED) {
       const instancePath = join(STORE_DIR, 'chatwoot', instanceName);
-      execFileSync('rm', ['-rf', instancePath]);
+      rmSync(instancePath, { recursive: true, force: true });
     }
 
     const instance = await this.prismaRepository.instance.findFirst({

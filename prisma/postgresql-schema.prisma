@@ -60,6 +60,11 @@ enum DifyBotType {
   workflow
 }
 
+enum ChatControlMode {
+  AI
+  HUMAN
+}
+
 model Instance {
   id                      String                   @id @default(cuid())
   name                    String                   @unique @db.VarChar(255)
@@ -116,6 +121,8 @@ model Instance {
   N8nSetting              N8nSetting[]
   Evoai                   Evoai[]
   EvoaiSetting            EvoaiSetting?
+  LeadFunnel              LeadFunnel[]
+  Lead                    Lead[]
 }
 
 // --- SAAS MULTI-TENANCY MODELS ---
@@ -131,6 +138,7 @@ model User {
   
   instances     Instance[]
   subscription  Subscription?
+  internalNotes InternalNote[]
 }
 
 enum UserRole {
@@ -185,7 +193,10 @@ model Chat {
   updatedAt      DateTime? @updatedAt @db.Timestamp
   Instance       Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId     String
-  unreadMessages Int       @default(0)
+  unreadMessages Int              @default(0)
+  controlMode    ChatControlMode  @default(AI)
+  lastMessage    String?          @db.Text
+  internalNotes  InternalNote[]
 
   @@unique([instanceId, remoteJid])
   @@index([instanceId])
@@ -205,6 +216,8 @@ model Contact {
   @@unique([remoteJid, instanceId])
   @@index([remoteJid])
   @@index([instanceId])
+
+  Lead Lead[]
 }
 
 model Message {
@@ -250,6 +263,67 @@ model MessageUpdate {
 
   @@index([instanceId])
   @@index([messageId])
+}
+
+model LeadFunnel {
+  id          String      @id @default(cuid())
+  name        String      @db.VarChar(100)
+  description String?     @db.VarChar(255)
+  instanceId  String
+  Instance    Instance    @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  stages      LeadStage[]
+  createdAt   DateTime    @default(now()) @db.Timestamp
+  updatedAt   DateTime    @updatedAt @db.Timestamp
+
+  @@index([instanceId])
+}
+
+model LeadStage {
+  id          String      @id @default(cuid())
+  name        String      @db.VarChar(100)
+  color       String?     @db.VarChar(50) @default("#00ff88")
+  order       Int         @default(0)
+  funnelId    String
+  Funnel      LeadFunnel  @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  leads       Lead[]
+  createdAt   DateTime    @default(now()) @db.Timestamp
+  updatedAt   DateTime    @updatedAt @db.Timestamp
+
+  @@index([funnelId])
+}
+
+model Lead {
+  id          String      @id @default(cuid())
+  value       Float       @default(0.0)
+  notes       String?     @db.Text
+  stageId     String
+  Stage       LeadStage   @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  contactId   String
+  Contact     Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  instanceId  String
+  Instance    Instance    @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now()) @db.Timestamp
+  updatedAt   DateTime    @updatedAt @db.Timestamp
+
+  @@index([stageId])
+  @@index([contactId])
+  @@index([instanceId])
+}
+
+model InternalNote {
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @db.Timestamp
+  updatedAt  DateTime @updatedAt @db.Timestamp
+  
+  chatId     String
+  Chat       Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  userId     String
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([userId])
 }
 
 model Webhook {

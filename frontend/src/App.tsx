@@ -4,6 +4,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import { Channels } from './pages/Channels';
 import { AIAgents } from './pages/AIAgents';
+import ChatHub from './pages/ChatHub';
+import SalesFunnel from './pages/SalesFunnel';
 import { Billing } from './pages/Billing';
 import { Flows } from './pages/Flows';
 import { DevTools } from './pages/DevTools';
@@ -33,6 +35,8 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/chat-hub" element={<ChatHub />} />
+            <Route path="/sales" element={<SalesFunnel />} />
             <Route path="/channels" element={<Channels />} />
             <Route path="/ai" element={<AIAgents />} />
             <Route path="/flows" element={<Flows />} />

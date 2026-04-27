@@ -9,6 +9,7 @@ export default {
       colors: {
         primary: "#00f2ff",
         secondary: "#7000ff",
+        "avri-accent": "#00ff88",
         dark: "#0a0a0f",
         "dark-accent": "#1a1a2e",
         "card-bg": "rgba(255, 255, 255, 0.05)",

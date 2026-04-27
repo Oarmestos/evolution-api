@@ -759,6 +759,7 @@ export class ChannelStartupService {
           "Chat"."createdAt" as "windowStart",
           "Chat"."createdAt" + INTERVAL '24 hours' as "windowExpires",
           "Chat"."unreadMessages" as "unreadMessages",
+          "Chat"."controlMode" as "controlMode",
           CASE WHEN "Chat"."createdAt" + INTERVAL '24 hours' > NOW() THEN true ELSE false END as "windowActive",
           "Message"."id" AS "lastMessageId",
           "Message"."key" AS "lastMessage_key",
@@ -819,6 +820,7 @@ export class ChannelStartupService {
           windowActive: contact.windowActive,
           lastMessage: lastMessage ? this.cleanMessageData(lastMessage) : undefined,
           unreadCount: contact.unreadMessages,
+          controlMode: contact.controlMode,
           isSaved: !!contact.contactId,
         };
       });

@@ -1482,12 +1482,45 @@ export class BaileysStartupService extends ChannelStartupService {
 
           this.sendDataWebhook(Events.MESSAGES_UPSERT, messageRaw);
 
-          await chatbotController.emit({
-            instance: { instanceName: this.instance.name, instanceId: this.instanceId },
-            remoteJid: messageRaw.key.remoteJid,
-            msg: messageRaw,
-            pushName: messageRaw.pushName,
+          // Hybrid Attention Logic: Update Chat record
+          const chat = await this.prismaRepository.chat.upsert({
+            where: {
+              instanceId_remoteJid: {
+                instanceId: this.instanceId,
+                remoteJid: messageRaw.key.remoteJid,
+              },
+            },
+            create: {
+              instanceId: this.instanceId,
+              remoteJid: messageRaw.key.remoteJid,
+              lastMessage:
+                messageRaw.message?.conversation ||
+                messageRaw.message?.extendedTextMessage?.text ||
+                `[${messageRaw.messageType}]`,
+              unreadMessages: received.key.fromMe ? 0 : 1,
+              controlMode: 'AI',
+            },
+            update: {
+              lastMessage:
+                messageRaw.message?.conversation ||
+                messageRaw.message?.extendedTextMessage?.text ||
+                `[${messageRaw.messageType}]`,
+              unreadMessages: received.key.fromMe ? 0 : { increment: 1 },
+              updatedAt: new Date(),
+            },
           });
+
+          // Only emit to chatbot if controlMode is AI
+          if (chat.controlMode === 'AI') {
+            await chatbotController.emit({
+              instance: { instanceName: this.instance.name, instanceId: this.instanceId },
+              remoteJid: messageRaw.key.remoteJid,
+              msg: messageRaw,
+              pushName: messageRaw.pushName,
+            });
+          } else {
+            this.logger.log(`Chat ${messageRaw.key.remoteJid} is in HUMAN mode. Skipping AI.`);
+          }
 
           const contact = await this.prismaRepository.contact.findFirst({
             where: { remoteJid: received.key.remoteJid, instanceId: this.instanceId },
@@ -4154,6 +4187,69 @@ export class BaileysStartupService extends ChannelStartupService {
       this.logger.error(error);
       throw new BadRequestException(error.toString());
     }
+  }
+
+  public async updateControlMode(remoteJid: string, mode: 'AI' | 'HUMAN') {
+    const chat = await this.prismaRepository.chat.upsert({
+      where: {
+        instanceId_remoteJid: {
+          instanceId: this.instanceId,
+          remoteJid: remoteJid,
+        },
+      },
+      create: {
+        instanceId: this.instanceId,
+        remoteJid: remoteJid,
+        controlMode: mode,
+      },
+      update: {
+        controlMode: mode,
+      },
+    });
+
+    return chat;
+  }
+
+  public async createInternalNote(remoteJid: string, content: string, userId: string) {
+    const chat = await this.prismaRepository.chat.findUnique({
+      where: {
+        instanceId_remoteJid: {
+          instanceId: this.instanceId,
+          remoteJid: remoteJid,
+        },
+      },
+    });
+
+    if (!chat) {
+      throw new NotFoundException(`Chat ${remoteJid} not found`);
+    }
+
+    return await this.prismaRepository.internalNote.create({
+      data: {
+        content,
+        chatId: chat.id,
+        userId,
+      },
+    });
+  }
+
+  public async fetchInternalNotes(remoteJid: string) {
+    const chat = await this.prismaRepository.chat.findUnique({
+      where: {
+        instanceId_remoteJid: {
+          instanceId: this.instanceId,
+          remoteJid: remoteJid,
+        },
+      },
+    });
+
+    if (!chat) return [];
+
+    return await this.prismaRepository.internalNote.findMany({
+      where: { chatId: chat.id },
+      include: { User: { select: { name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   public async updateMessage(data: UpdateMessageDto) {

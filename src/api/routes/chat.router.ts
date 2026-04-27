@@ -281,6 +281,22 @@ export class ChatRouter extends RouterBroker {
         });
 
         return res.status(HttpStatus.CREATED).json(response);
+      })
+      .post(this.routerPath('updateControlMode'), ...guards, async (req, res) => {
+        const instance = req.params as unknown as InstanceDto;
+        const response = await chatController.updateControlMode(instance, req.body);
+        return res.status(HttpStatus.OK).json(response);
+      })
+      .post(this.routerPath('createInternalNote'), ...guards, async (req, res) => {
+        const instance = req.params as unknown as InstanceDto;
+        const response = await chatController.createInternalNote(instance, req.body);
+        return res.status(HttpStatus.CREATED).json(response);
+      })
+      .get(this.routerPath('fetchInternalNotes'), ...guards, async (req, res) => {
+        const instance = req.params as unknown as InstanceDto;
+        const { remoteJid } = req.query as unknown as { remoteJid: string };
+        const response = await chatController.fetchInternalNotes(instance, { remoteJid });
+        return res.status(HttpStatus.OK).json(response);
       });
   }
 
