@@ -755,7 +755,7 @@ export class ChannelStartupService {
             to_timestamp("Message"."messageTimestamp"::double precision), 
             "Contact"."updatedAt"
           ) as "updatedAt",
-          "Chat"."name" as "pushName",
+          "Chat"."name" as "chatName",
           "Chat"."createdAt" as "windowStart",
           "Chat"."createdAt" + INTERVAL '24 hours' as "windowExpires",
           "Chat"."unreadMessages" as "unreadMessages",
@@ -812,7 +812,7 @@ export class ChannelStartupService {
         return {
           id: contact.contactId || null,
           remoteJid: contact.remoteJid,
-          pushName: contact.pushName,
+          pushName: contact.pushName || contact.chatName || contact.remoteJid,
           profilePicUrl: contact.profilePicUrl,
           updatedAt: contact.updatedAt,
           windowStart: contact.windowStart,

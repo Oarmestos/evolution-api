@@ -306,7 +306,7 @@ export const DevTools: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-white/5 px-6 py-4 bg-[#0a0a0b]">
+      <div className="theme-surface border-b border-white/5 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -328,7 +328,7 @@ export const DevTools: React.FC = () => {
         <div className="max-w-4xl mx-auto p-6 space-y-6">
 
           {/* Config Bar */}
-          <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-5 space-y-4">
+          <div className="theme-surface rounded-2xl p-5 space-y-4">
             <h3 className="text-[11px] font-black uppercase tracking-widest text-white/40">Configuración</h3>
 
             {/* Base URL */}
@@ -344,7 +344,7 @@ export const DevTools: React.FC = () => {
                       className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
                         baseUrl === url
                           ? 'bg-primary/15 text-primary border border-primary/30'
-                          : 'bg-white/5 text-white/40 border border-white/5 hover:border-white/10'
+                          : 'theme-chip border-white/5 hover:border-white/10'
                       }`}
                     >
                       {url.includes('localhost') ? '🏠 Local' : '🌐 Producción'}
@@ -359,7 +359,7 @@ export const DevTools: React.FC = () => {
             <div className="flex items-center gap-3">
               <Key size={14} className="text-white/30 flex-shrink-0" />
               <span className="text-[11px] text-white/40 w-20">API Key</span>
-              <div className="flex-1 flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2">
+              <div className="theme-input flex-1 flex items-center gap-2 rounded-xl px-4 py-2">
                 <code className="flex-1 text-[12px] font-mono text-white/70">
                   {showKey ? apiKey : '•'.repeat(32)}
                 </code>
@@ -380,7 +380,7 @@ export const DevTools: React.FC = () => {
           </div>
 
           {/* Quick Start */}
-          <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-5 space-y-3">
+          <div className="theme-surface rounded-2xl p-5 space-y-3">
             <div className="flex items-center gap-2">
               <Play size={14} className="text-primary" />
               <h3 className="text-[11px] font-black uppercase tracking-widest text-white/40">Inicio rápido</h3>
@@ -396,7 +396,7 @@ export const DevTools: React.FC = () => {
           </div>
 
           {/* Modules */}
-          <div className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-5 space-y-1">
+          <div className="theme-surface rounded-2xl p-5 space-y-1">
             <h3 className="text-[11px] font-black uppercase tracking-widest text-white/40 mb-4">Endpoints</h3>
             {API_MODULES.map(module => (
               <ModuleSection key={module.id} module={module} baseUrl={baseUrl} />

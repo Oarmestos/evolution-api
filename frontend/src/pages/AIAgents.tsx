@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Cpu, Layers, MessageSquare, Share2, Mail, Sparkles, Plus, Check, ChevronRight, ArrowLeft, Zap, Brain, Wrench } from 'lucide-react';
+import { Bot, Cpu, Layers, MessageSquare, Share2, Sparkles, Plus, Check, ChevronRight, ArrowLeft, Brain, Wrench } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#0e0f11] border border-white/10 rounded-2xl w-full max-w-lg mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="theme-overlay-card rounded-2xl w-full max-w-lg mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b border-white/5">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-bold text-white">Crear Nuevo Agente de IA</h2>
@@ -103,7 +103,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                 onChange={e => set('name', e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && canNext && next()}
                 placeholder="Ej: Asistente de Ventas"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all"
+                className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all"
               />
             </div>
           )}
@@ -126,7 +126,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                         'flex items-center gap-3 p-3 rounded-xl border text-left transition-all',
                         form.type === t.id
                           ? 'border-primary/50 bg-primary/5'
-                          : 'border-white/5 bg-white/[0.02] hover:border-white/10'
+                          : 'theme-surface border-white/5 hover:border-white/10'
                       )}
                     >
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: t.color + '20' }}>
@@ -157,7 +157,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                   value={form.role}
                   onChange={e => set('role', e.target.value)}
                   placeholder="Ej: assistant, sales-agent, support..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all"
+                  className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all"
                 />
                 <p className="text-[11px] text-white/30 mt-1">¿Cuál es el papel o función de este agente?</p>
               </div>
@@ -167,7 +167,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                   value={form.objective}
                   onChange={e => set('objective', e.target.value)}
                   placeholder="Ej: customer support, lead generation..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all"
+                  className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all"
                 />
                 <p className="text-[11px] text-white/30 mt-1">¿Cuál es el principal objetivo que este agente debe alcanzar?</p>
               </div>
@@ -196,7 +196,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                   onChange={e => set('instructions', e.target.value)}
                   rows={5}
                   placeholder={`Ej: Eres un asistente especializado en ventas. Ayuda a los clientes a encontrar productos y responde dudas sobre pedidos. Sé siempre cordial, proactivo y enfocado en ofrecer la mejor experiencia al cliente.`}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all resize-none"
+                  className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all resize-none"
                 />
                 <div className="flex justify-between mt-1">
                   <p className="text-[11px] text-white/30">Mínimo 10 caracteres — sé específico</p>
@@ -225,7 +225,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                       value={form.apiKey}
                       onChange={e => set('apiKey', e.target.value)}
                       placeholder="sk-..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all font-mono"
+                      className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all font-mono"
                     />
                   </div>
                   <div>
@@ -233,9 +233,9 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                     <select
                       value={form.model}
                       onChange={e => set('model', e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all appearance-none"
+                      className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all appearance-none"
                     >
-                      {OPENAI_MODELS.map(m => <option key={m} value={m} className="bg-[#0e0f11]">{m}</option>)}
+                      {OPENAI_MODELS.map(m => <option key={m} value={m} className="theme-surface">{m}</option>)}
                     </select>
                     <p className="text-[11px] text-white/30 mt-1">Modelos OpenAI disponibles</p>
                   </div>
@@ -248,7 +248,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
                     value={form.apiKey}
                     onChange={e => set('apiKey', e.target.value)}
                     placeholder="https://tu-instancia.dify.ai/..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-all"
+                    className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all"
                   />
                   <p className="text-[11px] text-white/30 mt-1">URL de tu instalación de {AGENT_TYPES.find(t => t.id === form.type)?.name}</p>
                 </div>
@@ -264,7 +264,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
               </div>
               <h3 className="text-lg font-bold text-white">¡Agente configurado!</h3>
               <p className="text-sm text-white/40">Revisa el resumen antes de crear</p>
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 text-left space-y-3">
+              <div className="theme-surface rounded-xl p-4 text-left space-y-3">
                 {[
                   { label: 'Nombre', value: form.name },
                   { label: 'Tipo', value: AGENT_TYPES.find(t => t.id === form.type)?.name || form.type },
@@ -284,7 +284,7 @@ function CreateAgentWizard({ onClose, onCreated }: { onClose: () => void; onCrea
           {/* Nav Buttons */}
           <div className="flex gap-3 mt-6">
             {step > 0 && (
-              <button onClick={back} className="flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white/70 font-semibold transition-all">
+              <button onClick={back} className="theme-chip flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-white/10">
                 <ArrowLeft size={15} /> Volver
               </button>
             )}
@@ -388,7 +388,7 @@ export const AIAgents: React.FC = () => {
 
           {/* Agent List or Empty State */}
           {agents.length === 0 ? (
-            <div className="bg-[#0d0d0f] border border-dashed border-white/10 rounded-2xl py-16 text-center">
+            <div className="theme-surface border-dashed border-white/10 rounded-2xl py-16 text-center">
               <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Bot size={28} className="text-white/20" />
               </div>
@@ -409,7 +409,7 @@ export const AIAgents: React.FC = () => {
                 const t = agentType(agent.type);
                 const Icon = t?.icon || Bot;
                 return (
-                  <div key={agent.id} className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+                  <div key={agent.id} className="theme-surface rounded-2xl p-5 hover:border-white/10 transition-colors">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: (t?.color || '#fff') + '20' }}>
                         <Icon size={18} style={{ color: t?.color || '#fff' }} />
@@ -437,10 +437,10 @@ export const AIAgents: React.FC = () => {
               })}
               <button
                 onClick={() => setShowWizard(true)}
-                className="bg-[#0d0d0f] border border-dashed border-white/10 rounded-2xl p-5 flex items-center justify-center hover:border-white/20 hover:bg-white/[0.02] transition-all group"
+                className="theme-surface border-dashed border-white/10 rounded-2xl p-5 flex items-center justify-center hover:border-white/20 hover:bg-white/[0.02] transition-all group"
               >
                 <div className="text-center">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-2 group-hover:bg-primary/10 transition-colors">
+                  <div className="theme-chip w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:bg-primary/10 transition-colors">
                     <Plus size={18} className="text-white/30 group-hover:text-primary transition-colors" />
                   </div>
                   <p className="text-sm font-semibold text-white/40 group-hover:text-white/70 transition-colors">Nuevo Agente</p>
@@ -458,7 +458,7 @@ export const AIAgents: React.FC = () => {
               {FEATURES.map(f => {
                 const Icon = f.icon;
                 return (
-                  <div key={f.title} className="bg-[#0d0d0f] border border-white/5 rounded-2xl p-5">
+                  <div key={f.title} className="theme-surface rounded-2xl p-5">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: f.color + '20' }}>
                         <Icon size={15} style={{ color: f.color }} />

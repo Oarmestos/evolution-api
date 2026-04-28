@@ -38,6 +38,10 @@ export abstract class RouterBroker {
     }
 
     if (request.originalUrl.includes('/instance/create')) {
+      // Normalize integration property (some clients send "Integration" by mistake)
+      if (body && typeof body === 'object' && !body.integration && body.Integration) {
+        body.integration = body.Integration;
+      }
       Object.assign(instance, body);
     }
 

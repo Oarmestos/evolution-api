@@ -147,7 +147,6 @@ import { release } from 'os';
 import { join } from 'path';
 import P from 'pino';
 import qrcode, { QRCodeToDataURLOptions } from 'qrcode';
-import qrcodeTerminal from 'qrcode-terminal';
 import sharp from 'sharp';
 import { PassThrough, Readable } from 'stream';
 import { v4 } from 'uuid';
@@ -403,12 +402,7 @@ export class BaileysStartupService extends ChannelStartupService {
         }
       });
 
-      qrcodeTerminal.generate(qr, { small: true }, (qrcode) =>
-        this.logger.log(
-          `\n{ instance: ${this.instance.name} pairingCode: ${this.instance.qrcode.pairingCode}, qrcodeCount: ${this.instance.qrcode.count} }\n` +
-            qrcode,
-        ),
-      );
+      // QR rendering is handled by the frontend (base64) to avoid leaking QR codes in server logs.
 
       await this.prismaRepository.instance.update({
         where: { id: this.instanceId },
@@ -491,6 +485,7 @@ export class BaileysStartupService extends ChannelStartupService {
         where: { id: this.instanceId },
         data: {
           ownerJid: this.instance.wuid,
+          number: this.instance.wuid?.split('@')?.[0] || null,
           profileName: (await this.getProfileName()) as string,
           profilePicUrl: this.instance.profilePictureUrl,
           connectionStatus: 'open',

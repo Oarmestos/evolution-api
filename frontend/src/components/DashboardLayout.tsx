@@ -5,7 +5,7 @@ import { Header } from './Header';
 
 export const DashboardLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-avri-gradient">
+    <div className="theme-shell min-h-screen">
       <Sidebar />
       <div className="flex flex-col flex-1">
         <Header />

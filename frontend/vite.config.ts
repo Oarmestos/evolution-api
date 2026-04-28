@@ -1,29 +1,39 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const backendTarget = 'http://localhost:8080';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/instance': {
-        target: 'http://localhost:8080',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/webhook': {
-        target: 'http://localhost:8080',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/chatwoot': {
-        target: 'http://localhost:8080',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/user': {
-        target: 'http://localhost:8080',
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/chat': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/message': {
+        target: backendTarget,
         changeOrigin: true,
       }
     }

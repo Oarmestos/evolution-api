@@ -86,7 +86,7 @@ function NewLeadModal({ stages, onClose, onAdd }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-[#111113] border border-white/10 rounded-2xl w-full max-w-md mx-4 shadow-2xl shadow-black/50"
+        className="theme-overlay-card rounded-2xl w-full max-w-md mx-4 shadow-2xl shadow-black/50"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -114,7 +114,7 @@ function NewLeadModal({ stages, onClose, onAdd }: {
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="Ej. María González"
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+              className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
             />
           </div>
 
@@ -130,7 +130,7 @@ function NewLeadModal({ stages, onClose, onAdd }: {
                 value={form.value}
                 onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
                 placeholder="0.00"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
               />
             </div>
 
@@ -141,7 +141,7 @@ function NewLeadModal({ stages, onClose, onAdd }: {
               <select
                 value={form.channel}
                 onChange={e => setForm(f => ({ ...f, channel: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all appearance-none"
+                className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all appearance-none"
               >
                 {CHANNEL_OPTIONS.map(ch => (
                   <option key={ch} value={ch} className="bg-[#111113]">{ch}</option>
@@ -182,7 +182,7 @@ function NewLeadModal({ stages, onClose, onAdd }: {
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Información adicional sobre este prospecto..."
               rows={2}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all resize-none"
+              className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all resize-none"
             />
           </div>
 
@@ -190,7 +190,7 @@ function NewLeadModal({ stages, onClose, onAdd }: {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white/70 font-semibold transition-colors"
+              className="theme-chip flex-1 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-white/10"
             >
               Cancelar
             </button>
@@ -245,7 +245,7 @@ function ConfigurarEmbudoModal({ stages, onClose, onSave }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-[#111113] border border-white/10 rounded-2xl w-full max-w-lg mx-4 shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col"
+        className="theme-overlay-card rounded-2xl w-full max-w-lg mx-4 shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -268,7 +268,7 @@ function ConfigurarEmbudoModal({ stages, onClose, onSave }: {
             <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Etapas actuales</p>
             <div className="space-y-2">
               {localStages.map(stage => (
-                <div key={stage.id} className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-xl p-3">
+                <div key={stage.id} className="theme-surface flex items-center gap-3 rounded-xl p-3">
                   <GripVertical size={16} className="text-white/20 flex-shrink-0" />
                   
                   {/* Color picker */}
@@ -313,14 +313,14 @@ function ConfigurarEmbudoModal({ stages, onClose, onSave }: {
           {/* Add new stage */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Nueva etapa</p>
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+            <div className="theme-surface rounded-xl p-4 space-y-3">
               <input
                 type="text"
                 value={newStageName}
                 onChange={e => setNewStageName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addStage()}
                 placeholder="Nombre de la etapa..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-all"
+                className="theme-input w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all"
               />
               <div>
                 <p className="text-[10px] text-white/30 mb-2">Color</p>
@@ -344,7 +344,7 @@ function ConfigurarEmbudoModal({ stages, onClose, onSave }: {
               <button
                 type="button"
                 onClick={addStage}
-                className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white/80 font-semibold transition-colors flex items-center justify-center gap-2"
+                className="theme-chip w-full py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 hover:bg-white/10"
               >
                 <Plus size={16} />
                 Agregar Etapa
@@ -357,7 +357,7 @@ function ConfigurarEmbudoModal({ stages, onClose, onSave }: {
         <div className="p-6 border-t border-white/5 flex-shrink-0 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white/70 font-semibold transition-colors"
+            className="theme-chip flex-1 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-white/10"
           >
             Cancelar
           </button>
@@ -392,7 +392,7 @@ function LeadCard({ lead }: { lead: Lead }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-[#121214] p-4 rounded-xl border border-white/5 cursor-grab active:cursor-grabbing hover:border-white/10 transition-colors"
+      className="theme-surface-alt p-4 rounded-xl cursor-grab active:cursor-grabbing hover:border-white/10 transition-colors"
     >
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-medium text-white/90 text-sm">{lead.name}</h4>
@@ -422,8 +422,8 @@ function StageColumn({ stage }: { stage: Stage }) {
   });
 
   return (
-    <div className="flex flex-col flex-shrink-0 w-72 bg-[#0d0d0f] border border-white/5 rounded-2xl overflow-hidden" style={{ maxHeight: 'calc(100vh - 130px)' }}>
-      <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#0d0d0f]">
+    <div className="theme-surface flex flex-col flex-shrink-0 w-72 rounded-2xl overflow-hidden" style={{ maxHeight: 'calc(100vh - 130px)' }}>
+      <div className="theme-surface p-4 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div
             className="w-2.5 h-2.5 rounded-full"
@@ -555,7 +555,7 @@ export default function SalesFunnel() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Action Bar */}
-      <div className="flex-shrink-0 border-b border-white/5 flex items-center justify-between px-6 py-4 bg-[#0a0a0b]">
+      <div className="theme-surface border-b border-white/5 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
             <Users size={18} />
@@ -584,7 +584,7 @@ export default function SalesFunnel() {
       </div>
 
       {/* Metrics Bar */}
-      <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4 border-b border-white/5 bg-[#080809]">
+      <div className="theme-surface grid grid-cols-4 gap-4 px-6 py-4 border-b border-white/5">
         {[
           { label: 'Total Leads', value: allLeads.length.toString(), sub: 'prospectos', icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
           { label: 'Ingresos Potenciales', value: `$${totalValue.toLocaleString()}`, sub: 'valor estimado', icon: DollarSign, color: 'text-[#00ff88]', bg: 'bg-[#00ff88]/10' },
@@ -604,7 +604,7 @@ export default function SalesFunnel() {
       </div>
 
       {/* Filter Bar */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-6 py-3 border-b border-white/5 bg-[#0a0a0b]">
+      <div className="theme-surface flex items-center gap-3 px-6 py-3 border-b border-white/5">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
           <input
@@ -612,7 +612,7 @@ export default function SalesFunnel() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Buscar prospecto..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/40 transition-colors"
+            className="theme-input w-full rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary/40 transition-colors"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -620,7 +620,7 @@ export default function SalesFunnel() {
           <select
             value={filterChannel}
             onChange={e => setFilterChannel(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-primary/40 transition-colors appearance-none"
+            className="theme-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/40 transition-colors appearance-none"
           >
             {['Todos', ...CHANNEL_OPTIONS].map(ch => (
               <option key={ch} value={ch} className="bg-[#111113]">{ch}</option>
@@ -634,13 +634,13 @@ export default function SalesFunnel() {
             value={filterMinValue}
             onChange={e => setFilterMinValue(e.target.value)}
             placeholder="Valor mín."
-            className="bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-primary/40 transition-colors w-32"
+            className="theme-input rounded-lg pl-8 pr-4 py-2 text-sm focus:outline-none focus:border-primary/40 transition-colors w-32"
           />
         </div>
         {activeFilters && (
           <button
             onClick={() => { setSearchQuery(''); setFilterChannel('Todos'); setFilterMinValue(''); }}
-            className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold text-white/50 hover:text-white border border-white/10 rounded-lg transition-colors"
+            className="theme-chip flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold hover:text-white rounded-lg transition-colors"
           >
             <X size={12} /> Limpiar
           </button>

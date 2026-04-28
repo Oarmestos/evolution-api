@@ -30,7 +30,7 @@ export const Sidebar: React.FC = () => {
   const logout = useAuthStore((state) => state.logout);
 
   return (
-    <aside className="w-64 bg-dark/50 backdrop-blur-xl border-r border-white/5 flex flex-col h-screen fixed left-0 top-0 z-50">
+    <aside className="theme-sidebar w-64 flex flex-col h-screen fixed left-0 top-0 z-50">
       <div className="p-8">
         <h1 className="text-2xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent tracking-widest uppercase">
           Avri
@@ -48,7 +48,7 @@ export const Sidebar: React.FC = () => {
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
                 isActive 
                   ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_20px_rgba(0,242,255,0.1)]" 
-                  : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+                  : "theme-muted hover:theme-text hover:bg-white/5 border border-transparent"
               )
             }
           >
@@ -58,10 +58,10 @@ export const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      <div className="p-4 mt-auto border-t border-white/5">
+      <div className="p-4 mt-auto border-t theme-border-soft">
         <button 
           onClick={logout}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-all duration-300 group"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl theme-muted hover:text-red-400 hover:bg-red-400/10 transition-all duration-300 group"
         >
           <LogOut className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
           <span className="font-medium">Cerrar Sesión</span>

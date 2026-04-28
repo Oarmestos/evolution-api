@@ -21,7 +21,7 @@ import { useInstanceStore } from '../store/useInstanceStore';
 import { cn } from '../utils/cn';
 
 export const ChatHub: React.FC = () => {
-  const { instances } = useInstanceStore();
+  const { instances, fetchInstances } = useInstanceStore();
   const { 
     chats, 
     messages, 
@@ -43,6 +43,10 @@ export const ChatHub: React.FC = () => {
   const [activeInstance, setActiveInstance] = useState<string | null>(null);
   const [inputTab, setInputTab] = useState<'reply' | 'note'>('reply');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchInstances();
+  }, [fetchInstances]);
 
   useEffect(() => {
     if (instances.length > 0 && !activeInstance) {
@@ -92,9 +96,9 @@ export const ChatHub: React.FC = () => {
   );
 
   return (
-    <div className="h-[calc(100vh-140px)] flex gap-0.5 overflow-hidden bg-[#0a0a0b] rounded-3xl border border-white/5">
+    <div className="theme-surface h-[calc(100vh-140px)] flex gap-0.5 overflow-hidden rounded-3xl">
       {/* Column 1: Chat List */}
-      <div className="w-[320px] flex flex-col border-r border-white/5 bg-[#0f1012]">
+      <div className="theme-surface-deep w-[320px] flex flex-col border-r border-white/5">
         <div className="p-4 space-y-4">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-primary transition-colors" />
@@ -103,7 +107,7 @@ export const ChatHub: React.FC = () => {
               placeholder="Buscar conversas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#1a1b1e] border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-gray-600"
+              className="theme-input w-full rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary/50 transition-all"
             />
           </div>
           <div className="flex items-center justify-between px-1">
@@ -137,7 +141,7 @@ export const ChatHub: React.FC = () => {
                 className={cn(
                   "w-full p-4 flex items-start gap-3 transition-all border-l-4 border-transparent",
                   selectedChat?.remoteJid === chat.remoteJid 
-                    ? "bg-[#1a1b1e] border-l-primary" 
+                    ? "theme-surface-alt border-l-primary" 
                     : "hover:bg-white/[0.02]"
                 )}
               >
@@ -177,7 +181,7 @@ export const ChatHub: React.FC = () => {
       </div>
 
       {/* Column 2: Chat View */}
-      <div className="flex-1 flex flex-col bg-[#0a0a0b] relative">
+      <div className="flex-1 flex flex-col relative">
         {!selectedChat ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
@@ -188,7 +192,7 @@ export const ChatHub: React.FC = () => {
         ) : (
           <>
             {/* Header */}
-            <div className="h-16 px-6 border-b border-white/5 flex items-center justify-between bg-[#0f1012]/50 backdrop-blur-md">
+            <div className="theme-surface-deep h-16 px-6 border-b border-white/5 flex items-center justify-between backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#2a2b2e] flex items-center justify-center text-xs font-bold text-gray-400 border border-white/5">
                   {selectedChat.pushName?.substring(0, 2).toUpperCase()}
@@ -234,7 +238,7 @@ export const ChatHub: React.FC = () => {
                             "rounded-2xl px-4 py-3 text-sm shadow-xl",
                             fromMe 
                               ? "bg-primary text-dark font-medium rounded-tr-none" 
-                              : "bg-[#1a1b1e] text-gray-100 border border-white/5 rounded-tl-none"
+                              : "theme-surface-alt text-gray-100 border border-white/5 rounded-tl-none"
                           )}>
                             {msg.message?.conversation || msg.message?.extendedTextMessage?.text || "[Tipo de mensagem não suportado]"}
                           </div>
@@ -254,7 +258,7 @@ export const ChatHub: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-6 bg-[#0f1012] border-t border-white/5">
+            <div className="theme-surface-deep p-6 border-t border-white/5">
               <div className="max-w-4xl mx-auto space-y-4">
                 {/* Tabs */}
                 <div className="flex gap-4 px-2">
@@ -292,7 +296,7 @@ export const ChatHub: React.FC = () => {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     className={cn(
-                      "w-full bg-[#1a1b1e] border-none rounded-2xl py-4 pl-24 pr-16 text-sm focus:ring-1 transition-all placeholder:text-gray-600",
+                      "theme-input w-full rounded-2xl py-4 pl-24 pr-16 text-sm focus:ring-1 transition-all",
                       inputTab === 'reply' ? "focus:ring-primary/30" : "focus:ring-secondary/30"
                     )}
                   />
@@ -317,7 +321,7 @@ export const ChatHub: React.FC = () => {
 
       {/* Column 3: Context & CRM */}
       {selectedChat && (
-        <div className="w-[320px] bg-[#0f1012] border-l border-white/5 flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar">
+        <div className="theme-surface-deep w-[320px] border-l border-white/5 flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="w-20 h-20 rounded-full bg-[#2a2b2e] flex items-center justify-center text-2xl font-bold text-primary border-2 border-primary/20 shadow-[0_0_20px_rgba(0,255,136,0.1)]">
               {selectedChat.pushName?.substring(0, 2).toUpperCase()}
@@ -336,11 +340,11 @@ export const ChatHub: React.FC = () => {
 
           <div className="space-y-4">
             {/* Mode Switch */}
-            <div className="bg-[#1a1b1e] rounded-2xl p-4 border border-white/5 space-y-3">
+            <div className="theme-surface-alt rounded-2xl p-4 space-y-3">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
                 <Bot className="w-3.5 h-3.5" /> Controle de Fluxo
               </h4>
-              <div className="flex p-1 bg-black/30 rounded-xl">
+              <div className="theme-chip flex p-1 rounded-xl">
                 <button 
                   onClick={() => activeInstance && updateControlMode(activeInstance, selectedChat.remoteJid, 'AI')}
                   className={cn(
@@ -372,7 +376,7 @@ export const ChatHub: React.FC = () => {
                 <MoreVertical className="w-4 h-4 text-gray-700" />
               </div>
               
-              <div className="bg-[#1a1b1e] rounded-2xl p-4 border border-white/5 space-y-4">
+              <div className="theme-surface-alt rounded-2xl p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
                     <Hash className="w-3.5 h-3.5" /> Ventas / Leads
@@ -395,13 +399,13 @@ export const ChatHub: React.FC = () => {
               </div>
 
               {/* Internal Notes Preview */}
-              <div className="bg-[#1a1b1e] rounded-2xl p-4 border border-white/5 space-y-4">
+              <div className="theme-surface-alt rounded-2xl p-4 space-y-4">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
                   <StickyNote className="w-3.5 h-3.5" /> Notas Recentes
                 </h4>
                 <div className="space-y-2">
                   {notes.slice(0, 2).map(note => (
-                    <div key={note.id} className="p-3 bg-black/20 rounded-xl border border-white/5">
+                    <div key={note.id} className="theme-chip p-3 rounded-xl">
                       <p className="text-[10px] text-gray-400 line-clamp-2">{note.content}</p>
                       <div className="flex justify-between mt-2">
                         <span className="text-[8px] font-bold text-primary uppercase">{note.User?.name}</span>
