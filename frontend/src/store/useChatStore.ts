@@ -89,13 +89,29 @@ export const useChatStore = create<ChatState>((set) => ({
         headers: { apikey: token }
       });
       const chats = normalizeChats(response.data);
-      set((state) => ({
-        chats,
-        loadingChats: false,
-        selectedChat: state.selectedChat
-          ? chats.find((chat) => chat.remoteJid === state.selectedChat?.remoteJid) ?? state.selectedChat
-          : null
-      }));
+      set((state) => {
+        // Deep-merge the refreshed chat data into selectedChat, preserving
+        // non-empty existing values so that pushName / contact info is never
+        // overwritten by an empty payload from the backend.
+        let nextSelectedChat = state.selectedChat;
+        if (state.selectedChat) {
+          const freshChat = chats.find((c) => c.remoteJid === state.selectedChat!.remoteJid);
+          if (freshChat) {
+            nextSelectedChat = {
+              ...state.selectedChat,
+              ...freshChat,
+              // Prefer non-empty values from the existing state
+              pushName: (freshChat.pushName && freshChat.pushName !== freshChat.remoteJid)
+                ? freshChat.pushName
+                : (state.selectedChat!.pushName || freshChat.pushName),
+              profilePicUrl: freshChat.profilePicUrl || state.selectedChat!.profilePicUrl,
+              phoneNumber: freshChat.phoneNumber || state.selectedChat!.phoneNumber,
+              email: freshChat.email || state.selectedChat!.email,
+            };
+          }
+        }
+        return { chats, loadingChats: false, selectedChat: nextSelectedChat };
+      });
     } catch (error) {
       console.error('Error fetching chats:', error);
       set({ loadingChats: false });
@@ -232,10 +248,12 @@ function normalizeChats(data: unknown): Chat[] {
     .map((raw: any) => {
       const controlMode: Chat['controlMode'] = raw.controlMode === 'HUMAN' ? 'HUMAN' : 'AI';
 
+      // Safely resolve pushName without coercing undefined/null to the string 'undefined'
+      const rawPushName = raw.pushName || raw.remoteJid || '';
       return {
         id: String(raw.id ?? raw.remoteJid ?? crypto.randomUUID()),
         remoteJid: String(raw.remoteJid ?? ''),
-        pushName: String(raw.pushName ?? raw.remoteJid ?? ''),
+        pushName: String(rawPushName),
         profilePicUrl: raw.profilePicUrl ?? undefined,
         lastMessage: raw.lastMessage
           ? {
@@ -278,17 +296,27 @@ function upsertChatWithLatestMessage(chats: Chat[], selectedChat: Chat | null, m
   const timestamp = message.messageTimestamp;
   const existingChat = chats.find((c) => c.remoteJid === message.key.remoteJid);
   
+  // Build only the fields that change when a new message is sent.
+  // Spread existingChat first so ALL existing contact data (phoneNumber, email,
+  // profilePicUrl, pushName, etc.) is preserved and never lost.
+  const source = existingChat ?? selectedChat;
   const baseChat: Chat = {
-    id: existingChat?.id ?? selectedChat?.id ?? message.key.remoteJid,
+    ...(source ?? {}),
+    id: source?.id ?? message.key.remoteJid,
     remoteJid: message.key.remoteJid,
-    pushName: existingChat?.pushName ?? selectedChat?.pushName ?? message.key.remoteJid.split('@')[0],
-    profilePicUrl: existingChat?.profilePicUrl ?? selectedChat?.profilePicUrl,
+    // Only fall back to the JID prefix if we truly have no name
+    pushName: (source?.pushName && source.pushName !== source.remoteJid)
+      ? source.pushName
+      : (message.pushName ?? source?.pushName ?? message.key.remoteJid.split('@')[0]),
+    profilePicUrl: source?.profilePicUrl,
+    phoneNumber: source?.phoneNumber,
+    email: source?.email,
     lastMessage: {
       message: preview,
       messageTimestamp: timestamp,
     },
     unreadCount: 0,
-    controlMode: existingChat?.controlMode ?? selectedChat?.controlMode ?? 'AI',
+    controlMode: source?.controlMode ?? 'AI',
     updatedAt: new Date(timestamp * 1000).toISOString(),
   };
 

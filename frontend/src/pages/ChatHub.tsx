@@ -53,6 +53,8 @@ export const ChatHub: React.FC = () => {
     email: ''
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Track which chat is open so we only reset editInfo when the chat actually changes
+  const activeChatJid = useRef<string | null>(null);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -85,8 +87,12 @@ export const ChatHub: React.FC = () => {
     }
   }, [activeInstance, fetchChats]);
 
+  // Effect 1: fires when the selected chat changes (new conversation opened)
+  // Resets editInfo and fetches notes only when the remoteJid actually changes.
   useEffect(() => {
-    if (activeInstance && selectedChat) {
+    if (!activeInstance || !selectedChat) return;
+    if (activeChatJid.current !== selectedChat.remoteJid) {
+      activeChatJid.current = selectedChat.remoteJid;
       fetchMessages(activeInstance, selectedChat.remoteJid);
       fetchNotes(activeInstance, selectedChat.remoteJid);
       setEditInfo({
@@ -94,13 +100,18 @@ export const ChatHub: React.FC = () => {
         phoneNumber: selectedChat.phoneNumber || selectedChat.remoteJid.split('@')[0],
         email: selectedChat.email || ''
       });
-      
-      const interval = setInterval(() => {
-        fetchMessages(activeInstance, selectedChat.remoteJid);
-      }, 5000);
-      return () => clearInterval(interval);
     }
-  }, [activeInstance, selectedChat, fetchMessages, fetchNotes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeInstance, selectedChat?.remoteJid]);
+
+  // Effect 2: message polling — refresh every 5s without touching editInfo
+  useEffect(() => {
+    if (!activeInstance || !selectedChat) return;
+    const interval = setInterval(() => {
+      fetchMessages(activeInstance, selectedChat.remoteJid);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeInstance, selectedChat?.remoteJid, fetchMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

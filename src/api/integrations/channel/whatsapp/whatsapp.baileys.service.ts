@@ -1564,11 +1564,17 @@ export class BaileysStartupService extends ChannelStartupService {
               );
             }
 
+            // Only update pushName in DB when we have a non-empty value to avoid
+            // erasing the client's real name when the agent replies (fromMe=true).
+            const contactUpdatePayload = contactRaw.pushName
+              ? contactRaw
+              : { ...contactRaw, pushName: contact?.pushName || undefined };
+
             if (this.configService.get<Database>('DATABASE').SAVE_DATA.CONTACTS)
               await this.prismaRepository.contact.upsert({
                 where: { remoteJid_instanceId: { remoteJid: contactRaw.remoteJid, instanceId: contactRaw.instanceId } },
                 create: contactRaw,
-                update: contactRaw,
+                update: contactUpdatePayload,
               });
 
             continue;
@@ -1579,7 +1585,7 @@ export class BaileysStartupService extends ChannelStartupService {
           if (this.configService.get<Database>('DATABASE').SAVE_DATA.CONTACTS)
             await this.prismaRepository.contact.upsert({
               where: { remoteJid_instanceId: { remoteJid: contactRaw.remoteJid, instanceId: contactRaw.instanceId } },
-              update: contactRaw,
+              update: contactRaw.pushName ? contactRaw : { ...contactRaw, pushName: undefined },
               create: contactRaw,
             });
         }
