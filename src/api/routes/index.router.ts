@@ -217,6 +217,9 @@ router
     });
   })
   .use('/instance', new InstanceRouter(configService, ...guards).router)
+  .use('/product', new ProductRouter(...guards).router)
+  .use('/order', new OrderRouter(...guards).router)
+  .use('/lead', new LeadRouter(...guards).router)
   .use('/message', new MessageRouter(...guards).router)
   .use('/call', new CallRouter(...guards).router)
   .use('/chat', new ChatRouter(...guards).router)
@@ -231,9 +234,6 @@ router
   .use('', new ChatbotRouter(...guards).router)
   .use('', new StorageRouter(...guards).router)
   .use('/user', new UserRouter().router)
-  .use('/theme', new ThemeRouter(authGuard['apikey']).router)
-  .use('/product', new ProductRouter(...guards).router)
-  .use('/order', new OrderRouter(...guards).router)
-  .use('/lead', new LeadRouter(...guards).router);
+  .use('/theme', new ThemeRouter(authGuard['apikey']).router);
 
 export { HttpStatus, router };

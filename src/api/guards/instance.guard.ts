@@ -16,7 +16,16 @@ async function getInstance(instanceName: string) {
       return exists || keyExists;
     }
 
-    return exists || (await prismaRepository.instance.findMany({ where: { name: instanceName } })).length > 0;
+    return (
+      exists ||
+      (
+        await prismaRepository.instance.findMany({
+          where: {
+            OR: [{ name: instanceName }, { id: instanceName }],
+          },
+        })
+      ).length > 0
+    );
   } catch (error) {
     throw new InternalServerErrorException(error?.toString());
   }
@@ -27,14 +36,23 @@ export async function instanceExistsGuard(req: Request, _: Response, next: NextF
     return next();
   }
 
-  const param = req.params as unknown as InstanceDto;
-  if (!param?.instanceName) {
+  const instanceName = req.params?.instanceName;
+  if (!instanceName) {
     throw new BadRequestException('"instanceName" not provided.');
   }
 
-  if (!(await getInstance(param.instanceName))) {
-    throw new NotFoundException(`The "${param.instanceName}" instance does not exist`);
+  const instance = await prismaRepository.instance.findFirst({
+    where: {
+      OR: [{ name: instanceName }, { id: instanceName }],
+    },
+  });
+
+  if (!instance) {
+    throw new NotFoundException(`The "${instanceName}" instance does not exist`);
   }
+
+  // Attach instance data to params so controllers can use instance.id
+  Object.assign(req.params, instance);
 
   next();
 }

@@ -24,6 +24,8 @@ import { useChatStore } from '../store/useChatStore';
 import { useInstanceStore } from '../store/useInstanceStore';
 import { cn } from '../utils/cn';
 import axios from 'axios';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 
 export const ChatHub: React.FC = () => {
   const { instances, fetchInstances } = useInstanceStore();
@@ -62,6 +64,7 @@ export const ChatHub: React.FC = () => {
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [cart, setCart] = useState<{ product: any, quantity: number }[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -187,10 +190,10 @@ export const ChatHub: React.FC = () => {
   const fetchProducts = async () => {
     if (!activeInstance) return;
     try {
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/product/${activeInstance}`, {
+      const { data } = await axios.get(`/product/${activeInstance}`, {
         headers: { apikey: token }
       });
-      setAllProducts(data);
+      setAllProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching products:', err);
     }
@@ -217,10 +220,33 @@ export const ChatHub: React.FC = () => {
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
+  const updateQuantity = (productId: string, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.product.id === productId) {
+        const newQ = item.quantity + delta;
+        return newQ > 0 ? { ...item, quantity: newQ } : item;
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
+  };
+
+  const sendCartToClient = async () => {
+    if (!activeInstance || !selectedChat || cart.length === 0) return;
+    const total = cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0);
+    let text = `🛒 *Resumen de tu pedido:*\n\n`;
+    cart.forEach(item => {
+      text += `▪ ${item.quantity}x ${item.product.name} - $${(item.product.price * item.quantity).toLocaleString()}\n`;
+    });
+    text += `\n*Total a pagar: $${total.toLocaleString()}*`;
+    
+    await sendMessage(activeInstance, selectedChat.remoteJid, text);
+    setShowOrderModal(false);
+  };
+
   const registerOrder = async () => {
     if (!activeInstance || !selectedChat || cart.length === 0) return;
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/order/${activeInstance}`, {
+      await axios.post(`/order/${activeInstance}`, {
         remoteJid: selectedChat.remoteJid,
         items: cart.map(item => ({ productId: item.product.id, quantity: item.quantity })),
         status: 'PAID'
@@ -475,6 +501,17 @@ export const ChatHub: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleSend} className="relative group">
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-[110%] left-0 mb-2 z-50 shadow-2xl">
+                      <EmojiPicker 
+                        theme={Theme.DARK}
+                        onEmojiClick={(emojiData: EmojiClickData) => {
+                          setInputText((prev) => prev + emojiData.emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-1 absolute left-3 top-1/2 -translate-y-1/2 z-10">
                     <button 
                       type="button" 
@@ -494,7 +531,7 @@ export const ChatHub: React.FC = () => {
                     </button>
                     <button 
                       type="button" 
-                      onClick={() => alert('Selector de emojis (Próximamente en la versión estable)')}
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       className="p-2 text-gray-500 hover:text-yellow-500 transition-all hover:bg-yellow-500/10 rounded-xl"
                       title="Emojis"
                     >
@@ -516,7 +553,7 @@ export const ChatHub: React.FC = () => {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     className={cn(
-                      "theme-input w-full rounded-2xl py-5 pl-28 pr-28 text-sm focus:ring-2 transition-all outline-none border-white/5",
+                      "theme-input w-full rounded-2xl py-5 pl-[140px] pr-[100px] text-sm focus:ring-2 transition-all outline-none border-white/5",
                       inputTab === 'reply' ? "focus:ring-primary/20" : "focus:ring-secondary/20"
                     )}
                   />
@@ -788,9 +825,16 @@ export const ChatHub: React.FC = () => {
                       <div key={item.product.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <button onClick={() => removeFromCart(item.product.id)} className="text-red-500/40 hover:text-red-500"><X size={14} /></button>
-                          <span className="text-xs text-white/80">{item.product.name} x {item.quantity}</span>
+                          <span className="text-xs text-white/80">{item.product.name}</span>
                         </div>
-                        <span className="text-xs font-bold text-white">${(item.product.price * item.quantity).toLocaleString()}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
+                            <button onClick={() => updateQuantity(item.product.id, -1)} className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white rounded-md hover:bg-white/10">-</button>
+                            <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.product.id, 1)} className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white rounded-md hover:bg-white/10">+</button>
+                          </div>
+                          <span className="text-xs font-bold text-white w-16 text-right">${(item.product.price * item.quantity).toLocaleString()}</span>
+                        </div>
                       </div>
                     ))}
                     <div className="pt-4 flex justify-between items-center border-t border-white/5">
@@ -801,13 +845,22 @@ export const ChatHub: React.FC = () => {
                 </div>
               )}
 
-              <button 
-                onClick={registerOrder}
-                disabled={cart.length === 0}
-                className="w-full py-4 bg-primary text-dark font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 disabled:grayscale"
-              >
-                Confirmar y Registrar Venta
-              </button>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={sendCartToClient}
+                  disabled={cart.length === 0}
+                  className="flex-1 py-4 bg-white/5 text-white font-bold uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all disabled:opacity-50 text-[10px] flex items-center justify-center gap-2 border border-white/5"
+                >
+                  <MessageSquare size={14} /> Enviar al Chat
+                </button>
+                <button 
+                  onClick={registerOrder}
+                  disabled={cart.length === 0}
+                  className="flex-[1.5] py-4 bg-primary text-dark font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 disabled:grayscale text-[10px]"
+                >
+                  Cobrar y Registrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

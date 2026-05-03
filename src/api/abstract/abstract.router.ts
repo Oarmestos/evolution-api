@@ -20,7 +20,7 @@ const logger = new Logger('Validate');
 export abstract class RouterBroker {
   constructor() {}
   public routerPath(path: string, param = true) {
-    let route = '/' + path;
+    let route = path ? '/' + path : '';
     param ? (route += '/:instanceName') : null;
 
     return route;

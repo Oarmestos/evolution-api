@@ -81,6 +81,8 @@ async function bootstrap() {
     const isApiRequest =
       req.url.startsWith('/api') ||
       req.url.startsWith('/instance') ||
+      req.url.startsWith('/product') ||
+      req.url.startsWith('/order') ||
       req.url.startsWith('/webhook') ||
       req.url.startsWith('/chatwoot') ||
       req.url.startsWith('/store');
