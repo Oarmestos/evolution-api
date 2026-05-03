@@ -10,10 +10,13 @@ import { GroupController } from './controllers/group.controller';
 import { InstanceController } from './controllers/instance.controller';
 import { LabelController } from './controllers/label.controller';
 import { LeadController } from './controllers/lead.controller';
+import { OrderController } from './controllers/order.controller';
+import { ProductController } from './controllers/product.controller';
 import { ProxyController } from './controllers/proxy.controller';
 import { SendMessageController } from './controllers/sendMessage.controller';
 import { SettingsController } from './controllers/settings.controller';
 import { TemplateController } from './controllers/template.controller';
+import { ThemeController } from './controllers/theme.controller';
 import { UserController } from './controllers/user.controller';
 import { ChannelController } from './integrations/channel/channel.controller';
 import { EvolutionController } from './integrations/channel/evolution/evolution.controller';
@@ -44,9 +47,12 @@ import { PrismaRepository } from './repository/repository.service';
 import { CacheService } from './services/cache.service';
 import { LeadService } from './services/lead.service';
 import { WAMonitoringService } from './services/monitor.service';
+import { OrderService } from './services/order.service';
+import { ProductService } from './services/product.service';
 import { ProxyService } from './services/proxy.service';
 import { SettingsService } from './services/settings.service';
 import { TemplateService } from './services/template.service';
+import { ThemeService } from './services/theme.service';
 import { UserService } from './services/user.service';
 
 const logger = new Logger('WA MODULE');
@@ -147,5 +153,14 @@ export const evoaiController = new EvoaiController(evoaiService, prismaRepositor
 
 const userService = new UserService(prismaRepository);
 export const userController = new UserController(userService);
+
+const themeService = new ThemeService(prismaRepository);
+export const themeController = new ThemeController(themeService);
+
+const productService = new ProductService(prismaRepository);
+export const productController = new ProductController(productService);
+
+const orderService = new OrderService(prismaRepository);
+export const orderController = new OrderController(orderService);
 
 logger.info('Module - ON');

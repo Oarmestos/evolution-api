@@ -15,7 +15,10 @@ import {
   Filter,
   X,
   Users,
-  ChevronDown
+  ChevronDown,
+  Package,
+  ShoppingCart,
+  Plus
 } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
 import { useInstanceStore } from '../store/useInstanceStore';
@@ -55,6 +58,10 @@ export const ChatHub: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // Track which chat is open so we only reset editInfo when the chat actually changes
   const activeChatJid = useRef<string | null>(null);
+  const [showProductSelector, setShowProductSelector] = useState(false);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [cart, setCart] = useState<{ product: any, quantity: number }[]>([]);
+  const [showOrderModal, setShowOrderModal] = useState(false);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -177,13 +184,70 @@ export const ChatHub: React.FC = () => {
     }
   };
 
+  const fetchProducts = async () => {
+    if (!activeInstance) return;
+    try {
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/product/${activeInstance}`, {
+        headers: { apikey: token }
+      });
+      setAllProducts(data);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    }
+  };
+
+  const sendProduct = async (product: any) => {
+    if (!activeInstance || !selectedChat) return;
+    const text = `*${product.name}*\n${product.description || ''}\n\n*Precio:* $${product.price.toLocaleString()}\n\n¿Te gustaría que te ayude con el pedido?`;
+    await sendMessage(activeInstance, selectedChat.remoteJid, text);
+    setShowProductSelector(false);
+  };
+
+  const addToCart = (product: any) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id);
+      if (existing) {
+        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  const registerOrder = async () => {
+    if (!activeInstance || !selectedChat || cart.length === 0) return;
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/order/${activeInstance}`, {
+        remoteJid: selectedChat.remoteJid,
+        items: cart.map(item => ({ productId: item.product.id, quantity: item.quantity })),
+        status: 'PAID'
+      }, {
+        headers: { apikey: token }
+      });
+      alert('¡Venta registrada con éxito!');
+      setShowOrderModal(false);
+      setCart([]);
+    } catch (err) {
+      console.error('Error registering order:', err);
+      alert('Error al registrar la venta');
+    }
+  };
+
+  useEffect(() => {
+    if (activeInstance) fetchProducts();
+  }, [activeInstance]);
+
   const filteredChats = chats.filter(chat => 
     chat.pushName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     chat.remoteJid.includes(searchTerm)
   );
 
   return (
-    <div className="theme-surface h-[calc(100vh-140px)] flex gap-0.5 overflow-hidden rounded-3xl border border-white/5 shadow-2xl">
+    <>
+      <div className="theme-surface h-[calc(100vh-140px)] flex gap-0.5 overflow-hidden rounded-3xl border border-white/5 shadow-2xl">
       {/* Column 1: Chat List */}
       <div className="theme-surface-deep w-[320px] flex flex-col border-r border-white/5">
         <div className="p-4 space-y-4">
@@ -422,6 +486,14 @@ export const ChatHub: React.FC = () => {
                     </button>
                     <button 
                       type="button" 
+                      onClick={() => setShowProductSelector(true)}
+                      className="p-2 text-gray-500 hover:text-primary transition-all hover:bg-primary/10 rounded-xl"
+                      title="Catálogo de Productos"
+                    >
+                      <Package className="w-5 h-5" />
+                    </button>
+                    <button 
+                      type="button" 
                       onClick={() => alert('Selector de emojis (Próximamente en la versión estable)')}
                       className="p-2 text-gray-500 hover:text-yellow-500 transition-all hover:bg-yellow-500/10 rounded-xl"
                       title="Emojis"
@@ -602,6 +674,12 @@ export const ChatHub: React.FC = () => {
                   >
                     Convertir a Lead
                   </button>
+                  <button 
+                    onClick={() => setShowOrderModal(true)}
+                    className="w-full py-3.5 bg-white/5 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-white/5 hover:bg-white/10 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart size={14} /> Registrar Venta
+                  </button>
                 </div>
               </div>
 
@@ -630,6 +708,111 @@ export const ChatHub: React.FC = () => {
         </div>
       )}
     </div>
+
+      {/* Product Selector Modal */}
+      {showProductSelector && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setShowProductSelector(false)}>
+          <div className="theme-overlay-card w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-white/5">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Package className="text-primary" /> Seleccionar Producto</h2>
+              <button onClick={() => setShowProductSelector(false)} className="text-white/40 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allProducts.filter(p => p.enabled).map(product => (
+                  <div 
+                    key={product.id}
+                    onClick={() => sendProduct(product)}
+                    className="theme-surface-alt p-4 rounded-2xl border border-white/5 hover:border-primary/40 cursor-pointer transition-all group flex gap-4"
+                  >
+                    <div className="w-16 h-16 rounded-xl bg-black/40 overflow-hidden flex-shrink-0">
+                      {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white/10"><Package size={24} /></div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-white truncate">{product.name}</h4>
+                      <p className="text-[10px] text-white/40 line-clamp-1 mt-1">{product.description}</p>
+                      <p className="text-sm font-bold text-primary mt-2">${product.price.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {allProducts.length === 0 && (
+                <div className="text-center py-10 text-white/20">
+                  <Package size={48} className="mx-auto mb-4 opacity-10" />
+                  <p>No hay productos registrados en el catálogo.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Registration Modal */}
+      {showOrderModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setShowOrderModal(false)}>
+          <div className="theme-overlay-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-white/5">
+              <h2 className="text-xl font-bold text-white">Registrar Venta</h2>
+              <button onClick={() => setShowOrderModal(false)} className="text-white/40 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Agregar Productos</label>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                  {allProducts.map(product => (
+                    <div key={product.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                      <span className="text-xs text-white/60 font-medium">{product.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-primary">${product.price.toLocaleString()}</span>
+                        <button 
+                          onClick={() => addToCart(product)}
+                          className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {cart.length > 0 && (
+                <div className="pt-6 border-t border-white/5">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Carrito</label>
+                  <div className="space-y-3">
+                    {cart.map(item => (
+                      <div key={item.product.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => removeFromCart(item.product.id)} className="text-red-500/40 hover:text-red-500"><X size={14} /></button>
+                          <span className="text-xs text-white/80">{item.product.name} x {item.quantity}</span>
+                        </div>
+                        <span className="text-xs font-bold text-white">${(item.product.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    <div className="pt-4 flex justify-between items-center border-t border-white/5">
+                      <span className="text-sm font-bold text-white">Total</span>
+                      <span className="text-lg font-black text-primary">${cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={registerOrder}
+                disabled={cart.length === 0}
+                className="w-full py-4 bg-primary text-dark font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 disabled:grayscale"
+              >
+                Confirmar y Registrar Venta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

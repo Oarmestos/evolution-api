@@ -9,7 +9,10 @@ import {
   LogOut,
   Zap,
   Code2,
-  Users
+  Users,
+  Package,
+  ShoppingCart,
+  Palette
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuthStore } from '../store/useAuthStore';
@@ -18,7 +21,10 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: MessageSquare, label: 'Chat', path: '/chat-hub' },
   { icon: Users, label: 'Ventas', path: '/sales' },
+  { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },
+  { icon: Package, label: 'Productos', path: '/products' },
   { icon: Zap, label: 'Instancias', path: '/channels' },
+  { icon: Palette, label: 'Tema', path: '/theme' },
   { icon: Bot, label: 'IA & Agentes', path: '/ai' },
   { icon: Zap, label: 'Flujos', path: '/flows' },
   { icon: Code2, label: 'Desarrollador', path: '/dev' },
@@ -37,7 +43,7 @@ export const Sidebar: React.FC = () => {
         </h1>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2">
+      <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}

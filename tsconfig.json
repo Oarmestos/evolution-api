@@ -25,7 +25,8 @@
       "@exceptions": ["./src/exceptions"],
       "@libs/*": ["./src/libs/*"],
       "@utils/*": ["./src/utils/*"],
-      "@validate/*": ["./src/validate/*"]
+      "@validate/*": ["./src/validate/*"],
+      "@dto/*": ["./src/dto/*"]
     },
     "moduleResolution": "Node"
   },

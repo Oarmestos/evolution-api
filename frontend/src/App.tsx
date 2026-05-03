@@ -1,3 +1,4 @@
+// Routes for Evolution API
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from './components/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -12,7 +13,10 @@ import { DevTools } from './pages/DevTools';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { Appearance } from './pages/Appearance';
 import { Landing } from './pages/Landing';
+import { Products } from './pages/Products';
+import { Orders } from './pages/Orders';
 import { useAuthStore } from './store/useAuthStore';
 import { useEffect } from 'react';
 
@@ -37,7 +41,10 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chat-hub" element={<ChatHub />} />
             <Route path="/sales" element={<SalesFunnel />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/channels" element={<Channels />} />
+            <Route path="/theme" element={<Appearance />} />
             <Route path="/ai" element={<AIAgents />} />
             <Route path="/flows" element={<Flows />} />
             <Route path="/dev" element={<DevTools />} />
@@ -55,3 +62,4 @@ function App() {
 }
 
 export default App;
+

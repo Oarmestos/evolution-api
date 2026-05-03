@@ -43,6 +43,18 @@ export default defineConfig({
       '/contact': {
         target: backendTarget,
         changeOrigin: true,
+      },
+      '/product': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/order': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '^/theme/.*': {
+        target: backendTarget,
+        changeOrigin: true,
       }
     }
   }

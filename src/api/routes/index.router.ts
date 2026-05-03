@@ -17,10 +17,13 @@ import { GroupRouter } from './group.router';
 import { InstanceRouter } from './instance.router';
 import { LabelRouter } from './label.router';
 import { LeadRouter } from './lead.router';
+import { OrderRouter } from './order.router';
+import { ProductRouter } from './product.router';
 import { ProxyRouter } from './proxy.router';
 import { MessageRouter } from './sendMessage.router';
 import { SettingsRouter } from './settings.router';
 import { TemplateRouter } from './template.router';
+import { ThemeRouter } from './theme.router';
 import { UserRouter } from './user.router';
 
 enum HttpStatus {
@@ -228,6 +231,9 @@ router
   .use('', new ChatbotRouter(...guards).router)
   .use('', new StorageRouter(...guards).router)
   .use('/user', new UserRouter().router)
+  .use('/theme', new ThemeRouter(authGuard['apikey']).router)
+  .use('/product', new ProductRouter(...guards).router)
+  .use('/order', new OrderRouter(...guards).router)
   .use('/lead', new LeadRouter(...guards).router);
 
 export { HttpStatus, router };
