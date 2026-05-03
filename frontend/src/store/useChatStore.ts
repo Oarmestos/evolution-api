@@ -29,6 +29,8 @@ export interface Chat {
   };
   unreadCount: number;
   controlMode: 'AI' | 'HUMAN';
+  phoneNumber?: string;
+  email?: string;
   updatedAt: string;
 }
 
@@ -65,6 +67,7 @@ interface ChatState {
   updateControlMode: (instanceName: string, remoteJid: string, mode: 'AI' | 'HUMAN') => Promise<void>;
   createInternalNote: (instanceName: string, remoteJid: string, content: string) => Promise<void>;
   sendMessage: (instanceName: string, remoteJid: string, text: string) => Promise<void>;
+  updateContact: (instanceName: string, remoteJid: string, data: { pushName?: string; phoneNumber?: string; email?: string }) => Promise<void>;
   setSelectedChat: (chat: Chat | null) => void;
 }
 
@@ -192,6 +195,32 @@ export const useChatStore = create<ChatState>((set) => ({
     } catch (error) {
       console.error('Error sending message:', error);
     }
+  },
+ 
+  updateContact: async (instanceName, remoteJid, data) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      const response = await axios.patch(`/chat/updateContact/${instanceName}`, { remoteJid, ...data }, {
+        headers: { apikey: token }
+      });
+      const updatedContact = response.data;
+      set((state) => ({
+        chats: state.chats.map((c) => c.remoteJid === remoteJid ? { 
+          ...c, 
+          pushName: updatedContact.pushName || c.pushName,
+          phoneNumber: updatedContact.phoneNumber || c.phoneNumber,
+          email: updatedContact.email || c.email
+        } : c),
+        selectedChat: state.selectedChat?.remoteJid === remoteJid ? { 
+          ...state.selectedChat, 
+          pushName: updatedContact.pushName || state.selectedChat.pushName,
+          phoneNumber: updatedContact.phoneNumber || state.selectedChat.phoneNumber,
+          email: updatedContact.email || state.selectedChat.email
+        } : state.selectedChat
+      }));
+    } catch (error) {
+      console.error('Error updating contact:', error);
+    }
   }
 }));
 
@@ -216,6 +245,8 @@ function normalizeChats(data: unknown): Chat[] {
           : undefined,
         unreadCount: Number(raw.unreadCount ?? raw.unreadMessages ?? 0),
         controlMode,
+        phoneNumber: raw.phoneNumber ?? undefined,
+        email: raw.email ?? undefined,
         updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
       };
     })
@@ -245,21 +276,23 @@ function normalizeMessage(raw: RawMessage, options?: { remoteJid?: string; fallb
 function upsertChatWithLatestMessage(chats: Chat[], selectedChat: Chat | null, message: Message): Chat[] {
   const preview = extractMessagePreview(message.message);
   const timestamp = message.messageTimestamp;
+  const existingChat = chats.find((c) => c.remoteJid === message.key.remoteJid);
+  
   const baseChat: Chat = {
-    id: selectedChat?.id ?? message.key.remoteJid,
+    id: existingChat?.id ?? selectedChat?.id ?? message.key.remoteJid,
     remoteJid: message.key.remoteJid,
-    pushName: selectedChat?.pushName ?? message.key.remoteJid.split('@')[0],
-    profilePicUrl: selectedChat?.profilePicUrl,
+    pushName: existingChat?.pushName ?? selectedChat?.pushName ?? message.key.remoteJid.split('@')[0],
+    profilePicUrl: existingChat?.profilePicUrl ?? selectedChat?.profilePicUrl,
     lastMessage: {
       message: preview,
       messageTimestamp: timestamp,
     },
     unreadCount: 0,
-    controlMode: selectedChat?.controlMode ?? 'AI',
+    controlMode: existingChat?.controlMode ?? selectedChat?.controlMode ?? 'AI',
     updatedAt: new Date(timestamp * 1000).toISOString(),
   };
 
-  const updated = chats.some((chat) => chat.remoteJid === message.key.remoteJid)
+  const updated = existingChat
     ? chats.map((chat) => chat.remoteJid === message.key.remoteJid ? { ...chat, ...baseChat } : chat)
     : [baseChat, ...chats];
 
@@ -313,6 +346,6 @@ function extractMessagePreview(message: Record<string, any> | undefined): string
     message.documentMessage?.caption ||
     message.documentWithCaptionMessage?.caption ||
     message.pollCreationMessage?.name ||
-    '[Tipo de mensagem não suportado]'
+    '[Tipo de mensaje no soportado]'
   );
 }

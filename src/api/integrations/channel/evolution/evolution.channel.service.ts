@@ -201,7 +201,7 @@ export class EvolutionStartupService extends ChannelStartupService {
           data: messageRaw,
         });
 
-        await this.updateContact({
+        await this.internalUpdateContact({
           remoteJid: messageRaw.key.remoteJid,
           pushName: messageRaw.pushName,
           profilePicUrl: received.profilePicUrl,
@@ -212,7 +212,7 @@ export class EvolutionStartupService extends ChannelStartupService {
     }
   }
 
-  private async updateContact(data: { remoteJid: string; pushName?: string; profilePicUrl?: string }) {
+  private async internalUpdateContact(data: { remoteJid: string; pushName?: string; profilePicUrl?: string }) {
     const contactRaw: any = {
       remoteJid: data.remoteJid,
       pushName: data?.pushName,

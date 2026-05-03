@@ -43,14 +43,14 @@ export const Channels: React.FC = () => {
   }, [fetchInstances]);
 
   const channelTypes = [
-    { id: 'widget', name: 'Widget Web', desc: 'Widget de chat para seu website', icon: MessageCircle, color: 'text-white', active: false },
-    { id: 'whatsapp', name: 'WhatsApp', desc: 'Canal do WhatsApp para atendimento ao cliente', icon: Smartphone, color: 'text-green-500', active: true },
-    { id: 'instagram', name: 'Instagram', desc: 'Mensagens diretas do Instagram', icon: Image, color: 'text-white', active: false },
-    { id: 'facebook', name: 'Facebook Messenger', desc: 'Chat do Facebook Messenger', icon: Globe, color: 'text-white', active: false },
-    { id: 'telegram', name: 'Telegram', desc: 'Bot do Telegram para soporte automatizado', icon: Send, color: 'text-white', active: false },
-    { id: 'sms', name: 'SMS', desc: 'Mensagens de texto SMS', icon: Smartphone, color: 'text-white', active: false },
-    { id: 'email', name: 'Email', desc: 'Suporte por email', icon: Mail, color: 'text-white', active: false },
-    { id: 'api', name: 'API', desc: 'Integração via API personalizada', icon: Code, color: 'text-white', active: false },
+    { id: 'widget', name: 'Widget Web', desc: 'Widget de chat para tu sitio web', icon: MessageCircle, color: 'text-white', active: false },
+    { id: 'whatsapp', name: 'WhatsApp', desc: 'Canal de WhatsApp para atención al cliente', icon: Smartphone, color: 'text-green-500', active: true },
+    { id: 'instagram', name: 'Instagram', desc: 'Mensajes directos de Instagram', icon: Image, color: 'text-white', active: false },
+    { id: 'facebook', name: 'Facebook Messenger', desc: 'Chat de Facebook Messenger', icon: Globe, color: 'text-white', active: false },
+    { id: 'telegram', name: 'Telegram', desc: 'Bot de Telegram para soporte automatizado', icon: Send, color: 'text-white', active: false },
+    { id: 'sms', name: 'SMS', desc: 'Mensajes de texto SMS', icon: Smartphone, color: 'text-white', active: false },
+    { id: 'email', name: 'Email', desc: 'Soporte por correo electrónico', icon: Mail, color: 'text-white', active: false },
+    { id: 'api', name: 'API', desc: 'Integración vía API personalizada', icon: Code, color: 'text-white', active: false },
   ];
 
   const handleCreate = async (e: React.FormEvent) => {

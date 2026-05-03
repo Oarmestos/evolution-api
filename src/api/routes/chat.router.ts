@@ -297,6 +297,11 @@ export class ChatRouter extends RouterBroker {
         const { remoteJid } = req.query as unknown as { remoteJid: string };
         const response = await chatController.fetchInternalNotes(instance, { remoteJid });
         return res.status(HttpStatus.OK).json(response);
+      })
+      .patch(this.routerPath('updateContact'), ...guards, async (req, res) => {
+        const instance = req.params as unknown as InstanceDto;
+        const response = await chatController.updateContact(instance, req.body);
+        return res.status(HttpStatus.OK).json(response);
       });
   }
 

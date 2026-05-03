@@ -745,10 +745,20 @@ export class ChannelStartupService {
       WITH rankedMessages AS (
         SELECT DISTINCT ON ("Message"."key"->>'remoteJid') 
           "Contact"."id" as "contactId",
+          split_part(
+            COALESCE(
+              "Contact"."phoneNumber", 
+              "Message"."key"->>'remoteJidAlt',
+              "Message"."key"->>'remoteJid'
+            ),
+            '@',
+            1
+          ) as "phoneNumber",
+          "Contact"."email",
           "Message"."key"->>'remoteJid' as "remoteJid",
           CASE 
-            WHEN "Message"."key"->>'remoteJid' LIKE '%@g.us' THEN COALESCE("Chat"."name", "Contact"."pushName")
-            ELSE COALESCE("Contact"."pushName", "Message"."pushName")
+            WHEN "Message"."key"->>'remoteJid' LIKE '%@g.us' THEN COALESCE(NULLIF("Chat"."name", ''), NULLIF("Contact"."pushName", ''))
+            ELSE COALESCE(NULLIF("Contact"."pushName", ''), "Message"."pushName")
           END as "pushName",
           "Contact"."profilePicUrl",
           COALESCE(
@@ -764,7 +774,7 @@ export class ChannelStartupService {
           "Message"."id" AS "lastMessageId",
           "Message"."key" AS "lastMessage_key",
           CASE
-            WHEN "Message"."key"->>'fromMe' = 'true' THEN 'Você'
+            WHEN "Message"."key"->>'fromMe' = 'true' THEN 'Tú'
             ELSE "Message"."pushName"
           END AS "lastMessagePushName",
           "Message"."participant" AS "lastMessageParticipant",
@@ -821,6 +831,8 @@ export class ChannelStartupService {
           lastMessage: lastMessage ? this.cleanMessageData(lastMessage) : undefined,
           unreadCount: contact.unreadMessages,
           controlMode: contact.controlMode,
+          phoneNumber: contact.phoneNumber,
+          email: contact.email,
           isSaved: !!contact.contactId,
         };
       });
@@ -853,5 +865,85 @@ export class ChannelStartupService {
     ];
 
     return mediaTypes.some((type) => msg[type] && Object.keys(msg[type]).length > 0);
+  }
+
+  public async updateControlMode(remoteJid: string, mode: 'AI' | 'HUMAN') {
+    return await this.prismaRepository.chat.upsert({
+      where: {
+        instanceId_remoteJid: {
+          instanceId: this.instanceId,
+          remoteJid,
+        },
+      },
+      update: { controlMode: mode },
+      create: {
+        instanceId: this.instanceId,
+        remoteJid,
+        controlMode: mode,
+      },
+    });
+  }
+
+  public async updateContact(remoteJid: string, data: { pushName?: string; phoneNumber?: string; email?: string }) {
+    return await this.prismaRepository.contact.upsert({
+      where: {
+        remoteJid_instanceId: {
+          remoteJid,
+          instanceId: this.instanceId,
+        },
+      },
+      update: data,
+      create: {
+        ...data,
+        remoteJid,
+        instanceId: this.instanceId,
+      },
+    });
+  }
+
+  public async createInternalNote(remoteJid: string, content: string, userId: string) {
+    const chat = await this.prismaRepository.chat.findUnique({
+      where: {
+        instanceId_remoteJid: {
+          instanceId: this.instanceId,
+          remoteJid,
+        },
+      },
+    });
+
+    if (!chat) return null;
+
+    return await this.prismaRepository.internalNote.create({
+      data: {
+        content,
+        chatId: chat.id,
+        userId,
+      },
+    });
+  }
+
+  public async fetchInternalNotes(remoteJid: string) {
+    const chat = await this.prismaRepository.chat.findUnique({
+      where: {
+        instanceId_remoteJid: {
+          instanceId: this.instanceId,
+          remoteJid,
+        },
+      },
+    });
+
+    if (!chat) return [];
+
+    return await this.prismaRepository.internalNote.findMany({
+      where: {
+        chatId: chat.id,
+      },
+      include: {
+        User: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 }

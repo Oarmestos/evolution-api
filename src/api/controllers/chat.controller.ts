@@ -128,4 +128,12 @@ export class ChatController {
   public async fetchInternalNotes({ instanceName }: InstanceDto, { remoteJid }: { remoteJid: string }) {
     return await this.waMonitor.waInstances[instanceName].fetchInternalNotes(remoteJid);
   }
+
+  public async updateContact(
+    { instanceName }: InstanceDto,
+    data: { remoteJid: string; pushName?: string; phoneNumber?: string; email?: string },
+  ) {
+    const { remoteJid, ...updateData } = data;
+    return await this.waMonitor.waInstances[instanceName].updateContact(remoteJid, updateData);
+  }
 }

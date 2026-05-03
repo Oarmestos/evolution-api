@@ -1,112 +1,112 @@
-# Evolution API - AI Agent Guidelines
+# Evolution API - Guías para Agentes de IA
 
-This document provides comprehensive guidelines for AI agents (Claude, GPT, Cursor, etc.) working with the Evolution API codebase.
+Este documento proporciona pautas completas para los agentes de IA (Claude, GPT, Cursor, etc.) que trabajan con el código base de Evolution API.
 
-## Project Overview
+## Descripción General del Proyecto
 
-**Evolution API** is a production-ready, multi-tenant WhatsApp API platform built with Node.js, TypeScript, and Express.js. It supports multiple WhatsApp providers and extensive integrations with chatbots, CRM systems, and messaging platforms.
+**Evolution API** es una plataforma de API de WhatsApp multi-inquilino (multi-tenant) lista para producción, construida con Node.js, TypeScript y Express.js. Soporta múltiples proveedores de WhatsApp e integraciones extensas con chatbots, sistemas CRM y plataformas de mensajería.
 
-## Project Structure & Module Organization
+## Estructura del Proyecto y Organización de Módulos
 
-### Core Directories
-- **`src/`** – TypeScript source code with modular architecture
-  - `api/controllers/` – HTTP route handlers (thin layer)
-  - `api/services/` – Business logic (core functionality)
-  - `api/routes/` – Express route definitions (RouterBroker pattern)
-  - `api/integrations/` – External service integrations
-    - `channel/` – WhatsApp providers (Baileys, Business API, Evolution)
-    - `chatbot/` – AI/Bot integrations (OpenAI, Dify, Typebot, Chatwoot)
-    - `event/` – Event systems (WebSocket, RabbitMQ, SQS, NATS, Pusher)
-    - `storage/` – File storage (S3, MinIO)
-  - `dto/` – Data Transfer Objects (simple classes, no decorators)
-  - `guards/` – Authentication/authorization middleware
-  - `types/` – TypeScript type definitions
-  - `repository/` – Data access layer (Prisma)
-- **`prisma/`** – Database schemas and migrations
-  - `postgresql-schema.prisma` / `mysql-schema.prisma` – Provider-specific schemas
-  - `postgresql-migrations/` / `mysql-migrations/` – Provider-specific migrations
-- **`config/`** – Environment and application configuration
-- **`utils/`** – Shared utilities and helper functions
-- **`validate/`** – JSONSchema7 validation schemas
-- **`exceptions/`** – Custom HTTP exception classes
-- **`cache/`** – Redis and local cache implementations
+### Directorios Principales
+- **`src/`** – Código fuente TypeScript con arquitectura modular
+  - `api/controllers/` – Manejadores de rutas HTTP (capa delgada)
+  - `api/services/` – Lógica de negocio (funcionalidad principal)
+  - `api/routes/` – Definiciones de rutas Express (patrón RouterBroker)
+  - `api/integrations/` – Integraciones con servicios externos
+    - `channel/` – Proveedores de WhatsApp (Baileys, Business API, Evolution)
+    - `chatbot/` – Integraciones de IA/Bot (OpenAI, Dify, Typebot, Chatwoot)
+    - `event/` – Sistemas de eventos (WebSocket, RabbitMQ, SQS, NATS, Pusher)
+    - `storage/` – Almacenamiento de archivos (S3, MinIO)
+  - `dto/` – Objetos de Transferencia de Datos (clases simples, sin decoradores)
+  - `guards/` – Middleware de autenticación/autorización
+  - `types/` – Definiciones de tipos TypeScript
+  - `repository/` – Capa de acceso a datos (Prisma)
+- **`prisma/`** – Esquemas de base de datos y migraciones
+  - `postgresql-schema.prisma` / `mysql-schema.prisma` – Esquemas específicos por proveedor
+  - `postgresql-migrations/` / `mysql-migrations/` – Migraciones específicas por proveedor
+- **`config/`** – Configuración del entorno y de la aplicación
+- **`utils/`** – Utilidades compartidas y funciones auxiliares
+- **`validate/`** – Esquemas de validación JSONSchema7
+- **`exceptions/`** – Clases personalizadas de excepciones HTTP
+- **`cache/`** – Implementaciones de caché en Redis y local
 
-### Build & Deployment
-- **`dist/`** – Build output (do not edit directly)
-- **`public/`** – Static assets and media files
-- **`Docker*`**, **`docker-compose*.yaml`** – Containerization and local development stack
+### Construcción y Despliegue
+- **`dist/`** – Salida de construcción (no editar directamente)
+- **`public/`** – Activos estáticos y archivos multimedia
+- **`Docker*`**, **`docker-compose*.yaml`** – Contenedorización y stack de desarrollo local
 
-## Build, Test, and Development Commands
+## Comandos de Construcción, Prueba y Desarrollo
 
-### Development Workflow
+### Flujo de Desarrollo
 ```bash
-# Development server with hot reload
+# Servidor de desarrollo con hot reload
 npm run dev:server
 
-# Direct execution for testing
+# Ejecución directa para pruebas
 npm start
 
-# Production build and run
+# Construcción de producción y ejecución
 npm run build
 npm run start:prod
 ```
 
-### Code Quality
+### Calidad del Código
 ```bash
-# Linting and formatting
-npm run lint        # ESLint with auto-fix
-npm run lint:check  # ESLint check only
+# Linting y formateo
+npm run lint        # ESLint con auto-fix
+npm run lint:check  # Solo verificación de ESLint
 
-# Commit with conventional commits
-npm run commit      # Interactive commit with Commitizen
+# Commit con commits convencionales
+npm run commit      # Commit interactivo con Commitizen
 ```
 
-### Database Management
+### Gestión de Base de Datos
 ```bash
-# Set database provider first (CRITICAL)
-export DATABASE_PROVIDER=postgresql  # or mysql
+# Establecer el proveedor de base de datos primero (CRÍTICO)
+export DATABASE_PROVIDER=postgresql  # o mysql
 
-# Generate Prisma client
+# Generar cliente Prisma
 npm run db:generate
 
-# Development migrations (with provider sync)
+# Migraciones de desarrollo (con sincronización de proveedor)
 npm run db:migrate:dev      # Unix/Mac
 npm run db:migrate:dev:win  # Windows
 
-# Production deployment
+# Despliegue en producción
 npm run db:deploy      # Unix/Mac
 npm run db:deploy:win  # Windows
 
-# Database tools
-npm run db:studio      # Open Prisma Studio
+# Herramientas de base de datos
+npm run db:studio      # Abrir Prisma Studio
 ```
 
-### Docker Development
+### Desarrollo con Docker
 ```bash
-# Start local services (Redis, PostgreSQL, etc.)
+# Iniciar servicios locales (Redis, PostgreSQL, etc.)
 docker-compose up -d
 
-# Full development stack
+# Stack de desarrollo completo
 docker-compose -f docker-compose.dev.yaml up -d
 ```
 
-## Coding Standards & Architecture Patterns
+## Estándares de Codificación y Patrones de Arquitectura
 
-### Code Style (Enforced by ESLint + Prettier)
-- **TypeScript strict mode** with full type coverage
-- **2-space indentation**, single quotes, trailing commas
-- **120-character line limit**
-- **Import order** via `simple-import-sort`
-- **File naming**: `feature.kind.ts` (e.g., `whatsapp.baileys.service.ts`)
-- **Naming conventions**:
-  - Classes: `PascalCase`
-  - Functions/variables: `camelCase`
-  - Constants: `UPPER_SNAKE_CASE`
-  - Files: `kebab-case.type.ts`
+### Estilo de Código (Aplicado por ESLint + Prettier)
+- **Modo estricto de TypeScript** con cobertura completa de tipos
+- **Sangría de 2 espacios**, comillas simples, comas finales
+- **Límite de línea de 120 caracteres**
+- **Orden de importación** mediante `simple-import-sort`
+- **Nombramiento de archivos**: `feature.kind.ts` (ej., `whatsapp.baileys.service.ts`)
+- **Convenciones de nombres**:
+  - Clases: `PascalCase`
+  - Funciones/variables: `camelCase`
+  - Constantes: `UPPER_SNAKE_CASE`
+  - Archivos: `kebab-case.type.ts`
 
-### Architecture Patterns
+### Patrones de Arquitectura
 
-#### Service Layer Pattern
+#### Patrón de Capa de Servicio
 ```typescript
 export class ExampleService {
   constructor(private readonly waMonitor: WAMonitoringService) {}
@@ -114,23 +114,23 @@ export class ExampleService {
   private readonly logger = new Logger('ExampleService');
   
   public async create(instance: InstanceDto, data: ExampleDto) {
-    // Business logic here
+    // Lógica de negocio aquí
     return { example: { ...instance, data } };
   }
   
   public async find(instance: InstanceDto): Promise<ExampleDto | null> {
     try {
       const result = await this.waMonitor.waInstances[instance.instanceName].findData();
-      return result || null; // Return null on not found (Evolution pattern)
+      return result || null; // Retornar null si no se encuentra (patrón Evolution)
     } catch (error) {
-      this.logger.error('Error finding data:', error);
-      return null; // Return null on error (Evolution pattern)
+      this.logger.error('Error al buscar datos:', error);
+      return null; // Retornar null en caso de error (patrón Evolution)
     }
   }
 }
 ```
 
-#### Controller Pattern (Thin Layer)
+#### Patrón de Controlador (Capa Delgada)
 ```typescript
 export class ExampleController {
   constructor(private readonly exampleService: ExampleService) {}
@@ -141,7 +141,7 @@ export class ExampleController {
 }
 ```
 
-#### RouterBroker Pattern
+#### Patrón RouterBroker
 ```typescript
 export class ExampleRouter extends RouterBroker {
   constructor(...guards: any[]) {
@@ -159,23 +159,23 @@ export class ExampleRouter extends RouterBroker {
 }
 ```
 
-#### DTO Pattern (Simple Classes)
+#### Patrón DTO (Clases Simples)
 ```typescript
-// CORRECT - Evolution API pattern (no decorators)
+// CORRECTO - Patrón Evolution API (sin decoradores)
 export class ExampleDto {
   name: string;
   description?: string;
   enabled: boolean;
 }
 
-// INCORRECT - Don't use class-validator decorators
+// INCORRECTO - No usar decoradores de class-validator
 export class BadExampleDto {
-  @IsString() // ❌ Evolution API doesn't use decorators
+  @IsString() // ❌ Evolution API no usa decoradores
   name: string;
 }
 ```
 
-#### Validation Pattern (JSONSchema7)
+#### Patrón de Validación (JSONSchema7)
 ```typescript
 import { JSONSchema7 } from 'json-schema';
 import { v4 } from 'uuid';
@@ -192,164 +192,163 @@ export const exampleSchema: JSONSchema7 = {
 };
 ```
 
-## Multi-Tenant Architecture
+## Arquitectura Multi-Inquilino (Multi-Tenant)
 
-### Instance Isolation
-- **CRITICAL**: All operations must be scoped by `instanceName` or `instanceId`
-- **Database queries**: Always include `where: { instanceId: ... }`
-- **Authentication**: Validate instance ownership before operations
-- **Data isolation**: Complete separation between tenant instances
+### Aislamiento de Instancias
+- **CRÍTICO**: Todas las operaciones deben estar restringidas por `instanceName` o `instanceId`
+- **Consultas a la base de datos**: Incluir siempre `where: { instanceId: ... }`
+- **Autenticación**: Validar la propiedad de la instancia antes de las operaciones
+- **Aislamiento de datos**: Separación completa entre instancias de inquilinos
 
-### WhatsApp Instance Management
+### Gestión de Instancias de WhatsApp
 ```typescript
-// Access instance via WAMonitoringService
+// Acceder a la instancia a través de WAMonitoringService
 const waInstance = this.waMonitor.waInstances[instance.instanceName];
 if (!waInstance) {
-  throw new NotFoundException(`Instance ${instance.instanceName} not found`);
+  throw new NotFoundException(`Instancia ${instance.instanceName} no encontrada`);
 }
 ```
 
-## Database Patterns
+## Patrones de Base de Datos
 
-### Multi-Provider Support
-- **PostgreSQL**: Uses `@db.Integer`, `@db.JsonB`, `@default(now())`
-- **MySQL**: Uses `@db.Int`, `@db.Json`, `@default(now())`
-- **Environment**: Set `DATABASE_PROVIDER=postgresql` or `mysql`
-- **Migrations**: Provider-specific folders auto-selected
+### Soporte Multi-Proveedor
+- **PostgreSQL**: Usa `@db.Integer`, `@db.JsonB`, `@default(now())`
+- **MySQL**: Usa `@db.Int`, `@db.Json`, `@default(now())`
+- **Entorno**: Configurar `DATABASE_PROVIDER=postgresql` o `mysql`
+- **Migraciones**: Carpetas específicas por proveedor auto-seleccionadas
 
-### Prisma Repository Pattern
+### Patrón de Repositorio Prisma
 ```typescript
-// Always use PrismaRepository for database operations
+// Usar siempre PrismaRepository para operaciones de base de datos
 const result = await this.prismaRepository.instance.findUnique({
   where: { name: instanceName },
 });
 ```
 
-## Integration Patterns
+## Patrones de Integración
 
-### Channel Integration (WhatsApp Providers)
-- **Baileys**: WhatsApp Web with QR code authentication
-- **Business API**: Official Meta WhatsApp Business API  
-- **Evolution API**: Custom WhatsApp integration
-- **Pattern**: Extend base channel service classes
+### Integración de Canales (Proveedores de WhatsApp)
+- **Baileys**: WhatsApp Web con autenticación por código QR
+- **Business API**: WhatsApp Business API oficial de Meta
+- **Evolution API**: Integración personalizada de WhatsApp
+- **Patrón**: Extender las clases base de servicio de canal
 
-### Chatbot Integration
-- **Base classes**: Extend `BaseChatbotService` and `BaseChatbotController`
-- **Trigger system**: Support keyword, regex, and advanced triggers
-- **Session management**: Handle conversation state per user
-- **Available integrations**: EvolutionBot, OpenAI, Dify, Typebot, Chatwoot, Flowise, N8N, EvoAI
+### Integración de Chatbot
+- **Clases base**: Extender `BaseChatbotService` y `BaseChatbotController`
+- **Sistema de disparadores**: Soporte para palabras clave, regex y disparadores avanzados
+- **Gestión de sesiones**: Manejar el estado de la conversación por usuario
+- **Integraciones disponibles**: EvolutionBot, OpenAI, Dify, Typebot, Chatwoot, Flowise, N8N, EvoAI
 
-### Event Integration
-- **Internal events**: EventEmitter2 for application events
-- **External events**: WebSocket, RabbitMQ, SQS, NATS, Pusher
-- **Webhook delivery**: Reliable delivery with retry logic
+### Integración de Eventos
+- **Eventos internos**: EventEmitter2 para eventos de la aplicación
+- **Eventos externos**: WebSocket, RabbitMQ, SQS, NATS, Pusher
+- **Entrega de webhooks**: Entrega confiable con lógica de reintento
 
-## Testing Guidelines
+## Guías de Pruebas
 
-### Current State
-- **No formal test suite** currently implemented
-- **Manual testing** is the primary approach
-- **Integration testing** in development environment
+### Estado Actual
+- **Sin suite de pruebas formal** implementada actualmente
+- **Pruebas manuales** son el enfoque principal
+- **Pruebas de integración** en el entorno de desarrollo
 
-### Testing Strategy
+### Estrategia de Pruebas
 ```typescript
-// Place tests in test/ directory as *.test.ts
-// Run: npm test (watches test/all.test.ts)
+// Colocar pruebas en el directorio test/ como *.test.ts
+// Ejecutar: npm test (monitorea test/all.test.ts)
 
 describe('ExampleService', () => {
-  it('should create example', async () => {
-    // Mock external dependencies
-    // Test business logic
-    // Assert expected behavior
+  it('debería crear un ejemplo', async () => {
+    // Simular dependencias externas
+    // Probar lógica de negocio
+    // Asegurar el comportamiento esperado
   });
 });
 ```
 
-### Recommended Approach
-- Focus on **critical business logic** in services
-- **Mock external dependencies** (WhatsApp APIs, databases)
-- **Integration tests** for API endpoints
-- **Manual testing** for WhatsApp connection flows
+### Enfoque Recomendado
+- Centrarse en la **lógica de negocio crítica** en los servicios
+- **Simular dependencias externas** (APIs de WhatsApp, bases de datos)
+- **Pruebas de integración** para los endpoints de la API
+- **Pruebas manuales** para los flujos de conexión de WhatsApp
 
-## Commit & Pull Request Guidelines
+## Guías de Commit y Pull Request
 
-### Conventional Commits (Enforced by commitlint)
+### Commits Convencionales (Aplicados por commitlint)
 ```bash
-# Use interactive commit tool
+# Usar herramienta interactiva de commit
 npm run commit
 
-# Commit format: type(scope): subject (max 100 chars)
-# Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert, security
+# Formato del commit: tipo(alcance): asunto (máx 100 caracteres)
+# Tipos: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert, security
 ```
 
-### Examples
-- `feat(api): add WhatsApp message status endpoint`
-- `fix(baileys): resolve connection timeout issue`
-- `docs(readme): update installation instructions`
-- `refactor(service): extract common message validation logic`
+### Ejemplos
+- `feat(api): agregar endpoint de estado de mensaje de WhatsApp`
+- `fix(baileys): resolver problema de tiempo de espera de conexión`
+- `docs(readme): actualizar instrucciones de instalación`
+- `refactor(service): extraer lógica común de validación de mensajes`
 
-### Pull Request Requirements
-- **Clear description** of changes and motivation
-- **Linked issues** if applicable
-- **Migration impact** (specify database provider)
-- **Local testing steps** with screenshots/logs
-- **Breaking changes** clearly documented
+### Requisitos de Pull Request
+- **Descripción clara** de los cambios y la motivación
+- **Issues vinculados** si aplica
+- **Impacto en la migración** (especificar proveedor de base de datos)
+- **Pasos de prueba local** con capturas de pantalla/logs
+- **Cambios disruptivos** claramente documentados
 
-## Security & Configuration
+## Seguridad y Configuración
 
-### Environment Setup
+### Configuración del Entorno
 ```bash
-# Copy example environment file
+# Copiar archivo de ejemplo de entorno
 cp .env.example .env
 
-# NEVER commit secrets to version control
-# Set DATABASE_PROVIDER before database commands
-export DATABASE_PROVIDER=postgresql  # or mysql
+# NUNCA subir secretos al control de versiones
+# Establecer DATABASE_PROVIDER antes de los comandos de base de datos
+export DATABASE_PROVIDER=postgresql  # o mysql
 ```
 
-### Security Best Practices
-- **API key authentication** via `apikey` header
-- **Input validation** with JSONSchema7
-- **Rate limiting** on all endpoints
-- **Webhook signature validation**
-- **Instance-based access control**
-- **Secure defaults** for all configurations
+### Mejores Prácticas de Seguridad
+- **Autenticación por clave de API** a través del encabezado `apikey`
+- **Validación de entrada** con JSONSchema7
+- **Limitación de tasa** en todos los endpoints
+- **Validación de firma de webhook**
+- **Control de acceso basado en instancias**
+- **Valores predeterminados seguros** para todas las configuraciones
 
-### Vulnerability Reporting
-- See `SECURITY.md` for security vulnerability reporting process
-- Contact: `contato@evolution-api.com`
+### Reporte de Vulnerabilidades
+- Ver `SECURITY.md` para el proceso de reporte de vulnerabilidades de seguridad
+- Contacto: `contato@evolution-api.com`
 
-## Communication Standards
+## Estándares de Comunicación
 
-### Language Requirements
-- **User communication**: Always respond in Portuguese (PT-BR)
-- **Code/comments**: English for technical documentation
-- **API responses**: English for consistency
-- **Error messages**: Portuguese for user-facing errors
+### Requisitos de Idioma
+- **Comunicación con el usuario**: Responder siempre en **Español**
+- **Código/comentarios**: Inglés para documentación técnica
+- **Respuestas de la API**: Inglés para consistencia
+- **Mensajes de error**: Español para errores de cara al usuario
 
-### Documentation Standards
-- **Inline comments**: Document complex business logic
-- **API documentation**: Document all public endpoints
-- **Integration guides**: Document new integration patterns
-- **Migration guides**: Document database schema changes
+### Estándares de Documentación
+- **Comentarios en línea**: Documentar lógica de negocio compleja
+- **Documentación de la API**: Documentar todos los endpoints públicos
+- **Guías de integración**: Documentar nuevos patrones de integración
+- **Guías de migración**: Documentar cambios en el esquema de la base de datos
 
-## Performance & Scalability
+## Rendimiento y Escalabilidad
 
-### Caching Strategy
-- **Redis primary**: Distributed caching for production
-- **Node-cache fallback**: Local caching when Redis unavailable
-- **TTL strategy**: Appropriate cache expiration per data type
-- **Cache invalidation**: Proper invalidation on data changes
+### Estrategia de Caché
+- **Redis primario**: Caché distribuido para producción
+- **Node-cache de respaldo**: Caché local cuando Redis no está disponible
+- **Estrategia TTL**: Expiración de caché adecuada por tipo de dato
+- **Invalidación de caché**: Invalidación adecuada ante cambios en los datos
 
-### Connection Management
-- **Database**: Prisma connection pooling
-- **WhatsApp**: One connection per instance with lifecycle management
-- **Redis**: Connection pooling and retry logic
-- **External APIs**: Rate limiting and retry with exponential backoff
+### Gestión de Conexiones
+- **Base de datos**: Agrupación de conexiones Prisma (pooling)
+- **WhatsApp**: Una conexión por instancia con gestión del ciclo de vida
+- **Redis**: Agrupación de conexiones y lógica de reintento
+- **APIs externas**: Limitación de tasa y reintento con retroceso exponencial
 
-### Monitoring & Observability
-- **Structured logging**: Pino logger with correlation IDs
-- **Error tracking**: Comprehensive error scenarios
-- **Health checks**: Instance status and connection monitoring
-- **Telemetry**: Usage analytics (non-sensitive data only)
-
+### Monitoreo y Observabilidad
+- **Registro estructurado**: Registrador Pino con IDs de correlación
+- **Seguimiento de errores**: Escenarios de error exhaustivos
+- **Verificaciones de salud**: Estado de la instancia y monitoreo de conexión
+- **Telemetría**: Análisis de uso (solo datos no sensibles)

@@ -101,6 +101,87 @@ export abstract class BaseChatbotService<BotType = any, SettingsType = any> {
         },
       });
 
+      // --- CRM INTEGRATION: Auto Lead Creation ---
+      try {
+        // 1. Find or Create Default Funnel
+        let funnel = await this.prismaRepository.leadFunnel.findFirst({
+          where: { instanceId: instance.instanceId, name: 'Ventas Principal' },
+        });
+
+        if (!funnel) {
+          funnel = await this.prismaRepository.leadFunnel.create({
+            data: {
+              name: 'Ventas Principal',
+              description: 'Embudo de ventas generado automáticamente',
+              instanceId: instance.instanceId,
+            },
+          });
+        }
+
+        // 2. Find or Create Default Stages
+        const stageNames = ['Nuevos', 'Calificados', 'Propuesta', 'Cerrado'];
+        let stages = await this.prismaRepository.leadStage.findMany({
+          where: { funnelId: funnel.id },
+          orderBy: { order: 'asc' },
+        });
+
+        if (stages.length === 0) {
+          for (let i = 0; i < stageNames.length; i++) {
+            await this.prismaRepository.leadStage.create({
+              data: {
+                name: stageNames[i],
+                order: i,
+                funnelId: funnel.id,
+                color: i === 0 ? '#00e5ff' : i === 3 ? '#00c853' : '#ffab00',
+              },
+            });
+          }
+          stages = await this.prismaRepository.leadStage.findMany({
+            where: { funnelId: funnel.id },
+            orderBy: { order: 'asc' },
+          });
+        }
+
+        // 3. Find or Create Contact
+        let contact = await this.prismaRepository.contact.findFirst({
+          where: { remoteJid: remoteJidValue, instanceId: instance.instanceId },
+        });
+
+        if (!contact) {
+          contact = await this.prismaRepository.contact.create({
+            data: {
+              remoteJid: remoteJidValue,
+              pushName: pushNameValue,
+              instanceId: instance.instanceId,
+            },
+          });
+        }
+
+        // 4. Create Lead if not exists
+        const existingLead = await this.prismaRepository.lead.findFirst({
+          where: {
+            contactId: contact.id,
+            instanceId: instance.instanceId,
+          },
+        });
+
+        if (!existingLead) {
+          await this.prismaRepository.lead.create({
+            data: {
+              contactId: contact.id,
+              stageId: stages[0].id,
+              instanceId: instance.instanceId,
+              value: 0,
+              notes: 'Lead creado automáticamente vía Chatbot',
+            },
+          });
+          this.logger.info(`Lead created for contact ${remoteJidValue}`);
+        }
+      } catch (crmError) {
+        this.logger.error(`Error in CRM auto-init: ${crmError.message}`);
+      }
+      // --------------------------------------------
+
       return { session };
     } catch (error) {
       this.logger.error(error);

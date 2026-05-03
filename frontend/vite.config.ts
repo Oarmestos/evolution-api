@@ -28,11 +28,19 @@ export default defineConfig({
         target: backendTarget,
         changeOrigin: true,
       },
-      '/chat': {
+      '^/chat/.*': {
         target: backendTarget,
         changeOrigin: true,
       },
       '/message': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/lead': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/contact': {
         target: backendTarget,
         changeOrigin: true,
       }

@@ -390,11 +390,17 @@ export class BusinessStartupService extends ChannelStartupService {
       if (received.contacts) pushName = received.contacts[0].profile.name;
 
       if (received.messages) {
-        const message = received.messages[0]; // Añadir esta línea para definir message
+        const message = received.messages[0];
+
+        // Extraer el número real de WhatsApp de los contactos de Meta si existe
+        let waPhoneNumber = message.from;
+        if (received.contacts && received.contacts[0]?.wa_id) {
+          waPhoneNumber = received.contacts[0].wa_id;
+        }
 
         const key = {
           id: message.id,
-          remoteJid: this.phoneNumber,
+          remoteJid: message.from, // Seguir usando el sender ID para la comunicación interna
           fromMe: message.from === received.metadata.phone_number_id,
         };
 
@@ -697,29 +703,29 @@ export class BusinessStartupService extends ChannelStartupService {
           });
         }
 
-        const contact = await this.prismaRepository.contact.findFirst({
-          where: { instanceId: this.instanceId, remoteJid: key.remoteJid },
-        });
+        const remoteJid = key.remoteJid;
+        // Priorizar el número de WhatsApp real extraído anteriormente
+        const phoneNumber = waPhoneNumber || remoteJid.split('@')[0];
 
         const contactRaw: any = {
-          remoteJid: received.contacts[0].profile.phone,
+          remoteJid,
           pushName,
-          // profilePicUrl: '',
+          phoneNumber,
           instanceId: this.instanceId,
         };
 
-        if (contactRaw.remoteJid === 'status@broadcast') {
+        if (remoteJid === 'status@broadcast') {
           return;
         }
 
-        if (contact) {
-          const contactRaw: any = {
-            remoteJid: received.contacts[0].profile.phone,
-            pushName,
-            // profilePicUrl: '',
+        const contact = await this.prismaRepository.contact.findFirst({
+          where: {
+            remoteJid,
             instanceId: this.instanceId,
-          };
+          },
+        });
 
+        if (contact) {
           this.sendDataWebhook(Events.CONTACTS_UPDATE, contactRaw);
 
           if (this.configService.get<Chatwoot>('CHATWOOT').ENABLED && this.localChatwoot?.enabled) {
@@ -730,18 +736,17 @@ export class BusinessStartupService extends ChannelStartupService {
             );
           }
 
-          await this.prismaRepository.contact.updateMany({
-            where: { remoteJid: contact.remoteJid },
+          await this.prismaRepository.contact.update({
+            where: { id: contact.id },
             data: contactRaw,
           });
-          return;
+        } else {
+          this.sendDataWebhook(Events.CONTACTS_UPSERT, contactRaw);
+
+          await this.prismaRepository.contact.create({
+            data: contactRaw,
+          });
         }
-
-        this.sendDataWebhook(Events.CONTACTS_UPSERT, contactRaw);
-
-        this.prismaRepository.contact.create({
-          data: contactRaw,
-        });
       }
       if (received.statuses) {
         for await (const item of received.statuses) {

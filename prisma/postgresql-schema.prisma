@@ -212,6 +212,8 @@ model Contact {
   updatedAt     DateTime? @updatedAt @db.Timestamp
   Instance      Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId    String
+  phoneNumber   String?   @db.VarChar(100)
+  email         String?   @db.VarChar(255)
 
   @@unique([remoteJid, instanceId])
   @@index([remoteJid])

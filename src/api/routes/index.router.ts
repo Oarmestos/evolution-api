@@ -9,8 +9,6 @@ import { waMonitor } from '@api/server.module';
 import { configService, Database, Facebook } from '@config/env.config';
 import { NextFunction, Request, Response, Router } from 'express';
 import fs from 'fs';
-import mimeTypes from 'mime-types';
-import path from 'path';
 
 import { BusinessRouter } from './business.router';
 import { CallRouter } from './call.router';
@@ -158,6 +156,7 @@ if (metricsConfig.ENABLED) {
   });
 }
 
+/*
 router.get('/assets/*', (req, res) => {
   const fileName = req.params[0];
 
@@ -185,6 +184,7 @@ router.get('/assets/*', (req, res) => {
     res.status(404).send('File not found');
   }
 });
+*/
 
 router
   .use((req, res, next) => telemetry.collectTelemetry(req, res, next))

@@ -91,7 +91,7 @@ export const chatwootController = new ChatwootController(chatwootService, config
 const settingsService = new SettingsService(waMonitor);
 export const settingsController = new SettingsController(settingsService);
 
-const leadService = new LeadService(prismaRepository);
+const leadService = new LeadService(prismaRepository, waMonitor);
 export const leadController = new LeadController(leadService);
 
 export const instanceController = new InstanceController(

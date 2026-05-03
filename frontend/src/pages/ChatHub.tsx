@@ -14,11 +14,13 @@ import {
   Mic,
   Filter,
   X,
-  Users
+  Users,
+  ChevronDown
 } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
 import { useInstanceStore } from '../store/useInstanceStore';
 import { cn } from '../utils/cn';
+import axios from 'axios';
 
 export const ChatHub: React.FC = () => {
   const { instances, fetchInstances } = useInstanceStore();
@@ -42,7 +44,28 @@ export const ChatHub: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [activeInstance, setActiveInstance] = useState<string | null>(null);
   const [inputTab, setInputTab] = useState<'reply' | 'note'>('reply');
+  const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [editInfo, setEditInfo] = useState<{ pushName: string; phoneNumber: string; email: string }>({
+    pushName: '',
+    phoneNumber: '',
+    email: ''
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMoreOptions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const token = localStorage.getItem('avri_token');
 
   useEffect(() => {
     fetchInstances();
@@ -66,6 +89,11 @@ export const ChatHub: React.FC = () => {
     if (activeInstance && selectedChat) {
       fetchMessages(activeInstance, selectedChat.remoteJid);
       fetchNotes(activeInstance, selectedChat.remoteJid);
+      setEditInfo({
+        pushName: selectedChat.pushName || '',
+        phoneNumber: selectedChat.phoneNumber || selectedChat.remoteJid.split('@')[0],
+        email: selectedChat.email || ''
+      });
       
       const interval = setInterval(() => {
         fetchMessages(activeInstance, selectedChat.remoteJid);
@@ -90,13 +118,61 @@ export const ChatHub: React.FC = () => {
     setInputText('');
   };
 
+  const handleConvertToLead = async () => {
+    if (!activeInstance || !selectedChat || !token) return;
+    try {
+      const funnelsRes = await axios.get(`/lead/funnels/${activeInstance}`, {
+        headers: { apikey: token }
+      });
+      
+      const funnels = funnelsRes.data;
+      if (!funnels || funnels.length === 0) {
+        alert('No hay embudos creados. Por favor, crea uno en la sección de Ventas.');
+        return;
+      }
+
+      const funnel = funnels[0];
+      const defaultStageId = funnel?.Stages?.[0]?.id;
+
+      if (!defaultStageId) {
+        alert('El embudo no tiene etapas. Por favor, configura las etapas en la sección de Ventas.');
+        return;
+      }
+
+      await axios.post(`/lead/${activeInstance}`, {
+        contactId: selectedChat.id,
+        stageId: defaultStageId,
+        value: 0,
+        notes: 'Convertido desde Chat'
+      }, {
+        headers: { apikey: token }
+      });
+      
+      alert('¡Lead creado exitosamente!');
+    } catch (err) {
+      console.error('Error al convertir lead:', err);
+      alert('Error al conectar con el servidor de leads.');
+    }
+  };
+ 
+  const handleUpdateContact = async () => {
+    if (!activeInstance || !selectedChat) return;
+    try {
+      await useChatStore.getState().updateContact(activeInstance, selectedChat.remoteJid, editInfo);
+      alert('Información del contacto actualizada');
+    } catch (err) {
+      console.error('Error al actualizar contacto:', err);
+      alert('Error al actualizar contacto');
+    }
+  };
+
   const filteredChats = chats.filter(chat => 
     chat.pushName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     chat.remoteJid.includes(searchTerm)
   );
 
   return (
-    <div className="theme-surface h-[calc(100vh-140px)] flex gap-0.5 overflow-hidden rounded-3xl">
+    <div className="theme-surface h-[calc(100vh-140px)] flex gap-0.5 overflow-hidden rounded-3xl border border-white/5 shadow-2xl">
       {/* Column 1: Chat List */}
       <div className="theme-surface-deep w-[320px] flex flex-col border-r border-white/5">
         <div className="p-4 space-y-4">
@@ -104,14 +180,14 @@ export const ChatHub: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-primary transition-colors" />
             <input 
               type="text" 
-              placeholder="Buscar conversas..."
+              placeholder="Buscar conversaciones..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="theme-input w-full rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary/50 transition-all"
+              className="theme-input w-full rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary/50 transition-all outline-none"
             />
           </div>
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{chats.length} conversas</span>
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{chats.length} conversaciones</span>
             <div className="flex gap-2">
               <button className="text-[10px] font-bold text-gray-400 flex items-center gap-1 hover:text-white transition-colors">
                 <Filter className="w-3 h-3" /> Filtros
@@ -154,21 +230,21 @@ export const ChatHub: React.FC = () => {
                     )}
                   </div>
                   {chat.controlMode === 'AI' && (
-                    <div className="absolute -bottom-1 -right-1 p-1 bg-primary rounded-full border-2 border-[#0f1012]">
+                    <div className="absolute -bottom-1 -right-1 p-1 bg-primary rounded-full border-2 border-[#0f1012] shadow-[0_0_8px_rgba(0,255,136,0.5)]">
                       <Bot className="w-2 h-2 text-dark" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 text-left min-w-0 pt-1">
                   <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-sm text-gray-200 truncate pr-2">{chat.pushName || chat.remoteJid.split('@')[0]}</h4>
-                    <span className="text-[10px] text-gray-600 font-medium">Agora</span>
+                    <h4 className="font-bold text-sm text-gray-200 truncate pr-2">{chat.pushName || (chat.phoneNumber ? `+${chat.phoneNumber}` : chat.remoteJid.split('@')[0])}</h4>
+                    <span className="text-[10px] text-gray-600 font-medium">Reciente</span>
                   </div>
                   <p className={cn(
                     "text-xs mt-0.5 truncate",
                     chat.unreadCount > 0 ? "text-white font-medium" : "text-gray-500"
                   )}>
-                    {chat.lastMessage?.message || 'Sem mensagens'}
+                    {chat.lastMessage?.message || 'Sin mensajes'}
                   </p>
                 </div>
                 {chat.unreadCount > 0 && (
@@ -181,36 +257,73 @@ export const ChatHub: React.FC = () => {
       </div>
 
       {/* Column 2: Chat View */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative bg-[#0f1012]">
         {!selectedChat ? (
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center opacity-50">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
               <MessageSquare className="w-10 h-10 text-gray-800" />
             </div>
-            <p className="text-gray-600 text-sm font-bold uppercase tracking-widest">Selecione uma conversa</p>
+            <p className="text-gray-600 text-sm font-bold uppercase tracking-widest">Selecciona una conversación</p>
           </div>
         ) : (
           <>
             {/* Header */}
-            <div className="theme-surface-deep h-16 px-6 border-b border-white/5 flex items-center justify-between backdrop-blur-md">
+            <div className="theme-surface-deep h-16 px-6 border-b border-white/5 flex items-center justify-between backdrop-blur-md relative z-10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#2a2b2e] flex items-center justify-center text-xs font-bold text-gray-400 border border-white/5">
-                  {selectedChat.pushName?.substring(0, 2).toUpperCase()}
+                <div className="w-10 h-10 rounded-full bg-[#2a2b2e] overflow-hidden flex items-center justify-center border border-white/5 shrink-0">
+                  {selectedChat.profilePicUrl ? (
+                    <img src={selectedChat.profilePicUrl} alt={selectedChat.pushName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-xs font-bold text-gray-500">{selectedChat.pushName?.substring(0, 2).toUpperCase()}</div>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-bold text-white text-sm leading-tight">{selectedChat.pushName}</h4>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-gray-500">cliente-alpha</span>
+                    <span className="text-[10px] text-primary/70 font-bold uppercase tracking-tighter">
+                      {selectedChat.phoneNumber ? `+${selectedChat.phoneNumber}` : selectedChat.remoteJid.split('@')[0]}
+                    </span>
                     <span className="w-1 h-1 rounded-full bg-gray-700"></span>
-                    <span className="text-[10px] text-gray-500">Status: Em andamento</span>
+                    <span className="text-[10px] text-gray-500">Activo</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <button className="p-2 text-gray-500 hover:text-white transition-colors"><MoreVertical className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <div className="relative" ref={menuRef}>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMoreOptions(!showMoreOptions);
+                    }}
+                    className="p-2 text-gray-500 hover:text-white transition-colors hover:bg-white/5 rounded-lg active:scale-95"
+                    title="Más opciones"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                  {showMoreOptions && (
+                    <div className="absolute right-0 mt-2 w-48 theme-surface-alt border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] z-[100] py-2 animate-in fade-in slide-in-from-top-2">
+                      <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                        <User size={14} /> Ver Detalles
+                      </button>
+                      <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                        <Bot size={14} /> Silenciar Chat
+                      </button>
+                      <div className="h-px bg-white/5 my-2"></div>
+                      <button 
+                        onClick={() => {
+                          setSelectedChat(null);
+                          setShowMoreOptions(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                      >
+                        <X size={14} /> Cerrar Chat
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button 
                   onClick={() => setSelectedChat(null)}
-                  className="p-2 text-gray-500 hover:text-white transition-colors"
+                  className="p-2 text-gray-500 hover:text-white transition-colors hover:bg-white/5 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -218,49 +331,51 @@ export const ChatHub: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]">
-              {loadingMessages && messages.length === 0 ? (
-                <div className="flex justify-center p-4">
-                  <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-center">
-                    <span className="bg-white/5 px-3 py-1 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Início da conversa</span>
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')] relative">
+              <div className="absolute inset-0 bg-[#0f1012]/40 pointer-events-none"></div>
+              <div className="relative z-10 space-y-6">
+                {loadingMessages && messages.length === 0 ? (
+                  <div className="flex justify-center p-4">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
                   </div>
-                  
-                  {messages.map((msg, i) => {
-                    const fromMe = msg.key.fromMe;
-                    return (
-                      <div key={msg.id || i} className={cn("flex", fromMe ? "justify-end" : "justify-start")}>
-                        <div className="max-w-[80%] flex flex-col gap-1">
-                          <div className={cn(
-                            "rounded-2xl px-4 py-3 text-sm shadow-xl",
-                            fromMe 
-                              ? "bg-primary text-dark font-medium rounded-tr-none" 
-                              : "theme-surface-alt text-gray-100 border border-white/5 rounded-tl-none"
-                          )}>
-                            {msg.message?.conversation || msg.message?.extendedTextMessage?.text || "[Tipo de mensagem não suportado]"}
-                          </div>
-                          <div className={cn("flex items-center gap-2 px-1", fromMe ? "justify-end" : "justify-start")}>
-                            <span className="text-[10px] text-gray-600 font-bold">
-                              {new Date(msg.messageTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            {fromMe && <CheckCheck className="w-3.5 h-3.5 text-primary opacity-50" />}
+                ) : (
+                  <>
+                    <div className="flex justify-center">
+                      <span className="theme-chip px-3 py-1 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Inicio de la conversación</span>
+                    </div>
+                    
+                    {messages.map((msg, i) => {
+                      const fromMe = msg.key.fromMe;
+                      return (
+                        <div key={msg.id || i} className={cn("flex", fromMe ? "justify-end" : "justify-start")}>
+                          <div className="max-w-[80%] flex flex-col gap-1">
+                            <div className={cn(
+                              "rounded-2xl px-4 py-3 text-sm shadow-xl transition-all",
+                              fromMe 
+                                ? "bg-primary text-dark font-medium rounded-tr-none" 
+                                : "theme-surface-alt text-gray-100 border border-white/5 rounded-tl-none hover:border-white/10"
+                            )}>
+                              {msg.message?.conversation || msg.message?.extendedTextMessage?.text || "[Tipo de mensaje no soportado]"}
+                            </div>
+                            <div className={cn("flex items-center gap-2 px-1", fromMe ? "justify-end" : "justify-start")}>
+                              <span className="text-[10px] text-gray-600 font-bold">
+                                {new Date(msg.messageTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {fromMe && <CheckCheck className="w-3.5 h-3.5 text-primary opacity-50" />}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-              <div ref={messagesEndRef} />
+                      );
+                    })}
+                  </>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
 
             {/* Input Area */}
-            <div className="theme-surface-deep p-6 border-t border-white/5">
+            <div className="theme-surface-deep p-6 border-t border-white/5 relative z-10">
               <div className="max-w-4xl mx-auto space-y-4">
-                {/* Tabs */}
                 <div className="flex gap-4 px-2">
                   <button 
                     onClick={() => setInputTab('reply')}
@@ -270,7 +385,7 @@ export const ChatHub: React.FC = () => {
                     )}
                   >
                     <div className={cn("w-2 h-2 rounded-full", inputTab === 'reply' ? "bg-primary" : "bg-gray-800")}></div>
-                    Resposta
+                    Respuesta
                   </button>
                   <button 
                     onClick={() => setInputTab('note')}
@@ -284,28 +399,57 @@ export const ChatHub: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Input Field */}
                 <form onSubmit={handleSend} className="relative group">
-                  <div className="flex items-center gap-2 absolute left-4 top-1/2 -translate-y-1/2">
-                    <button type="button" className="p-2 text-gray-600 hover:text-white transition-colors"><Paperclip className="w-5 h-5" /></button>
-                    <button type="button" className="p-2 text-gray-600 hover:text-white transition-colors"><Smile className="w-5 h-5" /></button>
+                  <div className="flex items-center gap-1 absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                    <button 
+                      type="button" 
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      className="p-2 text-gray-500 hover:text-primary transition-all hover:bg-primary/10 rounded-xl"
+                      title="Adjuntar archivo"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => alert('Selector de emojis (Próximamente en la versión estable)')}
+                      className="p-2 text-gray-500 hover:text-yellow-500 transition-all hover:bg-yellow-500/10 rounded-xl"
+                      title="Emojis"
+                    >
+                      <Smile className="w-5 h-5" />
+                    </button>
+                    <input 
+                      type="file" 
+                      id="file-upload" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) alert(`Archivo seleccionado: ${file.name}`);
+                      }} 
+                    />
                   </div>
                   <input 
                     type="text" 
-                    placeholder={inputTab === 'reply' ? "Digite sua mensagem... (digite / para respostas prontas)" : "Digite uma nota interna..."}
+                    placeholder={inputTab === 'reply' ? "Escribe un mensaje aquí..." : "Escribe una nota interna para el equipo..."}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     className={cn(
-                      "theme-input w-full rounded-2xl py-4 pl-24 pr-16 text-sm focus:ring-1 transition-all",
-                      inputTab === 'reply' ? "focus:ring-primary/30" : "focus:ring-secondary/30"
+                      "theme-input w-full rounded-2xl py-5 pl-28 pr-28 text-sm focus:ring-2 transition-all outline-none border-white/5",
+                      inputTab === 'reply' ? "focus:ring-primary/20" : "focus:ring-secondary/20"
                     )}
                   />
-                  <div className="flex items-center gap-2 absolute right-4 top-1/2 -translate-y-1/2">
-                    <button type="button" className="p-2 text-gray-600 hover:text-white transition-colors"><Mic className="w-5 h-5" /></button>
+                  <div className="flex items-center gap-1 absolute right-3 top-1/2 -translate-y-1/2 z-10">
+                    <button 
+                      type="button" 
+                      onClick={() => alert('Grabación de audio (Próximamente)')}
+                      className="p-2 text-gray-500 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-xl"
+                      title="Grabar nota de voz"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
                     <button 
                       type="submit"
                       className={cn(
-                        "p-2 rounded-xl transition-all active:scale-90",
+                        "p-1.5 rounded-xl transition-all active:scale-90",
                         inputTab === 'reply' ? "text-primary hover:bg-primary/10" : "text-secondary hover:bg-secondary/10"
                       )}
                     >
@@ -327,38 +471,37 @@ export const ChatHub: React.FC = () => {
               {selectedChat.pushName?.substring(0, 2).toUpperCase()}
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">{selectedChat.pushName}</h3>
+              <h3 className="text-lg font-bold text-white leading-tight">{selectedChat.pushName}</h3>
               <div className="flex items-center justify-center gap-2 mt-1">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Online</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">En Línea</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500 font-mono bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-              +{selectedChat.remoteJid.split('@')[0]}
+            <div className="text-xs text-gray-500 font-mono bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 w-full truncate">
+              {selectedChat.phoneNumber ? `+${selectedChat.phoneNumber}` : selectedChat.remoteJid.split('@')[0]}
             </div>
           </div>
 
           <div className="space-y-4">
-            {/* Mode Switch */}
-            <div className="theme-surface-alt rounded-2xl p-4 space-y-3">
+            <div className="theme-surface-alt rounded-2xl p-4 space-y-3 border border-white/5">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
-                <Bot className="w-3.5 h-3.5" /> Controle de Fluxo
+                <Bot className="w-3.5 h-3.5" /> Control de Flujo
               </h4>
-              <div className="theme-chip flex p-1 rounded-xl">
+              <div className="bg-[#111113] flex p-1 rounded-xl">
                 <button 
                   onClick={() => activeInstance && updateControlMode(activeInstance, selectedChat.remoteJid, 'AI')}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase transition-all",
-                    selectedChat.controlMode === 'AI' ? "bg-primary text-dark" : "text-gray-500 hover:text-gray-300"
+                    selectedChat.controlMode === 'AI' ? "bg-primary text-dark shadow-lg shadow-primary/20" : "text-gray-500 hover:text-gray-300"
                   )}
                 >
-                  Inteligência
+                  Inteligencia
                 </button>
                 <button 
                   onClick={() => activeInstance && updateControlMode(activeInstance, selectedChat.remoteJid, 'HUMAN')}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-black uppercase transition-all",
-                    selectedChat.controlMode === 'HUMAN' ? "bg-secondary text-dark" : "text-gray-500 hover:text-gray-300"
+                    selectedChat.controlMode === 'HUMAN' ? "bg-secondary text-dark shadow-lg shadow-secondary/20" : "text-gray-500 hover:text-gray-300"
                   )}
                 >
                   Humano
@@ -366,53 +509,109 @@ export const ChatHub: React.FC = () => {
               </div>
             </div>
 
-            {/* Info Sections */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/[0.04] transition-colors cursor-pointer group">
+            <div className="space-y-3">
+              <div 
+                onClick={() => setShowContactInfo(!showContactInfo)}
+                className="flex items-center justify-between p-4 bg-white/[0.02] rounded-2xl border border-white/5 hover:bg-white/[0.04] transition-all cursor-pointer group"
+              >
                 <div className="flex items-center gap-3">
-                  <User className="w-4 h-4 text-gray-500 group-hover:text-primary" />
-                  <span className="text-xs font-bold text-gray-400">Informações do Contato</span>
+                  <User className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
+                  <span className="text-xs font-bold text-gray-400">Información del Contacto</span>
                 </div>
-                <MoreVertical className="w-4 h-4 text-gray-700" />
+                <ChevronDown className={cn("w-4 h-4 text-gray-700 transition-transform", showContactInfo && "rotate-180")} />
               </div>
+
+              {showContactInfo && (
+                <div className="theme-surface-alt rounded-2xl p-4 space-y-4 border border-white/5 animate-in fade-in slide-in-from-top-2">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-600 uppercase">Nombre</label>
+                      <input 
+                        type="text" 
+                        value={editInfo.pushName}
+                        onChange={(e) => setEditInfo({ ...editInfo, pushName: e.target.value })}
+                        className="theme-input w-full rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-primary/50 outline-none"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-600 uppercase">Teléfono</label>
+                      <input 
+                        type="text" 
+                        value={editInfo.phoneNumber}
+                        onChange={(e) => setEditInfo({ ...editInfo, phoneNumber: e.target.value })}
+                        className="theme-input w-full rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-primary/50 outline-none"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-600 uppercase">Email</label>
+                      <input 
+                        type="email" 
+                        value={editInfo.email}
+                        onChange={(e) => setEditInfo({ ...editInfo, email: e.target.value })}
+                        className="theme-input w-full rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-primary/50 outline-none"
+                      />
+                   </div>
+                   <button 
+                    onClick={handleUpdateContact}
+                    className="w-full py-2 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border border-white/5 hover:border-primary/30 text-gray-300 hover:text-primary"
+                   >
+                    Guardar Cambios
+                   </button>
+                   <div className="pt-2 border-t border-white/5 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-[10px] text-gray-600 uppercase">Instancia</span>
+                        <span className="text-[10px] text-white/50">{activeInstance}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[10px] text-gray-600 uppercase">JID</span>
+                        <span className="text-[10px] text-white/50 truncate max-w-[150px]">{selectedChat.remoteJid}</span>
+                      </div>
+                   </div>
+                </div>
+              )}
               
-              <div className="theme-surface-alt rounded-2xl p-4 space-y-4">
+              <div className="theme-surface-alt rounded-2xl p-5 space-y-5 border border-white/5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
                     <Hash className="w-3.5 h-3.5" /> Ventas / Leads
                   </h4>
                 </div>
-                <div className="space-y-3">
-                  <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between group hover:bg-primary/10 transition-colors">
                     <div>
-                      <p className="text-[10px] font-black text-primary uppercase">Estado del Lead</p>
-                      <p className="text-xs font-bold text-white mt-0.5">Nuevo Prospecto</p>
+                      <p className="text-[10px] font-black text-primary uppercase tracking-widest">Estado del Lead</p>
+                      <p className="text-xs font-bold text-white mt-1">Nuevo Prospecto</p>
                     </div>
-                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <Users className="w-4 h-4 text-primary" />
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-primary" />
                     </div>
                   </div>
-                  <button className="w-full py-2.5 bg-primary text-dark text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                  <button 
+                    onClick={handleConvertToLead}
+                    className="w-full py-3.5 bg-primary text-dark text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-xl shadow-primary/10 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
                     Convertir a Lead
                   </button>
                 </div>
               </div>
 
-              {/* Internal Notes Preview */}
-              <div className="theme-surface-alt rounded-2xl p-4 space-y-4">
+              <div className="theme-surface-alt rounded-2xl p-5 space-y-5 border border-white/5">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
-                  <StickyNote className="w-3.5 h-3.5" /> Notas Recentes
+                  <StickyNote className="w-3.5 h-3.5" /> Notas Recientes
                 </h4>
-                <div className="space-y-2">
-                  {notes.slice(0, 2).map(note => (
-                    <div key={note.id} className="theme-chip p-3 rounded-xl">
-                      <p className="text-[10px] text-gray-400 line-clamp-2">{note.content}</p>
-                      <div className="flex justify-between mt-2">
-                        <span className="text-[8px] font-bold text-primary uppercase">{note.User?.name}</span>
-                        <span className="text-[8px] text-gray-700">{new Date(note.createdAt).toLocaleDateString()}</span>
+                <div className="space-y-3">
+                  {notes.length === 0 ? (
+                    <p className="text-[10px] text-gray-700 italic">No hay notas registradas</p>
+                  ) : (
+                    notes.slice(0, 2).map(note => (
+                      <div key={note.id} className="bg-white/[0.02] p-4 rounded-xl border border-white/5">
+                        <p className="text-[11px] text-white/60 leading-relaxed italic">"{note.content}"</p>
+                        <div className="flex justify-between mt-3 items-center">
+                          <span className="text-[9px] font-black text-primary uppercase tracking-tighter bg-primary/10 px-2 py-0.5 rounded-md">{note.User?.name}</span>
+                          <span className="text-[9px] text-gray-700 font-bold">{new Date(note.createdAt).toLocaleDateString()}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

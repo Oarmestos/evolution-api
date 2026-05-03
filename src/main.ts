@@ -76,6 +76,28 @@ async function bootstrap() {
 
   app.use('/', router);
 
+  // SPA fallback for React Router
+  app.get('*', (req, res, next) => {
+    const isApiRequest =
+      req.url.startsWith('/api') ||
+      req.url.startsWith('/instance') ||
+      req.url.startsWith('/webhook') ||
+      req.url.startsWith('/chatwoot') ||
+      req.url.startsWith('/store');
+
+    const isAsset = req.url.startsWith('/assets') || req.url.includes('.');
+
+    if (isApiRequest || isAsset) {
+      return next();
+    }
+
+    res.sendFile(join(ROOT_DIR, 'frontend', 'dist', 'index.html'), (err) => {
+      if (err) {
+        next();
+      }
+    });
+  });
+
   app.use(
     (err: Error, req: Request, res: Response, next: NextFunction) => {
       if (err) {
@@ -136,27 +158,6 @@ async function bootstrap() {
       next();
     },
   );
-
-  // SPA fallback for React Router
-  app.get('*', (req, res, next) => {
-    const isApiRequest =
-      req.url.startsWith('/api') ||
-      req.url.startsWith('/instance') ||
-      req.url.startsWith('/webhook') ||
-      req.url.startsWith('/chatwoot') ||
-      req.url.startsWith('/store');
-
-    if (isApiRequest) {
-      return next();
-    }
-
-    res.sendFile(join(ROOT_DIR, 'frontend', 'dist', 'index.html'), (err) => {
-      if (err) {
-        // If dist/index.html doesn't exist (e.g. in dev), fallback to old public or just continue
-        next();
-      }
-    });
-  });
 
   const httpServer = configService.get<HttpServer>('SERVER');
 

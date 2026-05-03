@@ -1,10 +1,32 @@
 import { PrismaRepository } from '@api/repository/repository.service';
+import { WAMonitoringService } from '@api/services/monitor.service';
 import { Logger } from '@config/logger.config';
 import { NotFoundException } from '@exceptions';
 
 export class LeadService {
-  constructor(private readonly prisma: PrismaRepository) {}
+  constructor(
+    private readonly prisma: PrismaRepository,
+    private readonly waMonitor: WAMonitoringService,
+  ) {}
   private readonly logger = new Logger('LeadService');
+
+  private async emitEvent(instanceId: string, event: string, data: any) {
+    try {
+      const instance = await this.prisma.instance.findUnique({ where: { id: instanceId } });
+      if (!instance) return;
+
+      // Emit event using the eventEmitter
+      (this.waMonitor as any).eventEmitter.emit('lead.event', {
+        instanceName: instance.name,
+        event,
+        data,
+      });
+
+      this.logger.debug(`Emitted event ${event} for instance ${instance.name}`);
+    } catch (error) {
+      this.logger.error(`Error emitting lead event: ${error.message}`);
+    }
+  }
 
   public async createFunnel(instanceId: string, data: any) {
     return this.prisma.leadFunnel.create({
@@ -56,7 +78,7 @@ export class LeadService {
     });
     if (!stage) throw new NotFoundException('Stage not found');
 
-    return this.prisma.lead.create({
+    const lead = await this.prisma.lead.create({
       data: {
         value: data.value || 0,
         notes: data.notes || '',
@@ -68,6 +90,9 @@ export class LeadService {
         Contact: true,
       },
     });
+
+    await this.emitEvent(instanceId, 'lead.created', lead);
+    return lead;
   }
 
   public async moveLead(instanceId: string, leadId: string, newStageId: string) {
@@ -81,10 +106,13 @@ export class LeadService {
     });
     if (!stage) throw new NotFoundException('Target stage not found');
 
-    return this.prisma.lead.update({
+    const updatedLead = await this.prisma.lead.update({
       where: { id: leadId },
       data: { stageId: newStageId },
       include: { Contact: true },
     });
+
+    await this.emitEvent(instanceId, 'lead.updated', updatedLead);
+    return updatedLead;
   }
 }

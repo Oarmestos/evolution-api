@@ -1526,11 +1526,16 @@ export class BaileysStartupService extends ChannelStartupService {
             pushName: string;
             profilePicUrl?: string;
             instanceId: string;
+            phoneNumber?: string;
           } = {
             remoteJid: received.key.remoteJid,
-            pushName: received.key.fromMe ? '' : received.key.fromMe == null ? '' : received.pushName,
+            pushName: received.key.fromMe ? contact?.pushName || '' : received.pushName || contact?.pushName || '',
             profilePicUrl: (await this.profilePicture(received.key.remoteJid)).profilePictureUrl,
             instanceId: this.instanceId,
+            phoneNumber:
+              received.key.addressingMode === 'lid'
+                ? received.key.remoteJidAlt?.split('@')[0]
+                : received.key.remoteJid?.split('@')[0],
           };
 
           if (contactRaw.remoteJid === 'status@broadcast') {
@@ -4184,69 +4189,6 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
-  public async updateControlMode(remoteJid: string, mode: 'AI' | 'HUMAN') {
-    const chat = await this.prismaRepository.chat.upsert({
-      where: {
-        instanceId_remoteJid: {
-          instanceId: this.instanceId,
-          remoteJid: remoteJid,
-        },
-      },
-      create: {
-        instanceId: this.instanceId,
-        remoteJid: remoteJid,
-        controlMode: mode,
-      },
-      update: {
-        controlMode: mode,
-      },
-    });
-
-    return chat;
-  }
-
-  public async createInternalNote(remoteJid: string, content: string, userId: string) {
-    const chat = await this.prismaRepository.chat.findUnique({
-      where: {
-        instanceId_remoteJid: {
-          instanceId: this.instanceId,
-          remoteJid: remoteJid,
-        },
-      },
-    });
-
-    if (!chat) {
-      throw new NotFoundException(`Chat ${remoteJid} not found`);
-    }
-
-    return await this.prismaRepository.internalNote.create({
-      data: {
-        content,
-        chatId: chat.id,
-        userId,
-      },
-    });
-  }
-
-  public async fetchInternalNotes(remoteJid: string) {
-    const chat = await this.prismaRepository.chat.findUnique({
-      where: {
-        instanceId_remoteJid: {
-          instanceId: this.instanceId,
-          remoteJid: remoteJid,
-        },
-      },
-    });
-
-    if (!chat) return [];
-
-    return await this.prismaRepository.internalNote.findMany({
-      where: { chatId: chat.id },
-      include: { User: { select: { name: true, email: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
   public async updateMessage(data: UpdateMessageDto) {
     const jid = createJid(data.number);
 
@@ -4749,7 +4691,7 @@ export class BaileysStartupService extends ChannelStartupService {
       pushName:
         message.pushName ||
         (message.key.fromMe
-          ? 'Você'
+          ? undefined
           : message?.participant || (message.key?.participant ? message.key.participant.split('@')[0] : null)),
       status: status[message.status],
       message: this.deserializeMessageBuffers({ ...message.message }),
@@ -5187,7 +5129,7 @@ export class BaileysStartupService extends ChannelStartupService {
 
       if (!message.pushName) {
         if (messageKey.fromMe) {
-          message.pushName = 'Você';
+          message.pushName = 'Tú';
         } else if (message.contextInfo) {
           const contextInfo = message.contextInfo as { participant?: string };
           if (contextInfo.participant) {
