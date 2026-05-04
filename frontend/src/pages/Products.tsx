@@ -36,7 +36,7 @@ export const Products = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/product/${activeInstance}`, {
+      const { data } = await axios.get(`/product/${activeInstance}`, {
         headers: { apikey: token }
       });
       setProducts(Array.isArray(data) ? data : []);
@@ -64,11 +64,11 @@ export const Products = () => {
 
     try {
       if (editingProduct) {
-        await axios.put(`${import.meta.env.VITE_API_URL}/product/${editingProduct.id}/${activeInstance}`, payload, {
+        await axios.put(`/product/${editingProduct.id}/${activeInstance}`, payload, {
           headers: { apikey: token }
         });
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/product/${activeInstance}`, payload, {
+        await axios.post(`/product/${activeInstance}`, payload, {
           headers: { apikey: token }
         });
       }
@@ -84,7 +84,7 @@ export const Products = () => {
   const handleDelete = async (id: string) => {
     if (!token || !confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/product/${id}/${activeInstance}`, {
+        await axios.delete(`/product/${id}/${activeInstance}`, {
         headers: { apikey: token }
       });
       fetchProducts();

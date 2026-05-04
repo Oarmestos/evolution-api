@@ -43,7 +43,7 @@ export const Orders = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/order/${activeInstance}`, {
+      const { data } = await axios.get(`/order/${activeInstance}`, {
         headers: { apikey: token }
       });
       setOrders(Array.isArray(data) ? data : []);
@@ -62,7 +62,7 @@ export const Orders = () => {
   const updateStatus = async (orderId: string, newStatus: string) => {
     if (!token) return;
     try {
-      await axios.patch(`${import.meta.env.VITE_API_URL}/order/status/${orderId}/${activeInstance}`, {
+      await axios.patch(`/order/status/${orderId}/${activeInstance}`, {
         status: newStatus
       }, {
         headers: { apikey: token }
