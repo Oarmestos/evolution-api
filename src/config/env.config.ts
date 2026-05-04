@@ -258,7 +258,9 @@ export type EventsPusher = {
   TYPEBOT_CHANGE_STATUS: boolean;
 };
 
-export type ApiKey = { KEY: string };
+export type ApiKey = {
+  KEY: string;
+};
 
 export type Auth = {
   API_KEY: ApiKey;
@@ -908,3 +910,26 @@ export class ConfigService {
 }
 
 export const configService = new ConfigService();
+
+const DEFAULT_API_KEY = 'avri_secret_key';
+const INSECURE_KEYS = ['avri_secret_key', 'default', 'secret', 'password', '123456', 'admin'];
+
+export function getSecurityStatus(): { apiKeySecure: boolean; issues: string[] } {
+  const key = configService.get<Auth>('AUTHENTICATION').API_KEY.KEY;
+  const issues: string[] = [];
+
+  if (!key || key === DEFAULT_API_KEY) {
+    issues.push('Using default API key');
+  }
+  if (key.length < 16) {
+    issues.push('API key too short (minimum 16 characters recommended)');
+  }
+  if (INSECURE_KEYS.some((k) => key.toLowerCase().includes(k))) {
+    issues.push('API key contains common insecure words');
+  }
+
+  return {
+    apiKeySecure: issues.length === 0,
+    issues,
+  };
+}
