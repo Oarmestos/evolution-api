@@ -225,6 +225,14 @@ router
   .use('', new ChatbotRouter(...guards).router)
   .use('', new StorageRouter(...guards).router)
   .use('/user', new UserRouter().router)
-  .use('/theme', new ThemeRouter(authGuard['apikey']).router);
+  .use('/theme', new ThemeRouter(authGuard['apikey']).router)
+  .get('/store-api/:instanceName', async (req, res, next) => {
+    try {
+      const { themeController } = await import('@api/server.module');
+      return themeController.getStoreByInstance(req, res);
+    } catch (error) {
+      next(error);
+    }
+  });
 
 export { HttpStatus, router };

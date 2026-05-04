@@ -38,4 +38,18 @@ export class ThemeController {
     const response = await this.themeService.uploadLogo(userId, req.file as Express.Multer.File);
     return res.status(200).json(response);
   }
+
+  public async getStoreByInstance(req: Request, res: Response) {
+    const instanceName = req.params.instanceName;
+    if (!instanceName) {
+      return res.status(400).json({ error: 'Nombre de instancia requerido' });
+    }
+
+    try {
+      const data = await this.themeService.getThemeByInstance(instanceName);
+      return res.status(200).json(data);
+    } catch (error) {
+      return res.status(404).json({ error: (error as Error).message });
+    }
+  }
 }

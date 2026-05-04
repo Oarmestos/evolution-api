@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Package,
   ShoppingCart,
-  Plus
+  Plus,
+  Store
 } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
 import { useInstanceStore } from '../store/useInstanceStore';
@@ -531,6 +532,19 @@ export const ChatHub: React.FC = () => {
                     </button>
                     <button 
                       type="button" 
+                      onClick={() => {
+                        const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+                        const storeUrl = `${backendUrl}/store/index.html?instance=${activeInstance}`;
+                        navigator.clipboard.writeText(storeUrl);
+                        alert('Enlace de la tienda copiado al portapapeles');
+                      }}
+                      className="p-2 text-gray-500 hover:text-green-500 transition-all hover:bg-green-500/10 rounded-xl"
+                      title="Copiar enlace de la Tienda"
+                    >
+                      <Store className="w-5 h-5" />
+                    </button>
+                    <button 
+                      type="button" 
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       className="p-2 text-gray-500 hover:text-yellow-500 transition-all hover:bg-yellow-500/10 rounded-xl"
                       title="Emojis"
@@ -553,7 +567,7 @@ export const ChatHub: React.FC = () => {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     className={cn(
-                      "theme-input w-full rounded-2xl py-5 pl-[140px] pr-[100px] text-sm focus:ring-2 transition-all outline-none border-white/5",
+                      "theme-input w-full rounded-2xl py-5 pl-[220px] pr-[100px] text-sm focus:ring-2 transition-all outline-none border-white/5",
                       inputTab === 'reply' ? "focus:ring-primary/20" : "focus:ring-secondary/20"
                     )}
                   />

@@ -50,11 +50,12 @@ async function bootstrap() {
   const prismaRepository = new PrismaRepository(configService);
   await prismaRepository.onModuleInit();
 
-  app.use(
+   app.use(
     cors({
       origin(requestOrigin, callback) {
         const { ORIGIN } = configService.get<Cors>('CORS');
-        if (ORIGIN.includes('*')) {
+        // Allow all origins in development or if wildcard is set
+        if (ORIGIN.includes('*') || requestOrigin?.includes('localhost')) {
           return callback(null, true);
         }
         if (ORIGIN.indexOf(requestOrigin) !== -1) {
@@ -79,22 +80,22 @@ async function bootstrap() {
 
   app.use('/store', express.static(join(ROOT_DIR, 'store')));
 
+  // SPA fallback for React Router - must be after /store
   app.use('/', router);
 
-  // SPA fallback for React Router
   app.get('*', (req, res, next) => {
-    const isApiRequest =
+    // Skip API requests and static assets
+    if (
       req.url.startsWith('/api') ||
       req.url.startsWith('/instance') ||
       req.url.startsWith('/product') ||
       req.url.startsWith('/order') ||
       req.url.startsWith('/webhook') ||
       req.url.startsWith('/chatwoot') ||
-      req.url.startsWith('/store');
-
-    const isAsset = req.url.startsWith('/assets') || req.url.includes('.');
-
-    if (isApiRequest || isAsset) {
+      req.url.startsWith('/store') ||
+      req.url.startsWith('/assets') ||
+      req.url.includes('.')
+    ) {
       return next();
     }
 

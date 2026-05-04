@@ -3,6 +3,7 @@ import { PrismaRepository } from '@api/repository/repository.service';
 import { Logger } from '@config/logger.config';
 import { BadRequestException } from '@exceptions';
 import { v4 as uuidv4 } from 'uuid';
+import { waMonitor } from '@api/server.module';
 
 import { StoreThemeDto } from '../dto/theme.dto';
 
@@ -31,7 +32,7 @@ export class ThemeService {
 
   public async updateTheme(userId: string, data: StoreThemeDto) {
     try {
-      return await this.prisma.storeTheme.upsert({
+      const result = await this.prisma.storeTheme.upsert({
         where: { userId },
         update: data,
         create: {
@@ -39,6 +40,13 @@ export class ThemeService {
           userId,
         },
       });
+
+      // Sync with WhatsApp if enabled
+      if (data.syncWhatsapp) {
+        await this.syncWithWhatsapp(userId, data);
+      }
+
+      return result;
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Error al actualizar el tema');
@@ -65,6 +73,63 @@ export class ThemeService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Error al subir el logo');
+    }
+  }
+
+  public async getThemeByInstance(instanceName: string) {
+    try {
+      const instance = await this.prisma.instance.findUnique({
+        where: { name: instanceName },
+        include: { User: true },
+      });
+
+      if (!instance || !instance.User) {
+        throw new BadRequestException('Instancia no encontrada');
+      }
+
+      const theme = await this.getTheme(instance.User.id);
+      const products = await this.prisma.product.findMany({
+        where: { instanceId: instance.id },
+      });
+
+      return { theme, products };
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Error al obtener la tienda');
+    }
+  }
+
+  private async syncWithWhatsapp(userId: string, data: StoreThemeDto) {
+    try {
+      const instance = await this.prisma.instance.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!instance) {
+        this.logger.warn('No instance found for user');
+        return;
+      }
+
+      const waInstance = (waMonitor as any).waInstances?.[instance.name];
+      if (!waInstance) {
+        this.logger.warn('WhatsApp instance not connected');
+        return;
+      }
+
+      // Sync profile name
+      if (data.storeName) {
+        await waInstance.updateProfileName(data.storeName);
+      }
+
+      // Sync profile picture
+      if (data.logoUrl) {
+        await waInstance.updateProfilePicture(data.logoUrl);
+      }
+
+      this.logger.info(`Synced theme with WhatsApp for instance: ${instance.name}`);
+    } catch (error) {
+      this.logger.error('Error syncing with WhatsApp:', error);
     }
   }
 }

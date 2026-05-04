@@ -55,7 +55,15 @@ export default defineConfig({
       '^/theme/.*': {
         target: backendTarget,
         changeOrigin: true,
-      }
+      },
+      '/store-api': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '^/store(/.*)?': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
     }
   }
 })
