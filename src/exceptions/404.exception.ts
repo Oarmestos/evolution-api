@@ -1,11 +1,10 @@
-import { HttpStatus } from '@api/routes/index.router';
+import { HttpStatus } from '@api/routes/http-status.enum';
 
-export class NotFoundException {
+import { BaseException } from './base.exception';
+
+export class NotFoundException extends BaseException {
   constructor(...objectError: any[]) {
-    throw {
-      status: HttpStatus.NOT_FOUND,
-      error: 'Not Found',
-      message: objectError.length > 0 ? objectError : undefined,
-    };
+    const message = objectError.length > 0 ? objectError[0] : undefined;
+    super(HttpStatus.NOT_FOUND, 'Not Found', message);
   }
 }

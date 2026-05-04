@@ -1,11 +1,10 @@
-import { HttpStatus } from '@api/routes/index.router';
+import { HttpStatus } from '@api/routes/http-status.enum';
 
-export class InternalServerErrorException {
+import { BaseException } from './base.exception';
+
+export class InternalServerErrorException extends BaseException {
   constructor(...objectError: any[]) {
-    throw {
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
-      error: 'Internal Server Error',
-      message: objectError.length > 0 ? objectError : undefined,
-    };
+    const message = objectError.length > 0 ? objectError[0] : undefined;
+    super(HttpStatus.INTERNAL_SERVER_ERROR, 'Internal Server Error', message);
   }
 }

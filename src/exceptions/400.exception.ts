@@ -1,11 +1,10 @@
-import { HttpStatus } from '@api/routes/index.router';
+import { HttpStatus } from '@api/routes/http-status.enum';
 
-export class BadRequestException {
+import { BaseException } from './base.exception';
+
+export class BadRequestException extends BaseException {
   constructor(...objectError: any[]) {
-    throw {
-      status: HttpStatus.BAD_REQUEST,
-      error: 'Bad Request',
-      message: objectError.length > 0 ? objectError : undefined,
-    };
+    const message = objectError.length > 0 ? objectError[0] : undefined;
+    super(HttpStatus.BAD_REQUEST, 'Bad Request', message);
   }
 }

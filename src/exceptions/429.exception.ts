@@ -1,11 +1,10 @@
-import { HttpStatus } from '@api/routes/index.router';
+import { HttpStatus } from '@api/routes/http-status.enum';
 
-export class TooManyRequestsException {
+import { BaseException } from './base.exception';
+
+export class TooManyRequestsException extends BaseException {
   constructor(...objectError: any[]) {
-    throw {
-      status: HttpStatus.TOO_MANY_REQUESTS,
-      error: 'Too Many Requests',
-      message: objectError.length > 0 ? objectError : undefined,
-    };
+    const message = objectError.length > 0 ? objectError[0] : undefined;
+    super(HttpStatus.TOO_MANY_REQUESTS, 'Too Many Requests', message);
   }
 }

@@ -42,6 +42,7 @@ import { TypebotService } from './integrations/chatbot/typebot/services/typebot.
 import { EventManager } from './integrations/event/event.manager';
 import { S3Controller } from './integrations/storage/s3/controllers/s3.controller';
 import { S3Service } from './integrations/storage/s3/services/s3.service';
+import { AppRegistry } from './module.registry';
 import { ProviderFiles } from './provider/sessions';
 import { PrismaRepository } from './repository/repository.service';
 import { CacheService } from './services/cache.service';
@@ -62,7 +63,7 @@ if (configService.get<Chatwoot>('CHATWOOT').ENABLED) {
   chatwootCache = new CacheService(new CacheEngine(configService, ChatwootService.name).getEngine());
 }
 
-export const cache = new CacheService(new CacheEngine(configService, 'instance').getEngine());
+const cache = new CacheService(new CacheEngine(configService, 'instance').getEngine());
 const baileysCache = new CacheService(new CacheEngine(configService, 'baileys').getEngine());
 
 let providerFiles: ProviderFiles = null;
@@ -70,9 +71,9 @@ if (configService.get<ProviderSession>('PROVIDER').ENABLED) {
   providerFiles = new ProviderFiles(configService);
 }
 
-export const prismaRepository = new PrismaRepository(configService);
+const prismaRepository = new PrismaRepository(configService);
 
-export const waMonitor = new WAMonitoringService(
+const waMonitor = new WAMonitoringService(
   eventEmitter,
   configService,
   prismaRepository,
@@ -82,85 +83,152 @@ export const waMonitor = new WAMonitoringService(
   baileysCache,
 );
 
+// Registrar servicios principales en el registro
+AppRegistry.register('prismaRepository', () => prismaRepository);
+AppRegistry.register('cache', () => cache);
+AppRegistry.register('baileysCache', () => baileysCache);
+AppRegistry.register('chatwootCache', () => chatwootCache);
+AppRegistry.register('providerFiles', () => providerFiles);
+AppRegistry.register('waMonitor', () => waMonitor);
+
+// Servicios
 const s3Service = new S3Service(prismaRepository);
-export const s3Controller = new S3Controller(s3Service);
+AppRegistry.register(S3Service, () => s3Service);
 
 const templateService = new TemplateService(waMonitor, prismaRepository, configService);
-export const templateController = new TemplateController(templateService);
+AppRegistry.register(TemplateService, () => templateService);
 
 const proxyService = new ProxyService(waMonitor);
-export const proxyController = new ProxyController(proxyService, waMonitor);
+AppRegistry.register(ProxyService, () => proxyService);
 
 const chatwootService = new ChatwootService(waMonitor, configService, prismaRepository, chatwootCache);
-export const chatwootController = new ChatwootController(chatwootService, configService);
+AppRegistry.register(ChatwootService, () => chatwootService);
 
 const settingsService = new SettingsService(waMonitor);
-export const settingsController = new SettingsController(settingsService);
+AppRegistry.register(SettingsService, () => settingsService);
 
 const leadService = new LeadService(prismaRepository, waMonitor);
-export const leadController = new LeadController(leadService);
-
-export const instanceController = new InstanceController(
-  waMonitor,
-  configService,
-  prismaRepository,
-  eventEmitter,
-  chatwootService,
-  settingsService,
-  proxyController,
-  cache,
-  chatwootCache,
-  baileysCache,
-  providerFiles,
-);
-export const sendMessageController = new SendMessageController(waMonitor);
-export const callController = new CallController(waMonitor);
-export const chatController = new ChatController(waMonitor);
-export const businessController = new BusinessController(waMonitor);
-export const groupController = new GroupController(waMonitor);
-export const labelController = new LabelController(waMonitor);
-
-export const eventManager = new EventManager(prismaRepository, waMonitor);
-export const chatbotController = new ChatbotController(prismaRepository, waMonitor);
-export const channelController = new ChannelController(prismaRepository, waMonitor);
-
-// channels
-export const evolutionController = new EvolutionController(prismaRepository, waMonitor);
-export const metaController = new MetaController(prismaRepository, waMonitor);
-export const baileysController = new BaileysController(waMonitor);
+AppRegistry.register(LeadService, () => leadService);
 
 const openaiService = new OpenaiService(waMonitor, prismaRepository, configService);
-export const openaiController = new OpenaiController(openaiService, prismaRepository, waMonitor);
+AppRegistry.register(OpenaiService, () => openaiService);
 
-// chatbots
 const typebotService = new TypebotService(waMonitor, configService, prismaRepository, openaiService);
-export const typebotController = new TypebotController(typebotService, prismaRepository, waMonitor);
+AppRegistry.register(TypebotService, () => typebotService);
 
 const difyService = new DifyService(waMonitor, prismaRepository, configService, openaiService);
-export const difyController = new DifyController(difyService, prismaRepository, waMonitor);
+AppRegistry.register(DifyService, () => difyService);
 
 const evolutionBotService = new EvolutionBotService(waMonitor, prismaRepository, configService, openaiService);
-export const evolutionBotController = new EvolutionBotController(evolutionBotService, prismaRepository, waMonitor);
+AppRegistry.register(EvolutionBotService, () => evolutionBotService);
 
 const flowiseService = new FlowiseService(waMonitor, prismaRepository, configService, openaiService);
-export const flowiseController = new FlowiseController(flowiseService, prismaRepository, waMonitor);
+AppRegistry.register(FlowiseService, () => flowiseService);
 
 const n8nService = new N8nService(waMonitor, prismaRepository, configService, openaiService);
-export const n8nController = new N8nController(n8nService, prismaRepository, waMonitor);
+AppRegistry.register(N8nService, () => n8nService);
 
 const evoaiService = new EvoaiService(waMonitor, prismaRepository, configService, openaiService);
-export const evoaiController = new EvoaiController(evoaiService, prismaRepository, waMonitor);
+AppRegistry.register(EvoaiService, () => evoaiService);
 
 const userService = new UserService(prismaRepository);
-export const userController = new UserController(userService);
+AppRegistry.register(UserService, () => userService);
 
 const themeService = new ThemeService(prismaRepository);
-export const themeController = new ThemeController(themeService);
+AppRegistry.register(ThemeService, () => themeService);
 
 const productService = new ProductService(prismaRepository);
-export const productController = new ProductController(productService);
+AppRegistry.register(ProductService, () => productService);
 
 const orderService = new OrderService(prismaRepository);
-export const orderController = new OrderController(orderService);
+AppRegistry.register(OrderService, () => orderService);
+
+// Controladores
+AppRegistry.register(S3Controller, () => new S3Controller(s3Service));
+AppRegistry.register(TemplateController, () => new TemplateController(templateService));
+AppRegistry.register(ProxyController, () => new ProxyController(proxyService, waMonitor));
+AppRegistry.register(ChatwootController, () => new ChatwootController(chatwootService, configService));
+AppRegistry.register(SettingsController, () => new SettingsController(settingsService));
+AppRegistry.register(LeadController, () => new LeadController(leadService));
+AppRegistry.register(
+  InstanceController,
+  () =>
+    new InstanceController(
+      waMonitor,
+      configService,
+      prismaRepository,
+      eventEmitter,
+      chatwootService,
+      settingsService,
+      AppRegistry.resolve(ProxyController),
+      cache,
+      chatwootCache,
+      baileysCache,
+      providerFiles,
+    ),
+);
+AppRegistry.register(SendMessageController, () => new SendMessageController(waMonitor));
+AppRegistry.register(CallController, () => new CallController(waMonitor));
+AppRegistry.register(ChatController, () => new ChatController(waMonitor));
+AppRegistry.register(BusinessController, () => new BusinessController(waMonitor));
+AppRegistry.register(GroupController, () => new GroupController(waMonitor));
+AppRegistry.register(LabelController, () => new LabelController(waMonitor));
+
+AppRegistry.register(EventManager, () => new EventManager(prismaRepository, waMonitor));
+AppRegistry.register(ChatbotController, () => new ChatbotController(prismaRepository, waMonitor));
+AppRegistry.register(ChannelController, () => new ChannelController(prismaRepository, waMonitor));
+
+AppRegistry.register(EvolutionController, () => new EvolutionController(prismaRepository, waMonitor));
+AppRegistry.register(MetaController, () => new MetaController(prismaRepository, waMonitor));
+AppRegistry.register(BaileysController, () => new BaileysController(waMonitor));
+
+AppRegistry.register(OpenaiController, () => new OpenaiController(openaiService, prismaRepository, waMonitor));
+AppRegistry.register(TypebotController, () => new TypebotController(typebotService, prismaRepository, waMonitor));
+AppRegistry.register(DifyController, () => new DifyController(difyService, prismaRepository, waMonitor));
+AppRegistry.register(
+  EvolutionBotController,
+  () => new EvolutionBotController(evolutionBotService, prismaRepository, waMonitor),
+);
+AppRegistry.register(FlowiseController, () => new FlowiseController(flowiseService, prismaRepository, waMonitor));
+AppRegistry.register(N8nController, () => new N8nController(n8nService, prismaRepository, waMonitor));
+AppRegistry.register(EvoaiController, () => new EvoaiController(evoaiService, prismaRepository, waMonitor));
+
+AppRegistry.register(UserController, () => new UserController(userService));
+AppRegistry.register(ThemeController, () => new ThemeController(themeService));
+AppRegistry.register(ProductController, () => new ProductController(productService));
+AppRegistry.register(OrderController, () => new OrderController(orderService));
+
+// Exportaciones para compatibilidad (mantener existentes)
+export const eventManager = AppRegistry.resolve(EventManager);
+export const channelController = AppRegistry.resolve(ChannelController);
+export const chatbotController = AppRegistry.resolve(ChatbotController);
+export const s3Controller = AppRegistry.resolve(S3Controller);
+export const templateController = AppRegistry.resolve(TemplateController);
+export const proxyController = AppRegistry.resolve(ProxyController);
+export const chatwootController = AppRegistry.resolve(ChatwootController);
+export const settingsController = AppRegistry.resolve(SettingsController);
+export const leadController = AppRegistry.resolve(LeadController);
+export const instanceController = AppRegistry.resolve(InstanceController);
+export const sendMessageController = AppRegistry.resolve(SendMessageController);
+export const callController = AppRegistry.resolve(CallController);
+export const chatController = AppRegistry.resolve(ChatController);
+export const businessController = AppRegistry.resolve(BusinessController);
+export const groupController = AppRegistry.resolve(GroupController);
+export const labelController = AppRegistry.resolve(LabelController);
+export const evolutionController = AppRegistry.resolve(EvolutionController);
+export const metaController = AppRegistry.resolve(MetaController);
+export const baileysController = AppRegistry.resolve(BaileysController);
+export const openaiController = AppRegistry.resolve(OpenaiController);
+export const typebotController = AppRegistry.resolve(TypebotController);
+export const difyController = AppRegistry.resolve(DifyController);
+export const evolutionBotController = AppRegistry.resolve(EvolutionBotController);
+export const flowiseController = AppRegistry.resolve(FlowiseController);
+export const n8nController = AppRegistry.resolve(N8nController);
+export const evoaiController = AppRegistry.resolve(EvoaiController);
+export const userController = AppRegistry.resolve(UserController);
+export const themeController = AppRegistry.resolve(ThemeController);
+export const productController = AppRegistry.resolve(ProductController);
+export const orderController = AppRegistry.resolve(OrderController);
+export { cache, prismaRepository, waMonitor };
 
 logger.info('Module - ON');

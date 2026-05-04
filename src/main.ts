@@ -18,6 +18,7 @@ import {
 import { onUnexpectedError } from '@config/error.config';
 import { Logger } from '@config/logger.config';
 import { ROOT_DIR } from '@config/path.config';
+import { getSwaggerOptions } from '@config/swagger.config';
 import * as Sentry from '@sentry/node';
 import { ServerUP } from '@utils/server-up';
 import axios from 'axios';
@@ -26,6 +27,10 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { json, NextFunction, Request, Response, urlencoded } from 'express';
 import { join } from 'path';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+
+import { BaseException } from './exceptions/base.exception';
 
 async function initWA() {
   await waMonitor.loadInstance();
@@ -105,6 +110,11 @@ async function bootstrap() {
       if (err) {
         const webhook = configService.get<Webhook>('WEBHOOK');
 
+        const isBaseException = err instanceof BaseException;
+        const status = isBaseException ? (err as BaseException).status : err['status'] || 500;
+        const error = isBaseException ? (err as BaseException).error : err['error'] || 'Internal Server Error';
+        const message = isBaseException ? err.message : err['message'] || 'Internal Server Error';
+
         if (webhook.EVENTS.ERRORS_WEBHOOK && webhook.EVENTS.ERRORS_WEBHOOK != '' && webhook.EVENTS.ERRORS) {
           const tzoffset = new Date().getTimezoneOffset() * 60000; //offset in milliseconds
           const localISOTime = new Date(Date.now() - tzoffset).toISOString();
@@ -115,11 +125,11 @@ async function bootstrap() {
           const errorData = {
             event: 'error',
             data: {
-              error: err['error'] || 'Internal Server Error',
-              message: err['message'] || 'Internal Server Error',
-              status: err['status'] || 500,
+              error,
+              message,
+              status,
               response: {
-                message: err['message'] || 'Internal Server Error',
+                message,
               },
             },
             date_time: now,
@@ -135,11 +145,11 @@ async function bootstrap() {
           httpService.post('', errorData);
         }
 
-        return res.status(err['status'] || 500).json({
-          status: err['status'] || 500,
-          error: err['error'] || 'Internal Server Error',
+        return res.status(status).json({
+          status,
+          error,
           response: {
-            message: err['message'] || 'Internal Server Error',
+            message,
           },
         });
       }
@@ -175,6 +185,12 @@ async function bootstrap() {
   }
 
   eventManager.init(server);
+
+  // Swagger documentation
+  const swaggerOptions = getSwaggerOptions(configService);
+  const swaggerSpec = swaggerJsdoc(swaggerOptions);
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  logger.info('Swagger - ON: /docs');
 
   const sentryConfig = configService.get<SentryConfig>('SENTRY');
   if (sentryConfig.DSN) {

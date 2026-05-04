@@ -1,11 +1,10 @@
-import { HttpStatus } from '@api/routes/index.router';
+import { HttpStatus } from '@api/routes/http-status.enum';
 
-export class UnauthorizedException {
+import { BaseException } from './base.exception';
+
+export class UnauthorizedException extends BaseException {
   constructor(...objectError: any[]) {
-    throw {
-      status: HttpStatus.UNAUTHORIZED,
-      error: 'Unauthorized',
-      message: objectError.length > 0 ? objectError : 'Unauthorized',
-    };
+    const message = objectError.length > 0 ? objectError[0] : undefined;
+    super(HttpStatus.UNAUTHORIZED, 'Unauthorized', message);
   }
 }

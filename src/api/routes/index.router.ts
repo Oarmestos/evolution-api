@@ -14,6 +14,7 @@ import { BusinessRouter } from './business.router';
 import { CallRouter } from './call.router';
 import { ChatRouter } from './chat.router';
 import { GroupRouter } from './group.router';
+import { HttpStatus } from './http-status.enum';
 import { InstanceRouter } from './instance.router';
 import { LabelRouter } from './label.router';
 import { LeadRouter } from './lead.router';
@@ -25,17 +26,6 @@ import { SettingsRouter } from './settings.router';
 import { TemplateRouter } from './template.router';
 import { ThemeRouter } from './theme.router';
 import { UserRouter } from './user.router';
-
-enum HttpStatus {
-  OK = 200,
-  CREATED = 201,
-  NOT_FOUND = 404,
-  FORBIDDEN = 403,
-  BAD_REQUEST = 400,
-  UNAUTHORIZED = 401,
-  TOO_MANY_REQUESTS = 429,
-  INTERNAL_SERVER_ERROR = 500,
-}
 
 const router: Router = Router();
 const serverConfig = configService.get('SERVER');
