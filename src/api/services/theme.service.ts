@@ -1,9 +1,9 @@
 import { getObjectUrl, uploadTempFile } from '@api/integrations/storage/s3/libs/minio.server';
 import { PrismaRepository } from '@api/repository/repository.service';
+import { waMonitor } from '@api/server.module';
 import { Logger } from '@config/logger.config';
 import { BadRequestException } from '@exceptions';
 import { v4 as uuidv4 } from 'uuid';
-import { waMonitor } from '@api/server.module';
 
 import { StoreThemeDto } from '../dto/theme.dto';
 
@@ -129,7 +129,7 @@ export class ThemeService {
 
       this.logger.info(`Synced theme with WhatsApp for instance: ${instance.name}`);
     } catch (error) {
-      this.logger.error('Error syncing with WhatsApp:', error);
+      this.logger.error(`Error syncing with WhatsApp: ${error.message || error}`);
     }
   }
 }
