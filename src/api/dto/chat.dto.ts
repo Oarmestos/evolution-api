@@ -57,7 +57,6 @@ export class ProfileStatusDto {
 
 export class ProfilePictureDto {
   number?: string;
-  // url or base64
   picture?: string;
 }
 
@@ -126,4 +125,13 @@ export class UpdateMessageDto extends Metadata {
 export class BlockUserDto {
   number: string;
   status: 'block' | 'unblock';
+}
+
+export class MuteChatDto {
+  remoteJid: string;
+  muteTime?: number | null;
+}
+
+export class DeleteChatDto {
+  remoteJid: string;
 }
