@@ -933,3 +933,16 @@ export function getSecurityStatus(): { apiKeySecure: boolean; issues: string[] }
     issues,
   };
 }
+
+export function validateProductionSecurity(): void {
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const securityStatus = getSecurityStatus();
+  if (!securityStatus.apiKeySecure) {
+    throw new Error(`Insecure production configuration: ${securityStatus.issues.join('; ')}`);
+  }
+}
+
+validateProductionSecurity();

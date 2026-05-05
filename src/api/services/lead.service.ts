@@ -78,6 +78,11 @@ export class LeadService {
     });
     if (!stage) throw new NotFoundException('Stage not found');
 
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: data.contactId, instanceId },
+    });
+    if (!contact) throw new NotFoundException('Contact not found');
+
     const lead = await this.prisma.lead.create({
       data: {
         value: data.value || 0,

@@ -35,7 +35,14 @@ lerna-debug.log*
 # Project related
 /instances/*
 !/instances/.gitkeep
-/test/
+/test/*
+!/test/database-provider-support.test.ts
+!/test/http-hardening.test.ts
+!/test/lead.service.test.ts
+!/test/metrics.test.ts
+!/test/router-broker.test.ts
+!/test/order.service.test.ts
+!/test/user.service.test.ts
 /src/env.yml
 /store
 *.env

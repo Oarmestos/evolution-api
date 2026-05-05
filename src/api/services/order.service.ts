@@ -1,7 +1,14 @@
 import { PrismaRepository } from '@api/repository/repository.service';
 import { Logger } from '@config/logger.config';
 import { OrderDto } from '@dto/order.dto';
-import { NotFoundException } from '@exceptions';
+import { BadRequestException, NotFoundException } from '@exceptions';
+
+const ORDER_STATUSES = ['PENDING', 'PAID', 'SHIPPED', 'CANCELED'] as const;
+type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+function isOrderStatus(status: string): status is OrderStatus {
+  return ORDER_STATUSES.includes(status as OrderStatus);
+}
 
 export class OrderService {
   constructor(private readonly prisma: PrismaRepository) {}
@@ -59,7 +66,11 @@ export class OrderService {
     });
   }
 
-  public async updateStatus(instanceId: string, id: string, status: any) {
+  public async updateStatus(instanceId: string, id: string, status: string) {
+    if (!isOrderStatus(status)) {
+      throw new BadRequestException('Invalid order status');
+    }
+
     const order = await this.prisma.order.findFirst({
       where: { id, instanceId },
     });

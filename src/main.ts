@@ -6,20 +6,13 @@ import { ProviderFiles } from '@api/provider/sessions';
 import { PrismaRepository } from '@api/repository/repository.service';
 import { HttpStatus, router } from '@api/routes/index.router';
 import { eventManager, waMonitor } from '@api/server.module';
-import {
-  Auth,
-  configService,
-  Cors,
-  HttpServer,
-  ProviderSession,
-  Sentry as SentryConfig,
-  Webhook,
-} from '@config/env.config';
+import { configService, Cors, HttpServer, ProviderSession, Sentry as SentryConfig, Webhook } from '@config/env.config';
 import { onUnexpectedError } from '@config/error.config';
 import { Logger } from '@config/logger.config';
 import { ROOT_DIR } from '@config/path.config';
 import { getSwaggerOptions } from '@config/swagger.config';
 import * as Sentry from '@sentry/node';
+import { getBodyLimits, isCorsOriginAllowed } from '@utils/http-hardening';
 import { ServerUP } from '@utils/server-up';
 import axios from 'axios';
 import compression from 'compression';
@@ -49,25 +42,24 @@ async function bootstrap() {
 
   const prismaRepository = new PrismaRepository(configService);
   await prismaRepository.onModuleInit();
+  const bodyLimits = getBodyLimits();
 
   app.use(
     cors({
       origin(requestOrigin, callback) {
         const { ORIGIN } = configService.get<Cors>('CORS');
-        // Allow all origins in development or if wildcard is set
-        if (ORIGIN.includes('*') || requestOrigin?.includes('localhost')) {
+
+        if (isCorsOriginAllowed(requestOrigin, ORIGIN)) {
           return callback(null, true);
         }
-        if (ORIGIN.indexOf(requestOrigin) !== -1) {
-          return callback(null, true);
-        }
+
         return callback(new Error('Not allowed by CORS'));
       },
       methods: [...configService.get<Cors>('CORS').METHODS],
       credentials: configService.get<Cors>('CORS').CREDENTIALS,
     }),
-    urlencoded({ extended: true, limit: '136mb' }),
-    json({ limit: '136mb' }),
+    urlencoded({ extended: true, limit: bodyLimits.urlencoded }),
+    json({ limit: bodyLimits.json }),
     cookieParser(),
     compression(),
   );
@@ -120,7 +112,6 @@ async function bootstrap() {
           const tzoffset = new Date().getTimezoneOffset() * 60000; //offset in milliseconds
           const localISOTime = new Date(Date.now() - tzoffset).toISOString();
           const now = localISOTime;
-          const globalApiKey = configService.get<Auth>('AUTHENTICATION').API_KEY.KEY;
           const serverUrl = configService.get<HttpServer>('SERVER').URL;
 
           const errorData = {
@@ -134,7 +125,6 @@ async function bootstrap() {
               },
             },
             date_time: now,
-            api_key: globalApiKey,
             server_url: serverUrl,
           };
 

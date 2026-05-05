@@ -37,7 +37,7 @@ export class OrderRouter extends RouterBroker {
           request: req,
           schema: {
             type: 'object',
-            properties: { status: { type: 'string' } },
+            properties: { status: { type: 'string', enum: ['PENDING', 'PAID', 'SHIPPED', 'CANCELED'] } },
             required: ['status'],
           },
           ClassRef: InstanceDto,

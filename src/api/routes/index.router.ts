@@ -6,7 +6,9 @@ import { ChatbotRouter } from '@api/integrations/chatbot/chatbot.router';
 import { EventRouter } from '@api/integrations/event/event.router';
 import { StorageRouter } from '@api/integrations/storage/storage.router';
 import { waMonitor } from '@api/server.module';
-import { configService, Database, Facebook } from '@config/env.config';
+import { configService, Database, Facebook, getSecurityStatus } from '@config/env.config';
+import { buildHealthStatus } from '@utils/http-hardening';
+import { getClientIps, isMetricsIpAllowed, renderPrometheusMetrics, verifyMetricsBasicAuth } from '@utils/metrics';
 import { NextFunction, Request, Response, Router } from 'express';
 import fs from 'fs';
 
@@ -36,18 +38,25 @@ const telemetry = new Telemetry();
 
 const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
+function maskSecret(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.length <= 8 ? '********' : `${value.slice(0, 4)}...${value.slice(-4)}`;
+}
+
 // Middleware for metrics IP whitelist
 const metricsIPWhitelist = (req: Request, res: Response, next: NextFunction) => {
   const metricsConfig = configService.get('METRICS');
-  const allowedIPs = metricsConfig.ALLOWED_IPS?.split(',').map((ip) => ip.trim()) || ['127.0.0.1'];
-  const clientIPs = [
+  const clientIps = getClientIps([
     req.ip,
     req.connection.remoteAddress,
     req.socket.remoteAddress,
     req.headers['x-forwarded-for'],
-  ].filter((ip) => ip !== undefined);
+  ]);
 
-  if (allowedIPs.filter((ip) => clientIPs.includes(ip)) === 0) {
+  if (!isMetricsIpAllowed(metricsConfig.ALLOWED_IPS, clientIps)) {
     return res.status(403).send('Forbidden: IP not allowed');
   }
 
@@ -57,24 +66,14 @@ const metricsIPWhitelist = (req: Request, res: Response, next: NextFunction) => 
 // Middleware for metrics Basic Authentication
 const metricsBasicAuth = (req: Request, res: Response, next: NextFunction) => {
   const metricsConfig = configService.get('METRICS');
-  const metricsUser = metricsConfig.USER;
-  const metricsPass = metricsConfig.PASSWORD;
+  const authResult = verifyMetricsBasicAuth(req.get('Authorization'), metricsConfig);
 
-  if (!metricsUser || !metricsPass) {
-    return res.status(500).send('Metrics authentication not configured');
-  }
-
-  const auth = req.get('Authorization');
-  if (!auth || !auth.startsWith('Basic ')) {
+  if (!authResult.ok && authResult.status === 401) {
     res.set('WWW-Authenticate', 'Basic realm="Avri API Metrics"');
-    return res.status(401).send('Authentication required');
   }
 
-  const credentials = Buffer.from(auth.slice(6), 'base64').toString();
-  const [user, pass] = credentials.split(':');
-
-  if (user !== metricsUser || pass !== metricsPass) {
-    return res.status(401).send('Invalid credentials');
+  if (!authResult.ok) {
+    return res.status(authResult.status).send(authResult.message);
   }
 
   next();
@@ -99,54 +98,14 @@ if (metricsConfig.ENABLED) {
     res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
-    const escapeLabel = (value: unknown) =>
-      String(value ?? '')
-        .replace(/\\/g, '\\\\')
-        .replace(/\n/g, '\\n')
-        .replace(/"/g, '\\"');
-
-    const lines: string[] = [];
-
-    const clientName = databaseConfig.CONNECTION.CLIENT_NAME || 'unknown';
-    const serverUrl = serverConfig.URL || '';
-
-    // environment info
-    lines.push('# HELP avri_environment_info Environment information');
-    lines.push('# TYPE avri_environment_info gauge');
-    lines.push(
-      `avri_environment_info{version="${escapeLabel(packageJson.version)}",clientName="${escapeLabel(
-        clientName,
-      )}",serverUrl="${escapeLabel(serverUrl)}"} 1`,
+    res.send(
+      renderPrometheusMetrics({
+        version: packageJson.version,
+        clientName: databaseConfig.CONNECTION.CLIENT_NAME,
+        serverUrl: serverConfig.URL,
+        instances: (waMonitor && waMonitor.waInstances) || {},
+      }),
     );
-
-    const instances = (waMonitor && waMonitor.waInstances) || {};
-    const instanceEntries = Object.entries(instances);
-
-    // total instances
-    lines.push('# HELP avri_instances_total Total number of instances');
-    lines.push('# TYPE avri_instances_total gauge');
-    lines.push(`avri_instances_total ${instanceEntries.length}`);
-
-    // per-instance status
-    lines.push('# HELP avri_instance_up 1 if instance state is open, else 0');
-    lines.push('# TYPE avri_instance_up gauge');
-    lines.push('# HELP avri_instance_state Instance state as a labelled metric');
-    lines.push('# TYPE avri_instance_state gauge');
-
-    for (const [name, instance] of instanceEntries) {
-      const state = instance?.connectionStatus?.state || 'unknown';
-      const integration = instance?.integration || '';
-      const up = state === 'open' ? 1 : 0;
-
-      lines.push(`avri_instance_up{instance="${escapeLabel(name)}",integration="${escapeLabel(integration)}"} ${up}`);
-      lines.push(
-        `avri_instance_state{instance="${escapeLabel(name)}",integration="${escapeLabel(
-          integration,
-        )}",state="${escapeLabel(state)}"} 1`,
-      );
-    }
-
-    res.send(lines.join('\n') + '\n');
   });
 }
 
@@ -182,6 +141,18 @@ router.get('/assets/*', (req, res) => {
 
 router
   .use((req, res, next) => telemetry.collectTelemetry(req, res, next))
+  .get('/health', async (req, res) => {
+    const securityStatus = getSecurityStatus();
+
+    return res.status(securityStatus.apiKeySecure ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE).json(
+      buildHealthStatus({
+        version: packageJson.version,
+        databaseProvider: databaseConfig.PROVIDER,
+        apiKeySecure: securityStatus.apiKeySecure,
+        securityIssueCount: securityStatus.issues.length,
+      }),
+    );
+  })
 
   // Route disabled to allow serving index.html from public folder
   /*
@@ -204,7 +175,8 @@ router
       message: 'Credentials are valid',
       facebookAppId: facebookConfig.APP_ID,
       facebookConfigId: facebookConfig.CONFIG_ID,
-      facebookUserToken: facebookConfig.USER_TOKEN,
+      facebookUserTokenConfigured: !!facebookConfig.USER_TOKEN,
+      facebookUserTokenPreview: maskSecret(facebookConfig.USER_TOKEN),
     });
   })
   .use('/instance', new InstanceRouter(configService, ...guards).router)

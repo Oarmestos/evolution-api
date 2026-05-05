@@ -24,10 +24,64 @@ function getMigrationsFolder(provider) {
 
 const migrationsFolder = getMigrationsFolder(databaseProviderDefault);
 
+const REQUIRED_APP_MODELS = [
+  'User',
+  'StoreTheme',
+  'Plan',
+  'Subscription',
+  'LeadFunnel',
+  'LeadStage',
+  'Lead',
+  'InternalNote',
+  'Product',
+  'Order',
+  'OrderItem',
+];
+
+const REQUIRED_APP_ENUMS = ['ChatControlMode', 'UserRole', 'SubscriptionStatus', 'OrderStatus'];
+
+function findMissingSchemaBlocks(schemaPath, blocks, blockType) {
+  if (!existsSync(schemaPath)) {
+    return blocks;
+  }
+
+  const schema = require('fs').readFileSync(schemaPath, 'utf8');
+  return blocks.filter((block) => !new RegExp(`^${blockType}\\s+${block}\\s*{`, 'm').test(schema));
+}
+
+function assertProviderSchemaCompatibility(provider) {
+  if (process.env.AVRI_ALLOW_PARTIAL_MYSQL_SCHEMA === 'true') {
+    return;
+  }
+
+  if (provider !== 'mysql') {
+    return;
+  }
+
+  const schemaPath = `prisma\\${provider}-schema.prisma`;
+  const missingModels = findMissingSchemaBlocks(schemaPath, REQUIRED_APP_MODELS, 'model');
+  const missingEnums = findMissingSchemaBlocks(schemaPath, REQUIRED_APP_ENUMS, 'enum');
+
+  if (missingModels.length === 0 && missingEnums.length === 0) {
+    return;
+  }
+
+  console.error('DATABASE_PROVIDER=mysql is not compatible with the current application schema.');
+  console.error(`Missing models: ${missingModels.join(', ') || 'none'}`);
+  console.error(`Missing enums: ${missingEnums.join(', ') || 'none'}`);
+  console.error('Use DATABASE_PROVIDER=postgresql for users, store, leads, products, and orders.');
+  console.error('Set AVRI_ALLOW_PARTIAL_MYSQL_SCHEMA=true only if you know these modules are disabled.');
+  process.exit(1);
+}
+
 let command = process.argv
   .slice(2)
   .join(' ')
   .replace(/DATABASE_PROVIDER/g, databaseProviderDefault);
+
+if (/prisma\s+(generate|migrate|studio)/.test(command)) {
+  assertProviderSchemaCompatibility(databaseProviderDefault);
+}
 
 // Substituir referências à pasta de migrations pela pasta correta
 const migrationsPattern = new RegExp(`${databaseProviderDefault}-migrations`, 'g');
