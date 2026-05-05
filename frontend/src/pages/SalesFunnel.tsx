@@ -140,10 +140,9 @@ function NewLeadModal({ stages, onClose, onAdd }: {
 
 // --- Main Component ---
 const SalesFunnel: React.FC = () => {
-  const { instances, fetchInstances } = useInstanceStore();
-  const activeInstance = instances[0];
+  const { activeInstance, instances, fetchInstances } = useInstanceStore();
   const [stages, setStages] = useState<Stage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -187,7 +186,7 @@ const SalesFunnel: React.FC = () => {
     } else {
       loadData();
     }
-  }, [instances.length]);
+  }, [activeInstance?.instanceName, instances.length]);
 
   useEffect(() => {
     if (!activeInstance || !token) return;

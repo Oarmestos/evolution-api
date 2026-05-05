@@ -7,35 +7,38 @@ export class ThemeController {
   constructor(private readonly themeService: ThemeService) {}
 
   public async getTheme(req: Request, res: Response) {
-    const userId = req['user']?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'No autorizado' });
+    const instanceId = req.query.instanceId as string;
+    if (!instanceId) {
+      return res.status(400).json({ error: 'ID de instancia requerido' });
     }
-    const response = await this.themeService.getTheme(userId);
+    const response = await this.themeService.getTheme(instanceId);
     return res.status(200).json(response);
   }
 
   public async updateTheme(req: Request, res: Response) {
-    const userId = req['user']?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'No autorizado' });
+    const instanceId = req.body.instanceId;
+    if (!instanceId) {
+      return res.status(400).json({ error: 'ID de instancia requerido' });
     }
     const data: StoreThemeDto = req.body;
-    const response = await this.themeService.updateTheme(userId, data);
+    // Remove instanceId from data to avoid prisma errors if it's not in the DTO
+    const { instanceId: _, ...themeData } = data as any;
+    
+    const response = await this.themeService.updateTheme(instanceId, themeData);
     return res.status(200).json(response);
   }
 
   public async uploadLogo(req: Request, res: Response) {
-    const userId = req['user']?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'No autorizado' });
+    const instanceId = req.body.instanceId || req.query.instanceId;
+    if (!instanceId) {
+      return res.status(400).json({ error: 'ID de instancia requerido' });
     }
 
     if (!req.file) {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
     }
 
-    const response = await this.themeService.uploadLogo(userId, req.file as Express.Multer.File);
+    const response = await this.themeService.uploadLogo(instanceId, req.file as Express.Multer.File);
     return res.status(200).json(response);
   }
 
@@ -102,7 +105,7 @@ export class ThemeController {
       const data = await this.themeService.getThemeByInstance(instanceName, page, limit);
       return res.status(200).json(data);
     } catch (error) {
-      return res.status(404).json({ error: (error as Error).message });
+      return res.status(error.status || 500).json({ error: (error as Error).message });
     }
   }
 }

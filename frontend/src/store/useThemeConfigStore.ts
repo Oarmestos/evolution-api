@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { useInstanceStore } from './useInstanceStore';
 
 export interface ThemeConfig {
   template: string;
@@ -76,12 +77,14 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
 
   fetchTheme: async () => {
     const token = localStorage.getItem('avri_token');
-    if (!token) return;
+    const activeInstance = useInstanceStore.getState().activeInstance;
+    if (!token || !activeInstance) return;
 
     set({ loading: true, error: null });
     try {
       const response = await axios.get('/theme/fetch', {
-        headers: { apikey: token }
+        headers: { apikey: token },
+        params: { instanceId: activeInstance.instanceId }
       });
       if (response.data) {
         set({ theme: { ...DEFAULT_THEME, ...response.data }, loading: false });
@@ -89,7 +92,7 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
         set({ loading: false });
       }
     } catch (err: unknown) {
-      set({ error: (err as Error).message, loading: false });
+      set({ error: (err as any).response?.data?.error || (err as Error).message, loading: false });
     }
   },
 
@@ -101,26 +104,32 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
 
   saveTheme: async () => {
     const token = localStorage.getItem('avri_token');
-    if (!token) return;
+    const activeInstance = useInstanceStore.getState().activeInstance;
+    if (!token || !activeInstance) return;
 
     set({ saving: true, error: null });
     try {
       const { theme } = get();
-      await axios.put('/theme/update', theme, {
+      await axios.put('/theme/update', {
+        ...theme,
+        instanceId: activeInstance.instanceId
+      }, {
         headers: { apikey: token }
       });
       set({ saving: false });
     } catch (err: unknown) {
-      set({ error: (err as Error).message, saving: false });
+      set({ error: (err as any).response?.data?.error || (err as Error).message, saving: false });
     }
   },
 
   uploadLogo: async (file: File) => {
     const token = localStorage.getItem('avri_token');
-    if (!token) return null;
+    const activeInstance = useInstanceStore.getState().activeInstance;
+    if (!token || !activeInstance) return null;
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('instanceId', activeInstance.instanceId);
 
     try {
       const response = await axios.post('/theme/logo', formData, {
@@ -135,7 +144,7 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
       }));
       return logoUrl;
     } catch (err: unknown) {
-      set({ error: (err as Error).message });
+      set({ error: (err as any).response?.data?.error || (err as Error).message });
       return null;
     }
   },

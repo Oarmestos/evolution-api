@@ -68,11 +68,10 @@ async function bootstrap() {
   app.set('views', join(ROOT_DIR, 'views'));
 
   // app.use(express.static(join(ROOT_DIR, 'public')));
+  // app.use(express.static(join(ROOT_DIR, 'public')));
   app.use(express.static(join(ROOT_DIR, 'frontend', 'dist')));
 
-  app.use('/store', express.static(join(ROOT_DIR, 'store')));
-
-  // SPA fallback for React Router - must be after /store
+  // SPA fallback for React Router
   app.use('/', router);
 
   app.get('*', (req, res, next) => {
@@ -84,7 +83,6 @@ async function bootstrap() {
       req.url.startsWith('/order') ||
       req.url.startsWith('/webhook') ||
       req.url.startsWith('/chatwoot') ||
-      req.url.startsWith('/store') ||
       req.url.startsWith('/assets') ||
       req.url.includes('.')
     ) {

@@ -64,6 +64,7 @@ model Instance {
   Websocket               Websocket?
   Product                 Product[]
   Order                   Order[]
+  storeTheme              StoreTheme?
 }
 
 model User {
@@ -76,13 +77,12 @@ model User {
   updatedAt     DateTime       @updatedAt @db.Timestamp(6)
   instances     Instance[]
   internalNotes InternalNote[]
-  storeTheme    StoreTheme?
   subscription  Subscription?
 }
 
 model StoreTheme {
   id           String   @id @default(cuid())
-  userId       String   @unique
+  instanceId   String   @unique
   template     String   @default("moderno") @db.VarChar(50)
   storeName    String?  @db.VarChar(100)
   logoUrl      String?  @db.VarChar(500)
@@ -97,9 +97,9 @@ model StoreTheme {
   syncWhatsapp Boolean  @default(false)
   createdAt    DateTime @default(now()) @db.Timestamp(6)
   updatedAt    DateTime @updatedAt @db.Timestamp(6)
-  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Instance     Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([instanceId])
 }
 
 model Plan {

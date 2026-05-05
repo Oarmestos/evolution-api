@@ -3,7 +3,15 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
+import { useInstanceStore } from '../store/useInstanceStore';
+
 export const DashboardLayout: React.FC = () => {
+  const { fetchInstances } = useInstanceStore();
+
+  React.useEffect(() => {
+    fetchInstances();
+  }, [fetchInstances]);
+
   return (
     <div className="theme-shell min-h-screen">
       <Sidebar />

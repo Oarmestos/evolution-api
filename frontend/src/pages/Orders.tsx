@@ -31,19 +31,18 @@ const statusConfig = {
 };
 
 export const Orders = () => {
-  const { instances } = useInstanceStore();
-  const activeInstance = instances.length > 0 ? instances[0].instanceName : null;
+  const { activeInstance } = useInstanceStore();
   const token = localStorage.getItem('avri_token');
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
-    if (!token) return;
+    if (!token || !activeInstance) return;
     try {
       setLoading(true);
-      const { data } = await axios.get(`/order/${activeInstance}`, {
+      const { data } = await axios.get(`/order/${activeInstance.instanceName}`, {
         headers: { apikey: token }
       });
       setOrders(Array.isArray(data) ? data : []);
@@ -57,12 +56,12 @@ export const Orders = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [instances]);
+  }, [activeInstance?.instanceName]);
 
   const updateStatus = async (orderId: string, newStatus: string) => {
-    if (!token) return;
+    if (!token || !activeInstance) return;
     try {
-      await axios.patch(`/order/status/${orderId}/${activeInstance}`, {
+      await axios.patch(`/order/status/${orderId}/${activeInstance.instanceName}`, {
         status: newStatus
       }, {
         headers: { apikey: token }
@@ -257,5 +256,3 @@ export const Orders = () => {
     </div>
   );
 };
-
-

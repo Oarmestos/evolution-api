@@ -113,7 +113,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
           : null;
 
         if (!currentActive || !matchInList) {
-          // No active instance or it was deleted \u2014 select the first one.
+          // No active instance or it was deleted — select the first one.
           get().setActiveInstance(normalized[0]);
         } else if (
           matchInList.connectionStatus !== currentActive.connectionStatus ||

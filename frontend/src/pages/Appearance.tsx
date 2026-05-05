@@ -18,9 +18,11 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { useThemeConfigStore } from '../store/useThemeConfigStore';
+import { useInstanceStore } from '../store/useInstanceStore';
 import { cn } from '../utils/cn';
 
 export const Appearance: React.FC = () => {
+  const { activeInstance } = useInstanceStore();
   const { 
     theme, 
     loading, 
@@ -38,7 +40,7 @@ export const Appearance: React.FC = () => {
 
   useEffect(() => {
     fetchTheme();
-  }, [fetchTheme]);
+  }, [fetchTheme, activeInstance]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

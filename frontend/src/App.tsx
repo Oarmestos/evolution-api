@@ -17,6 +17,7 @@ import { Appearance } from './pages/Appearance';
 import { Landing } from './pages/Landing';
 import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
+import { PublicStore } from './pages/PublicStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useEffect } from 'react';
 
@@ -34,6 +35,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/store/:instanceName" element={<PublicStore />} />
 
         {/* Rutas Privadas (Dashboard) */}
         <Route element={<ProtectedRoute />}>

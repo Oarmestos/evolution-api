@@ -14,11 +14,10 @@ interface Product {
 }
 
 export const Products = () => {
-  const { instances } = useInstanceStore();
-  const activeInstance = instances.length > 0 ? instances[0].instanceName : null;
+  const { activeInstance } = useInstanceStore();
   const token = localStorage.getItem('avri_token');
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,10 +32,10 @@ export const Products = () => {
   });
 
   const fetchProducts = async () => {
-    if (!token) return;
+    if (!token || !activeInstance) return;
     try {
       setLoading(true);
-      const { data } = await axios.get(`/product/${activeInstance}`, {
+      const { data } = await axios.get(`/product/${activeInstance.instanceName}`, {
         headers: { apikey: token }
       });
       setProducts(Array.isArray(data) ? data : []);
@@ -50,7 +49,7 @@ export const Products = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [instances]);
+  }, [activeInstance?.instanceName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,11 +63,11 @@ export const Products = () => {
 
     try {
       if (editingProduct) {
-        await axios.put(`/product/${editingProduct.id}/${activeInstance}`, payload, {
+        await axios.put(`/product/${editingProduct.id}/${activeInstance.instanceName}`, payload, {
           headers: { apikey: token }
         });
       } else {
-        await axios.post(`/product/${activeInstance}`, payload, {
+        await axios.post(`/product/${activeInstance.instanceName}`, payload, {
           headers: { apikey: token }
         });
       }
@@ -82,9 +81,9 @@ export const Products = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!token || !confirm('¿Estás seguro de eliminar este producto?')) return;
+    if (!token || !activeInstance || !confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
-        await axios.delete(`/product/${id}/${activeInstance}`, {
+        await axios.delete(`/product/${id}/${activeInstance.instanceName}`, {
         headers: { apikey: token }
       });
       fetchProducts();
@@ -323,5 +322,3 @@ export const Products = () => {
     </div>
   );
 };
-
-

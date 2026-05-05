@@ -2,7 +2,7 @@ import { getObjectUrl, uploadTempFile } from '@api/integrations/storage/s3/libs/
 import { PrismaRepository } from '@api/repository/repository.service';
 import { waMonitor } from '@api/server.module';
 import { Logger } from '@config/logger.config';
-import { BadRequestException } from '@exceptions';
+import { BadRequestException, NotFoundException } from '@exceptions';
 import { v4 as uuidv4 } from 'uuid';
 
 import { StoreThemeDto } from '../dto/theme.dto';
@@ -11,15 +11,15 @@ export class ThemeService {
   constructor(private readonly prisma: PrismaRepository) {}
   private readonly logger = new Logger('ThemeService');
 
-  public async getTheme(userId: string) {
+  public async getTheme(instanceId: string) {
     try {
       let theme = await this.prisma.storeTheme.findUnique({
-        where: { userId },
+        where: { instanceId },
       });
 
       if (!theme) {
         theme = await this.prisma.storeTheme.create({
-          data: { userId },
+          data: { instanceId },
         });
       }
 
@@ -30,28 +30,27 @@ export class ThemeService {
     }
   }
 
-  public async updateTheme(userId: string, data: StoreThemeDto) {
+  public async updateTheme(instanceId: string, data: StoreThemeDto) {
     try {
       const result = await this.prisma.storeTheme.upsert({
-        where: { userId },
+        where: { instanceId },
         update: data,
         create: {
           ...data,
-          userId,
+          instanceId,
         },
       });
 
       // Sync with WhatsApp if enabled
       if (data.syncWhatsapp) {
-        const instance = await this.prisma.instance.findFirst({
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
+        const instance = await this.prisma.instance.findUnique({
+          where: { id: instanceId },
         });
 
         if (instance) {
           await this.syncWithWhatsapp(instance.name, data);
         } else {
-          this.logger.warn(`No instance found for user ${userId}, skipping WhatsApp sync`);
+          this.logger.warn(`No instance found for id ${instanceId}, skipping WhatsApp sync`);
         }
       }
 
@@ -62,9 +61,9 @@ export class ThemeService {
     }
   }
 
-  public async uploadLogo(userId: string, file: Express.Multer.File) {
+  public async uploadLogo(instanceId: string, file: Express.Multer.File) {
     try {
-      const fileName = `logo-${userId}-${uuidv4()}-${file.originalname}`;
+      const fileName = `logo-${instanceId}-${uuidv4()}-${file.originalname}`;
       const folder = 'store-logos';
 
       await uploadTempFile(folder, fileName, file.buffer, file.size, { 'Content-Type': file.mimetype });
@@ -73,9 +72,9 @@ export class ThemeService {
 
       // Update theme with new logo URL
       await this.prisma.storeTheme.upsert({
-        where: { userId },
+        where: { instanceId },
         update: { logoUrl },
-        create: { userId, logoUrl },
+        create: { instanceId, logoUrl },
       });
 
       return { logoUrl };
@@ -89,30 +88,24 @@ export class ThemeService {
     try {
       const instance = await this.prisma.instance.findUnique({
         where: { name: instanceName },
-        include: { User: true },
       });
 
       if (!instance) {
-        throw new BadRequestException('Instancia no encontrada');
+        throw new NotFoundException('Instancia no encontrada');
       }
 
-      const userId = instance.userId || instance.User?.id;
-      if (!userId) {
-        throw new BadRequestException('Usuario no encontrado para la instancia');
-      }
-
-      const theme = await this.getTheme(userId);
+      const theme = await this.getTheme(instance.id);
 
       const skip = (page - 1) * limit;
       const [products, total] = await Promise.all([
         this.prisma.product.findMany({
-          where: { instanceId: instance.id },
+          where: { instanceId: instance.id, enabled: true },
           orderBy: { createdAt: 'desc' },
           skip,
           take: limit,
         }),
         this.prisma.product.count({
-          where: { instanceId: instance.id },
+          where: { instanceId: instance.id, enabled: true },
         }),
       ]);
 
@@ -129,6 +122,7 @@ export class ThemeService {
       };
     } catch (error) {
       this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
       throw new BadRequestException('Error al obtener la tienda');
     }
   }
