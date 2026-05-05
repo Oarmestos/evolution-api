@@ -4,7 +4,6 @@ import {
   DeleteMessage,
   getBase64FromMediaMessageDto,
   MarkChatUnreadDto,
-  MuteChatDto,
   NumberDto,
   PrivacySettingDto,
   ProfileNameDto,
@@ -13,6 +12,7 @@ import {
   ReadMessageDto,
   SendPresenceDto,
   UpdateMessageDto,
+  MuteChatDto,
   WhatsAppNumberDto,
 } from '@api/dto/chat.dto';
 import { InstanceDto } from '@api/dto/instance.dto';

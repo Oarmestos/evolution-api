@@ -1,11 +1,13 @@
-import { RouterBroker } from '@api/abstract/abstract.router';
+import { Router } from 'express';
+import { ChatController } from '@api/controllers/chat.controller';
+import { RouterBroker } from '@api/routes/router.broker';
+import { chatController } from '@api/server.module';
 import {
   ArchiveChatDto,
   BlockUserDto,
   DeleteMessage,
   getBase64FromMediaMessageDto,
   MarkChatUnreadDto,
-  MuteChatDto,
   NumberDto,
   PrivacySettingDto,
   ProfileNameDto,
@@ -14,52 +16,46 @@ import {
   ReadMessageDto,
   SendPresenceDto,
   UpdateMessageDto,
+  MuteChatDto,
   WhatsAppNumberDto,
 } from '@api/dto/chat.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
 import { Query } from '@api/repository/repository.service';
-import { chatController } from '@api/server.module';
 import { Contact, Message, MessageUpdate } from '@prisma/client';
+import { HttpStatus } from '@api/types/wa.types';
 import {
   archiveChatSchema,
   blockUserSchema,
   contactValidateSchema,
   deleteMessageSchema,
+  getBase64FromMediaMessageSchema,
   markChatUnreadSchema,
   messageUpSchema,
   messageValidateSchema,
-  presenceSchema,
   privacySettingsSchema,
   profileNameSchema,
   profilePictureSchema,
   profileSchema,
   profileStatusSchema,
   readMessageSchema,
+  sendPresenceSchema,
   updateMessageSchema,
   whatsappNumberSchema,
-} from '@validate/validate.schema';
-import { RequestHandler, Router } from 'express';
-
-import { HttpStatus } from './index.router';
+} from '@api/validate/chat.validate';
 
 export class ChatRouter extends RouterBroker {
-  constructor(...guards: RequestHandler[]) {
+  constructor(...guards: any[]) {
     super();
     this.router
-      .post(this.routerPath('whatsappNumbers'), ...guards, async (req, res) => {
-        try {
-          const response = await this.dataValidate<WhatsAppNumberDto>({
-            request: req,
-            schema: whatsappNumberSchema,
-            ClassRef: WhatsAppNumberDto,
-            execute: (instance, data) => chatController.whatsappNumber(instance, data),
-          });
+      .post(this.routerPath('whatsappNumber'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<WhatsAppNumberDto>({
+          request: req,
+          schema: whatsappNumberSchema,
+          ClassRef: WhatsAppNumberDto,
+          execute: (instance, data) => chatController.whatsappNumber(instance, data),
+        });
 
-          return res.status(HttpStatus.OK).json(response);
-        } catch (error) {
-          console.log(error);
-          return res.status(HttpStatus.BAD_REQUEST).json(error);
-        }
+        return res.status(HttpStatus.OK).json(response);
       })
       .post(this.routerPath('markMessageAsRead'), ...guards, async (req, res) => {
         const response = await this.dataValidate<ReadMessageDto>({
@@ -69,7 +65,7 @@ export class ChatRouter extends RouterBroker {
           execute: (instance, data) => chatController.readMessage(instance, data),
         });
 
-        return res.status(HttpStatus.CREATED).json(response);
+        return res.status(HttpStatus.OK).json(response);
       })
       .post(this.routerPath('archiveChat'), ...guards, async (req, res) => {
         const response = await this.dataValidate<ArchiveChatDto>({
@@ -79,7 +75,7 @@ export class ChatRouter extends RouterBroker {
           execute: (instance, data) => chatController.archiveChat(instance, data),
         });
 
-        return res.status(HttpStatus.CREATED).json(response);
+        return res.status(HttpStatus.OK).json(response);
       })
       .post(this.routerPath('markChatUnread'), ...guards, async (req, res) => {
         const response = await this.dataValidate<MarkChatUnreadDto>({
@@ -89,9 +85,9 @@ export class ChatRouter extends RouterBroker {
           execute: (instance, data) => chatController.markChatUnread(instance, data),
         });
 
-        return res.status(HttpStatus.CREATED).json(response);
+        return res.status(HttpStatus.OK).json(response);
       })
-      .delete(this.routerPath('deleteMessageForEveryone'), ...guards, async (req, res) => {
+      .post(this.routerPath('deleteMessage'), ...guards, async (req, res) => {
         const response = await this.dataValidate<DeleteMessage>({
           request: req,
           schema: deleteMessageSchema,
@@ -99,27 +95,27 @@ export class ChatRouter extends RouterBroker {
           execute: (instance, data) => chatController.deleteMessage(instance, data),
         });
 
-        return res.status(HttpStatus.CREATED).json(response);
-      })
-      .post(this.routerPath('fetchProfilePictureUrl'), ...guards, async (req, res) => {
-        const response = await this.dataValidate<NumberDto>({
-          request: req,
-          schema: profilePictureSchema,
-          ClassRef: NumberDto,
-          execute: (instance, data) => chatController.fetchProfilePicture(instance, data),
-        });
-
         return res.status(HttpStatus.OK).json(response);
       })
       .post(this.routerPath('getBase64FromMediaMessage'), ...guards, async (req, res) => {
         const response = await this.dataValidate<getBase64FromMediaMessageDto>({
           request: req,
-          schema: null,
+          schema: getBase64FromMediaMessageSchema,
           ClassRef: getBase64FromMediaMessageDto,
           execute: (instance, data) => chatController.getBase64FromMediaMessage(instance, data),
         });
 
-        return res.status(HttpStatus.CREATED).json(response);
+        return res.status(HttpStatus.OK).json(response);
+      })
+      .post(this.routerPath('sendPresence'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<SendPresenceDto>({
+          request: req,
+          schema: sendPresenceSchema,
+          ClassRef: SendPresenceDto,
+          execute: (instance, data) => chatController.sendPresence(instance, data),
+        });
+
+        return res.status(HttpStatus.OK).json(response);
       })
       .post(this.routerPath('updateMessage'), ...guards, async (req, res) => {
         const response = await this.dataValidate<UpdateMessageDto>({
@@ -129,19 +125,9 @@ export class ChatRouter extends RouterBroker {
           execute: (instance, data) => chatController.updateMessage(instance, data),
         });
 
-        return res.status(HttpStatus.OK).json(response);
-      })
-      .post(this.routerPath('sendPresence'), ...guards, async (req, res) => {
-        const response = await this.dataValidate<null>({
-          request: req,
-          schema: presenceSchema,
-          ClassRef: SendPresenceDto,
-          execute: (instance, data) => chatController.sendPresence(instance, data),
-        });
-
         return res.status(HttpStatus.CREATED).json(response);
       })
-      .post(this.routerPath('updateBlockStatus'), ...guards, async (req, res) => {
+      .post(this.routerPath('blockUser'), ...guards, async (req, res) => {
         const response = await this.dataValidate<BlockUserDto>({
           request: req,
           schema: blockUserSchema,
@@ -201,6 +187,7 @@ export class ChatRouter extends RouterBroker {
 
         return res.status(HttpStatus.OK).json(response);
       })
+      // Profile routes
       .post(this.routerPath('fetchBusinessProfile'), ...guards, async (req, res) => {
         const response = await this.dataValidate<ProfilePictureDto>({
           request: req,
@@ -305,7 +292,7 @@ export class ChatRouter extends RouterBroker {
       .post(this.routerPath('muteChat'), ...guards, async (req, res) => {
         const response = await this.dataValidate<MuteChatDto>({
           request: req,
-          schema: null,
+          schema: null, // Skipping schema for now as it's simple
           ClassRef: MuteChatDto,
           execute: (instance, data) => chatController.muteChat(instance, data),
         });

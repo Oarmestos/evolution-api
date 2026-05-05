@@ -85,6 +85,8 @@ export const useChatStore = create<ChatState>((set) => ({
 
   fetchChats: async (instanceName) => {
     const token = localStorage.getItem('avri_token');
+    // Only show the loading skeleton on the very first fetch (no chats yet).
+    // On subsequent polling cycles, update silently to avoid re-render flashes.
     const isFirstLoad = useChatStore.getState().chats.length === 0;
     if (isFirstLoad) set({ loadingChats: true });
     try {
@@ -93,10 +95,15 @@ export const useChatStore = create<ChatState>((set) => ({
       });
       const chats = normalizeChats(response.data);
       set((state) => {
+        // Deep-merge the refreshed chat data into selectedChat, preserving
+        // non-empty existing values so that pushName / contact info is never
+        // overwritten by an empty payload from the backend.
         let nextSelectedChat = state.selectedChat;
         if (state.selectedChat) {
           const freshChat = chats.find((c) => c.remoteJid === state.selectedChat!.remoteJid);
           if (freshChat) {
+            // Only update selectedChat if something meaningful actually changed
+            // to avoid creating a new object reference on every poll.
             const hasChanges =
               freshChat.pushName !== state.selectedChat.pushName ||
               freshChat.unreadCount !== state.selectedChat.unreadCount ||
@@ -107,6 +114,7 @@ export const useChatStore = create<ChatState>((set) => ({
               nextSelectedChat = {
                 ...state.selectedChat,
                 ...freshChat,
+                // Prefer non-empty values from the existing state
                 pushName: (freshChat.pushName && freshChat.pushName !== freshChat.remoteJid)
                   ? freshChat.pushName
                   : (state.selectedChat!.pushName || freshChat.pushName),
@@ -134,6 +142,7 @@ export const useChatStore = create<ChatState>((set) => ({
       }, {
         headers: { apikey: token }
       });
+      // Evolution API returns messages in { messages: { records: [...] } }
       const records = response.data?.messages?.records || [];
       const messages = records.map(normalizeMessage).reverse();
       set((state) => ({
@@ -285,12 +294,18 @@ function normalizeChats(data: unknown): Chat[] {
       const controlMode: Chat['controlMode'] = raw.controlMode === 'HUMAN' ? 'HUMAN' : 'AI';
       const remoteJid = String(raw.remoteJid ?? '');
 
+      // Extract display name: prefer pushName, then Contact name.
       const rawPushName = raw.pushName || raw.name || '';
       
+      // Use real phone number from the record if available; avoid showing LID
       const phoneNumber: string | undefined =
         raw.phoneNumber ??
         (isRealPhoneJid(remoteJid) ? jidToNumber(remoteJid) : undefined);
 
+      // Determine the best display name. 
+      // If rawPushName exists and isn't just the JID, use it.
+      // Otherwise, use the formatted phone number.
+      // Final fallback is a generic label to avoid showing technical LIDs.
       let displayName = rawPushName;
       if (!displayName || displayName === remoteJid || displayName === jidToNumber(remoteJid)) {
         displayName = phoneNumber ? `+${phoneNumber}` : 'Contacto sin nombre';
@@ -341,17 +356,26 @@ function upsertChatWithLatestMessage(chats: Chat[], selectedChat: Chat | null, m
   const preview = extractMessagePreview(message.message);
   const timestamp = message.messageTimestamp;
 
+  // Match by exact remoteJid first, then by normalized base (handles @lid vs @s.whatsapp.net mismatch)
   const existingChat =
     chats.find((c) => c.remoteJid === message.key.remoteJid) ??
     chats.find((c) => jidToNumber(c.remoteJid) === jidToNumber(message.key.remoteJid) && jidToNumber(c.remoteJid) !== '');
   
+  // Build only the fields that change when a new message is sent.
+  // Spread existingChat first so ALL existing contact data (phoneNumber, email,
+  // profilePicUrl, pushName, etc.) is preserved and never lost.
   const source = existingChat ?? selectedChat;
+
+  // Preserve the existing remoteJid (e.g. @lid) if found \u2014 do NOT replace it
+  // with the message's JID which may use a different suffix (@s.whatsapp.net).
   const canonicalRemoteJid = existingChat?.remoteJid ?? message.key.remoteJid;
 
   const baseChat: Chat = {
     ...(source ?? {}),
     id: source?.id ?? canonicalRemoteJid,
     remoteJid: canonicalRemoteJid,
+    // Determine best pushName: prefer source name (if it's not a JID/LID/Placeholder),
+    // then message pushName, then formatted phone number.
     pushName: (() => {
       const currentName = source?.pushName;
       const isPlaceholder = !currentName || currentName === 'Contacto sin nombre' || currentName === source?.remoteJid || currentName === jidToNumber(source?.remoteJid || '');
@@ -432,10 +456,13 @@ function extractMessagePreview(message: Record<string, any> | undefined): string
   );
 }
 
-// ─── JID Utilities ───────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 JID Utilities \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
 /**
  * Extracts only the numeric/alphanumeric base from a WhatsApp JID.
+ * e.g. "176957652254939@lid" \u2192 "176957652254939"
+ *      "573001234567@s.whatsapp.net" \u2192 "573001234567"
+ *      "120363@g.us" \u2192 "120363"
  */
 function jidToNumber(jid: string): string {
   return jid ? jid.split('@')[0] : '';
@@ -443,14 +470,21 @@ function jidToNumber(jid: string): string {
 
 /**
  * Returns true if the JID corresponds to a real E.164 phone number.
+ * LID JIDs (e.g. @lid) and group JIDs (@g.us) are excluded.
+ * Real phone JIDs end with @s.whatsapp.net and have a purely numeric base.
  */
 function isRealPhoneJid(jid: string): boolean {
   if (!jid) return false;
   const [base, suffix] = jid.split('@');
   if (!suffix) return false;
+  // Groups end with g.us, LIDs end with lid
   if (suffix === 'g.us' || suffix === 'lid') return false;
+  // Broadcast list
   if (suffix === 'broadcast') return false;
+  // Must be all digits (E.164 without +)
   if (!/^\d+$/.test(base)) return false;
+  // LIDs typically have 15 digits and start with 1. Real phone numbers are usually shorter
+  // or don't match the LID pattern precisely.
   if (base.length === 15 && base.startsWith('1')) return false;
   
   return true;

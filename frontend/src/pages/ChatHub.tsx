@@ -25,6 +25,8 @@ export const ChatHub: React.FC = () => {
 
   const activeChatJid = useRef<string | null>(null);
 
+
+
   useEffect(() => {
     if (instances.length === 0) {
       fetchInstances();
@@ -68,6 +70,10 @@ export const ChatHub: React.FC = () => {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInstance, selectedChat?.remoteJid]);
+
+  useEffect(() => {
+    // any initialization
+  }, [activeInstance]);
 
   return (
     <>

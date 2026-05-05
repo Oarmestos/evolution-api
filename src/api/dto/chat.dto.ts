@@ -57,6 +57,7 @@ export class ProfileStatusDto {
 
 export class ProfilePictureDto {
   number?: string;
+  // url or base64
   picture?: string;
 }
 
