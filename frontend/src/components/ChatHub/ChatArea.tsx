@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, MoreVertical, MessageSquare, CheckCheck, Paperclip, Smile, Mic, X, Package, Store } from 'lucide-react';
-import { useChatStore } from '../../store/useChatStore';
+import { useChatStore, extractMessagePreview } from '../../store/useChatStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { cn } from '../../utils/cn';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
@@ -188,7 +188,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                               ? "bg-primary text-black font-medium rounded-tr-none shadow-primary/10" 
                               : "theme-surface-alt text-theme-text border border-border-soft rounded-tl-none hover:border-border-strong shadow-soft/5"
                           )}>
-                            {msg.message?.conversation || msg.message?.extendedTextMessage?.text || "[Tipo de mensaje no soportado]"}
+                            {extractMessagePreview(msg.message)}
                           </div>
                           <div className={cn("flex items-center gap-2 px-1", fromMe ? "justify-end" : "justify-start")}>
                             <span className="text-[10px] text-gray-600 font-bold">

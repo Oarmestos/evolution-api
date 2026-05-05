@@ -441,19 +441,36 @@ function createFallbackMessage(text?: string): Record<string, any> {
   return text ? { conversation: text } : {};
 }
 
-function extractMessagePreview(message: Record<string, any> | undefined): string {
+export function extractMessagePreview(message: Record<string, any> | undefined): string {
   if (!message) return '';
 
-  return (
-    message.conversation ||
-    message.extendedTextMessage?.text ||
-    message.imageMessage?.caption ||
-    message.videoMessage?.caption ||
-    message.documentMessage?.caption ||
-    message.documentWithCaptionMessage?.caption ||
-    message.pollCreationMessage?.name ||
-    '[Tipo de mensaje no soportado]'
-  );
+  if (message.conversation) return message.conversation;
+  if (message.extendedTextMessage?.text) return message.extendedTextMessage.text;
+  if (message.imageMessage) return message.imageMessage.caption || '📷 Imagen';
+  if (message.videoMessage) return message.videoMessage.caption || '🎥 Video';
+  if (message.audioMessage) return '🎵 Audio';
+  if (message.documentMessage) return message.documentMessage.caption || message.documentMessage.title || '📄 Documento';
+  if (message.documentWithCaptionMessage?.message?.documentMessage) {
+    const doc = message.documentWithCaptionMessage.message.documentMessage;
+    return doc.caption || doc.title || '📄 Documento';
+  }
+  if (message.stickerMessage) return '🪩 Sticker';
+  if (message.contactMessage) return '👤 Contacto';
+  if (message.contactsArrayMessage) return '👥 Contactos';
+  if (message.locationMessage) return '📍 Ubicación';
+  if (message.liveLocationMessage) return '📍 Ubicación en vivo';
+  if (message.pollCreationMessage) return `📊 Encuesta: ${message.pollCreationMessage.name || ''}`;
+  if (message.reactionMessage) return `❤️ Reacción: ${message.reactionMessage.text || ''}`;
+  
+  // System messages and notifications
+  if (message.protocolMessage) {
+    const type = message.protocolMessage.type;
+    if (type === 5 || type === 'HISTORY_SYNC_NOTIFICATION') return '🔄 Sincronizando historial...';
+    if (type === 0 || type === 'REVOKE') return '🚫 Mensaje eliminado';
+    return '⚙️ Mensaje de sistema';
+  }
+
+  return '[Tipo de mensaje no soportado]';
 }
 
 // \u2500\u2500\u2500 JID Utilities \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500

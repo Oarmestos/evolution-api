@@ -40,6 +40,13 @@ export const Channels: React.FC = () => {
 
   useEffect(() => {
     fetchInstances();
+
+    // Poll to keep connection statuses updated (useful for QR code scanning)
+    const interval = setInterval(() => {
+      fetchInstances(true);
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [fetchInstances]);
 
   const channelTypes = [

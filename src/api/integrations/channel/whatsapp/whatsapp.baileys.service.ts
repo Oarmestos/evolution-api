@@ -80,7 +80,7 @@ import { BadRequestException, InternalServerErrorException, NotFoundException } 
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import { Boom } from '@hapi/boom';
 import { createId as cuid } from '@paralleldrive/cuid2';
-import { Instance, Message } from '@prisma/client';
+import { Chat as PrismaChat, Contact as PrismaContact, Instance, Message, MessageUpdate } from '@prisma/client';
 import { createJid } from '@utils/createJid';
 import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
 import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
@@ -473,7 +473,10 @@ export class BaileysStartupService extends ChannelStartupService {
         `
         \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
         \u2502    CONNECTED TO WHATSAPP     \u2502
-        \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518`.replace(/^ +/gm, '  '),
+        \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518`.replace(
+          /^ +/gm,
+          '  ',
+        ),
       );
       this.logger.info(
         `
@@ -813,10 +816,29 @@ export class BaileysStartupService extends ChannelStartupService {
 
       if (events['messaging-history.set']) {
         const { chats, contacts, messages, isLatest } = events['messaging-history.set'];
-        console.log(`History sync: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages`);
+        this.logger.warn(
+          `History sync: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages`,
+        );
 
-        if (isLatest) {
-          // If you want to handle background history sync, do it here
+        // Save contacts from history sync
+        for (const contact of contacts) {
+          const name = contact.name || contact.verifiedName || contact.notify;
+          if (!name) continue; // Skip contacts without a name
+          await this.prismaRepository.contact.upsert({
+            where: {
+              instanceId_remoteJid: {
+                instanceId: this.instanceId,
+                remoteJid: contact.id,
+              },
+            },
+            update: { pushName: name, profilePicUrl: contact.imgUrl || undefined },
+            create: {
+              instanceId: this.instanceId,
+              remoteJid: contact.id,
+              pushName: name,
+              profilePicUrl: contact.imgUrl || undefined,
+            },
+          });
         }
       }
 
@@ -843,7 +865,7 @@ export class BaileysStartupService extends ChannelStartupService {
       }
 
       if (events['messages.upsert']) {
-        await this.messageProcessor.onMessage(events['messages.upsert']);
+        this.messageProcessor.processMessage(events['messages.upsert'], this.localSettings);
       }
 
       if (events['messages.update']) {
@@ -853,7 +875,9 @@ export class BaileysStartupService extends ChannelStartupService {
               data: {
                 instanceId: this.instanceId,
                 remoteJid: key.remoteJid,
+                keyId: key.id,
                 messageId: key.id,
+                fromMe: key.fromMe || false,
                 status: status[update.status],
                 dateTime: new Date(),
               },
@@ -888,7 +912,7 @@ export class BaileysStartupService extends ChannelStartupService {
     });
   }
 
-  private async messageHandle = {
+  private readonly messageHandle = {
     'messages.upsert': async (m: { messages: WAMessage[]; type: MessageUpsertType }) => {
       if (m.type === 'append') return;
 
@@ -936,6 +960,7 @@ export class BaileysStartupService extends ChannelStartupService {
             },
           },
           update: {
+            ...(msg.pushName ? { name: msg.pushName } : {}),
             lastMessage: msg.message as any,
             lastMessageTimestamp: msg.messageTimestamp as number,
             unreadMessages: fromMe ? 0 : { increment: 1 },
@@ -943,6 +968,7 @@ export class BaileysStartupService extends ChannelStartupService {
           create: {
             instanceId: this.instanceId,
             remoteJid,
+            name: msg.pushName || undefined,
             lastMessage: msg.message as any,
             lastMessageTimestamp: msg.messageTimestamp as number,
             unreadMessages: fromMe ? 0 : 1,
@@ -998,32 +1024,28 @@ export class BaileysStartupService extends ChannelStartupService {
         remoteJid,
       },
       include: {
-        User: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
+        User: true,
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   public async createInternalNote(remoteJid: string, content: string, userId: string) {
+    const chat = await this.findChatByRemoteJid(remoteJid);
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
     return await this.prismaRepository.internalNote.create({
       data: {
         instanceId: this.instanceId,
         remoteJid,
         content,
         userId,
+        chatId: chat.id,
       },
       include: {
-        User: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
+        User: true,
       },
     });
   }
@@ -1241,37 +1263,24 @@ export class BaileysStartupService extends ChannelStartupService {
     }
   }
 
-  public async fetchContacts(query: Query<Contact>) {
-    const count = await this.prismaRepository.contact.count({
-      where: { instanceId: this.instanceId, remoteJid: query?.where?.remoteJid },
-    });
-
-    if (!query?.offset) {
-      query.offset = 50;
-    }
-
-    if (!query?.page) {
-      query.page = 1;
-    }
-
+  public async fetchContacts(query: Query<PrismaContact>) {
+    const where = { instanceId: this.instanceId, remoteJid: query?.where?.remoteJid };
     const contacts = await this.prismaRepository.contact.findMany({
-      where: { instanceId: this.instanceId, remoteJid: query?.where?.remoteJid },
+      where,
       orderBy: { pushName: 'asc' },
-      skip: query.offset * (query?.page === 1 ? 0 : (query?.page as number) - 1),
-      take: query.offset,
+      skip: (query.offset || 50) * ((query?.page || 1) === 1 ? 0 : (query?.page as number) - 1),
+      take: query.offset || 50,
     });
 
-    return {
-      contacts: {
-        total: count,
-        pages: Math.ceil(count / query.offset),
-        currentPage: query.page,
-        records: contacts,
-      },
-    };
+    return contacts.map((contact) => ({
+      ...contact,
+      isGroup: contact.remoteJid.endsWith('@g.us'),
+      isSaved: !!contact.pushName || !!contact.profilePicUrl,
+      type: contact.remoteJid.endsWith('@g.us') ? 'group' : contact.pushName ? 'contact' : 'group_member',
+    }));
   }
 
-  public async fetchChats(query: Query<Contact>) {
+  public async fetchChats(query: Query<PrismaContact>) {
     const count = await this.prismaRepository.chat.count({
       where: { instanceId: this.instanceId, remoteJid: query?.where?.remoteJid },
     });
@@ -1291,14 +1300,22 @@ export class BaileysStartupService extends ChannelStartupService {
       take: query.offset,
     });
 
-    return {
-      chats: {
-        total: count,
-        pages: Math.ceil(count / query.offset),
-        currentPage: query.page,
-        records: chats,
+    const contactJids = chats.map((c) => c.remoteJid);
+    const contacts = await this.prismaRepository.contact.findMany({
+      where: {
+        instanceId: this.instanceId,
+        remoteJid: { in: contactJids },
       },
-    };
+    });
+
+    return chats.map((chat) => {
+      const contact = contacts.find((c) => c.remoteJid === chat.remoteJid);
+      return {
+        ...chat,
+        pushName: contact?.pushName || chat.name || chat.remoteJid.split('@')[0],
+        profilePicUrl: contact?.profilePicUrl,
+      };
+    }) as any;
   }
 
   public async fetchStatusMessage(query: Query<MessageUpdate>) {
@@ -1321,14 +1338,7 @@ export class BaileysStartupService extends ChannelStartupService {
       take: query.offset,
     });
 
-    return {
-      messages: {
-        total: count,
-        pages: Math.ceil(count / query.offset),
-        currentPage: query.page,
-        records: messages,
-      },
-    };
+    return messages;
   }
 
   public async fetchPrivacySettings() {
@@ -1348,7 +1358,7 @@ export class BaileysStartupService extends ChannelStartupService {
       if (data.profile) await this.client.updateProfilePicturePrivacy(data.profile);
       if (data.status) await this.client.updateStatusPrivacy(data.status);
       if (data.readreceipts) await this.client.updateReadReceiptsPrivacy(data.readreceipts);
-      if (data.groupadd) await this.client.updateGroupAddPrivacy(data.groupadd);
+      if (data.groupadd) await this.client.updateGroupsAddPrivacy(data.groupadd);
 
       return { message: 'Privacy settings updated' };
     } catch (error) {

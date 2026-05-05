@@ -887,9 +887,9 @@ export class ChannelStartupService {
   public async updateContact(remoteJid: string, data: { pushName?: string; phoneNumber?: string; email?: string }) {
     return await this.prismaRepository.contact.upsert({
       where: {
-        remoteJid_instanceId: {
-          remoteJid,
+        instanceId_remoteJid: {
           instanceId: this.instanceId,
+          remoteJid,
         },
       },
       update: data,
@@ -918,6 +918,7 @@ export class ChannelStartupService {
         content,
         chatId: chat.id,
         userId,
+        instanceId: this.instanceId,
       },
     });
   }

@@ -142,7 +142,8 @@ model Chat {
   name           String?         @db.VarChar(100)
   unreadMessages Int             @default(0)
   controlMode    ChatControlMode @default(AI)
-  lastMessage    String?
+  lastMessage          Json?
+  lastMessageTimestamp Int?
   Instance       Instance        @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   internalNotes  InternalNote[]
 
@@ -164,7 +165,7 @@ model Contact {
   Instance      Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   Lead          Lead[]
 
-  @@unique([remoteJid, instanceId])
+  @@unique([instanceId, remoteJid])
   @@index([remoteJid])
   @@index([instanceId])
 }
@@ -172,6 +173,7 @@ model Contact {
 model Message {
   id                           String              @id @default(cuid())
   key                          Json
+  keyId                        String              @db.VarChar(100)
   pushName                     String?             @db.VarChar(100)
   participant                  String?             @db.VarChar(100)
   messageType                  String              @db.VarChar(100)
@@ -193,7 +195,9 @@ model Message {
   session                      IntegrationSession? @relation(fields: [sessionId], references: [id])
   MessageUpdate                MessageUpdate[]
 
+  @@unique([instanceId, keyId])
   @@index([instanceId])
+  @@index([keyId])
 }
 
 model MessageUpdate {
@@ -206,6 +210,7 @@ model MessageUpdate {
   status      String   @db.VarChar(30)
   messageId   String
   instanceId  String
+  dateTime    DateTime @default(now()) @db.Timestamp(6)
   Instance    Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   Message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
@@ -263,8 +268,10 @@ model InternalNote {
   content   String
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @updatedAt @db.Timestamp(6)
-  chatId    String
-  userId    String
+  chatId     String
+  userId     String
+  instanceId String
+  remoteJid  String?  @db.VarChar(100)
   Chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -848,6 +855,7 @@ enum DeviceMessage {
   web
   unknown
   desktop
+  whatsapp
 }
 
 enum SessionStatus {

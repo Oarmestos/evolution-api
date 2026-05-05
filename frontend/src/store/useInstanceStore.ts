@@ -20,7 +20,7 @@ interface InstanceState {
   lastCreatedInstanceName: string | null;
   setActiveInstance: (instance: Instance | null) => void;
   clearLastQrCode: () => void;
-  fetchInstances: () => Promise<void>;
+  fetchInstances: (silent?: boolean) => Promise<void>;
   createInstance: (name: string) => Promise<void>;
   connectInstance: (name: string) => Promise<string | null>;
   logoutInstance: (name: string) => Promise<void>;
@@ -90,17 +90,21 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
   clearLastQrCode: () => set({ lastQrCodeBase64: null, lastCreatedInstanceName: null }),
-  fetchInstances: async () => {
+  fetchInstances: async (silent = false) => {
     const token = localStorage.getItem('avri_token');
     if (!token) return;
 
-    set({ loading: true, error: null });
+    if (!silent) set({ loading: true, error: null });
     try {
       const response = await axios.get('/instance/fetchInstances', {
         headers: { apikey: token }
       });
       const normalized = normalizeInstances(response.data);
-      set({ instances: normalized, loading: false });
+      if (!silent) {
+        set({ instances: normalized, loading: false });
+      } else {
+        set({ instances: normalized });
+      }
 
       // Auto-set active instance if none or if current one not in list.
       // IMPORTANT: Only call setActiveInstance when strictly necessary to avoid
@@ -127,6 +131,9 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
           }));
           localStorage.setItem('avri_active_instance', JSON.stringify({ ...currentActive, ...matchInList }));
         }
+      } else if (currentActive) {
+        // If the database is empty but we have an active instance in state, clear it.
+        get().setActiveInstance(null);
       }
     } catch (err: any) {
       if (err.response?.status === 401) {

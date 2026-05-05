@@ -13,7 +13,7 @@ export class CacheService {
     }
   }
 
-  async get(key: string): Promise<any> {
+  async get<T = any>(key: string): Promise<T | undefined> {
     if (!this.cache) {
       return;
     }

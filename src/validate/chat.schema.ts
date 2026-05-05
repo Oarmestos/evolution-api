@@ -316,3 +316,11 @@ export const profileSchema: JSONSchema7 = {
     isBusiness: { type: 'boolean' },
   },
 };
+export const getBase64FromMediaMessageSchema: JSONSchema7 = {
+  $id: v4(),
+  type: 'object',
+  properties: {
+    message: { type: 'object' },
+  },
+  required: ['message'],
+};

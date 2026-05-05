@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ChatController } from '@api/controllers/chat.controller';
-import { RouterBroker } from '@api/routes/router.broker';
+import { RouterBroker } from '@api/abstract/abstract.router';
 import { chatController } from '@api/server.module';
 import {
   ArchiveChatDto,
@@ -22,7 +22,7 @@ import {
 import { InstanceDto } from '@api/dto/instance.dto';
 import { Query } from '@api/repository/repository.service';
 import { Contact, Message, MessageUpdate } from '@prisma/client';
-import { HttpStatus } from '@api/types/wa.types';
+import { HttpStatus } from './index.router';
 import {
   archiveChatSchema,
   blockUserSchema,
@@ -38,10 +38,10 @@ import {
   profileSchema,
   profileStatusSchema,
   readMessageSchema,
-  sendPresenceSchema,
+  presenceSchema,
   updateMessageSchema,
   whatsappNumberSchema,
-} from '@api/validate/chat.validate';
+} from '@validate/chat.schema';
 
 export class ChatRouter extends RouterBroker {
   constructor(...guards: any[]) {
@@ -110,7 +110,7 @@ export class ChatRouter extends RouterBroker {
       .post(this.routerPath('sendPresence'), ...guards, async (req, res) => {
         const response = await this.dataValidate<SendPresenceDto>({
           request: req,
-          schema: sendPresenceSchema,
+          schema: presenceSchema,
           ClassRef: SendPresenceDto,
           execute: (instance, data) => chatController.sendPresence(instance, data),
         });
