@@ -1,215 +1,457 @@
 import { create } from 'zustand';
 import axios from 'axios';
-import { useInstanceStore } from './useInstanceStore';
 
-const normalizeJid = (jid: string) => {
-  if (!jid) return '';
-  return jid.split('@')[0].split(':')[0];
+type MessageKey = {
+  remoteJid: string;
+  fromMe: boolean;
+  id: string;
 };
 
-const isRealPhoneJid = (jid: string) => {
-  return jid.includes('@s.whatsapp.net');
+type RawMessage = {
+  id?: string;
+  key?: Partial<MessageKey>;
+  pushName?: string;
+  messageType?: string;
+  message?: Record<string, any>;
+  messageTimestamp?: number | string;
+  status?: string;
+  MessageUpdate?: Array<{ status?: string }>;
 };
-
-const jidToNumber = (jid: string) => {
-  if (!jid) return '';
-  return jid.split('@')[0].split(':')[0];
-};
-
-export interface Message {
-  key: {
-    remoteJid: string;
-    fromMe: boolean;
-    id: string;
-  };
-  message?: {
-    conversation?: string;
-    extendedTextMessage?: {
-      text: string;
-    };
-    [key: string]: any;
-  };
-  messageTimestamp: number;
-}
 
 export interface Chat {
+  id: string;
   remoteJid: string;
-  name: string | null;
-  profilePicUrl: string | null;
-  lastMessage: string | null;
-  unreadMessages: number;
-  email?: string | null;
-  phoneNumber?: string | null;
+  pushName: string;
+  profilePicUrl?: string;
+  lastMessage?: {
+    message?: string;
+    messageTimestamp?: number;
+  };
+  unreadCount: number;
+  controlMode: 'AI' | 'HUMAN';
+  phoneNumber?: string;
+  email?: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  key: MessageKey;
+  pushName?: string;
+  messageType: string;
+  message: any;
+  messageTimestamp: number;
+  status?: string;
+}
+
+export interface InternalNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  User: {
+    name: string;
+    email: string;
+  };
 }
 
 interface ChatState {
   chats: Chat[];
   messages: Message[];
-  activeChat: Chat | null;
-  activeInstance: string | null;
-  loading: boolean;
-  error: string | null;
-  fetchChats: () => Promise<void>;
-  fetchMessages: (remoteJid: string) => Promise<void>;
-  sendMessage: (remoteJid: string, text: string) => Promise<void>;
-  setActiveChat: (chat: Chat | null) => void;
-  upsertChatWithLatestMessage: (msg: Message) => void;
+  notes: InternalNote[];
+  loadingChats: boolean;
+  loadingMessages: boolean;
+  selectedChat: Chat | null;
+  fetchChats: (instanceName: string) => Promise<void>;
+  fetchMessages: (instanceName: string, remoteJid: string) => Promise<void>;
+  fetchNotes: (instanceName: string, remoteJid: string) => Promise<void>;
+  updateControlMode: (instanceName: string, remoteJid: string, mode: 'AI' | 'HUMAN') => Promise<void>;
+  createInternalNote: (instanceName: string, remoteJid: string, content: string) => Promise<void>;
+  sendMessage: (instanceName: string, remoteJid: string, text: string) => Promise<void>;
+  updateContact: (instanceName: string, remoteJid: string, data: { pushName?: string; phoneNumber?: string; email?: string }) => Promise<void>;
+  setSelectedChat: (chat: Chat | null) => void;
+  muteChat: (instanceName: string, remoteJid: string, muteTime?: number | null) => Promise<void>;
+  deleteChat: (instanceName: string, remoteJid: string) => Promise<void>;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set) => ({
   chats: [],
   messages: [],
-  activeChat: null,
-  activeInstance: null,
-  loading: false,
-  error: null,
+  notes: [],
+  loadingChats: false,
+  loadingMessages: false,
+  selectedChat: null,
 
-  setActiveChat: (chat) => {
-    set({ activeChat: chat, messages: [] });
-  },
+  setSelectedChat: (chat) => set({ selectedChat: chat, messages: [], notes: [] }),
 
-  fetchChats: async () => {
+  fetchChats: async (instanceName) => {
     const token = localStorage.getItem('avri_token');
-    const instance = useInstanceStore.getState().activeInstance;
-    if (!token || !instance) return;
-
-    // Only set loading on the very first load to avoid flickering during polling
-    if (get().chats.length === 0) set({ loading: true });
-    
+    const isFirstLoad = useChatStore.getState().chats.length === 0;
+    if (isFirstLoad) set({ loadingChats: true });
     try {
-      const response = await axios.get(`/chat/fetchChats/${instance.instanceName}`, {
+      const response = await axios.post(`/chat/findChats/${instanceName}`, {}, {
         headers: { apikey: token }
       });
-      
-      const incomingChats = Array.isArray(response.data) ? response.data : [];
-      
+      const chats = normalizeChats(response.data);
       set((state) => {
-        // Build a map of current chats by normalized number to handle LIDs
-        const chatMap = new Map<string, Chat>();
-        
-        // Strategy: We want to group by phone number. 
-        // If we have a real JID (@s.whatsapp.net) and a LID (@lid) for the same number,
-        // we should merge them or prioritize the one with better info.
-        
-        // 1. Load existing state into map (preserving names/pics)
-        state.chats.forEach(c => {
-          const num = jidToNumber(c.remoteJid);
-          chatMap.set(num, c);
-        });
+        let nextSelectedChat = state.selectedChat;
+        if (state.selectedChat) {
+          const freshChat = chats.find((c) => c.remoteJid === state.selectedChat!.remoteJid);
+          if (freshChat) {
+            const hasChanges =
+              freshChat.pushName !== state.selectedChat.pushName ||
+              freshChat.unreadCount !== state.selectedChat.unreadCount ||
+              freshChat.controlMode !== state.selectedChat.controlMode ||
+              freshChat.lastMessage?.message !== state.selectedChat.lastMessage?.message;
 
-        // 2. Process incoming chats
-        incomingChats.forEach((chat: any) => {
-          const num = jidToNumber(chat.remoteJid);
-          const existing = chatMap.get(num);
-          
-          const normalizedChat: Chat = {
-            remoteJid: chat.remoteJid,
-            name: chat.name || existing?.name || null,
-            profilePicUrl: chat.profilePicUrl || existing?.profilePicUrl || null,
-            lastMessage: chat.lastMessage || existing?.lastMessage || null,
-            unreadMessages: chat.unreadMessages ?? 0,
-            email: chat.Contact?.email || existing?.email || null,
-          };
-
-          // If current is LID but incoming is real JID, prefer real JID
-          if (existing && !isRealPhoneJid(existing.remoteJid) && isRealPhoneJid(chat.remoteJid)) {
-            chatMap.set(num, normalizedChat);
-          } else if (!existing) {
-            chatMap.set(num, normalizedChat);
-          } else {
-            // Merge unread and latest info
-            chatMap.set(num, {
-              ...existing,
-              ...normalizedChat,
-              unreadMessages: normalizedChat.unreadMessages || existing.unreadMessages
-            });
+            if (hasChanges) {
+              nextSelectedChat = {
+                ...state.selectedChat,
+                ...freshChat,
+                pushName: (freshChat.pushName && freshChat.pushName !== freshChat.remoteJid)
+                  ? freshChat.pushName
+                  : (state.selectedChat!.pushName || freshChat.pushName),
+                profilePicUrl: freshChat.profilePicUrl || state.selectedChat!.profilePicUrl,
+                phoneNumber: freshChat.phoneNumber || state.selectedChat!.phoneNumber,
+                email: freshChat.email || state.selectedChat!.email,
+              };
+            }
           }
-        });
-
-        return { 
-          chats: Array.from(chatMap.values()).sort((a, b) => (b.unreadMessages || 0) - (a.unreadMessages || 0)), 
-          loading: false,
-          activeInstance: instance.instanceName 
-        };
+        }
+        return { chats, loadingChats: false, selectedChat: nextSelectedChat };
       });
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      set({ loadingChats: false });
     }
   },
 
-  fetchMessages: async (remoteJid) => {
+  fetchMessages: async (instanceName, remoteJid) => {
     const token = localStorage.getItem('avri_token');
-    const instance = useInstanceStore.getState().activeInstance;
-    if (!token || !instance) return;
-
+    set({ loadingMessages: true });
     try {
-      const response = await axios.get(`/chat/fetchMessages/${instance.instanceName}`, {
-        headers: { apikey: token },
-        params: { remoteJid }
-      });
-      
-      const newMessages = Array.isArray(response.data) ? response.data : 
-                          (response.data?.messages ? response.data.messages : []);
-      
-      // Only update if content changed to prevent re-renders
-      if (JSON.stringify(newMessages) !== JSON.stringify(get().messages)) {
-        set({ messages: newMessages });
-      }
-    } catch (err: any) {
-      console.error('Error fetching messages:', err);
-    }
-  },
-
-  sendMessage: async (remoteJid, text) => {
-    const token = localStorage.getItem('avri_token');
-    const instance = useInstanceStore.getState().activeInstance;
-    if (!token || !instance) return;
-
-    try {
-      await axios.post(`/message/sendText/${instance.instanceName}`, {
-        number: remoteJid,
-        text,
-        delay: 1000
+      const response = await axios.post(`/chat/findMessages/${instanceName}`, {
+        where: { key: { remoteJid } }
       }, {
         headers: { apikey: token }
       });
-      
-      // Refresh messages immediately
-      get().fetchMessages(remoteJid);
-    } catch (err: any) {
-      console.error('Error sending message:', err);
+      const records = response.data?.messages?.records || [];
+      const messages = records.map(normalizeMessage).reverse();
+      set((state) => ({
+        messages: mergeMessages(messages, state.messages.filter((message) => isLocalOnlyMessage(message))),
+        loadingMessages: false
+      }));
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      set({ loadingMessages: false });
     }
   },
 
-  upsertChatWithLatestMessage: (msg: Message) => {
-    const remoteJid = msg.key.remoteJid;
-    const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || 'Nuevo mensaje';
-    const num = jidToNumber(remoteJid);
+  fetchNotes: async (instanceName, remoteJid) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      const response = await axios.get(`/chat/fetchInternalNotes/${instanceName}?remoteJid=${remoteJid}`, {
+        headers: { apikey: token }
+      });
+      set({ notes: response.data });
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  },
 
-    set((state) => {
-      const chatMap = new Map<string, Chat>();
-      state.chats.forEach(c => chatMap.set(jidToNumber(c.remoteJid), c));
+  updateControlMode: async (instanceName, remoteJid, mode) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      await axios.post(`/chat/updateControlMode/${instanceName}`, { remoteJid, mode }, {
+        headers: { apikey: token }
+      });
+      set((state) => ({
+        chats: state.chats.map((c) => c.remoteJid === remoteJid ? { ...c, controlMode: mode } : c),
+        selectedChat: state.selectedChat?.remoteJid === remoteJid ? { ...state.selectedChat, controlMode: mode } : state.selectedChat
+      }));
+    } catch (error) {
+      console.error('Error updating control mode:', error);
+    }
+  },
 
-      const existing = chatMap.get(num);
-      if (existing) {
-        chatMap.set(num, {
-          ...existing,
-          lastMessage: text,
-          unreadMessages: msg.key.fromMe ? existing.unreadMessages : (existing.unreadMessages + 1)
-        });
-      } else {
-        chatMap.set(num, {
-          remoteJid,
-          name: msg.pushName || num,
-          profilePicUrl: null,
-          lastMessage: text,
-          unreadMessages: msg.key.fromMe ? 0 : 1
-        });
-      }
+  createInternalNote: async (instanceName, remoteJid, content) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      const response = await axios.post(`/chat/createInternalNote/${instanceName}`, { remoteJid, content }, {
+        headers: { apikey: token }
+      });
+      set((state) => ({ notes: [response.data, ...state.notes] }));
+    } catch (error) {
+      console.error('Error creating internal note:', error);
+    }
+  },
 
-      return { 
-        chats: Array.from(chatMap.values()).sort((a, b) => b.unreadMessages - a.unreadMessages) 
-      };
-    });
+  sendMessage: async (instanceName, remoteJid, text) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      const response = await axios.post(`/message/sendText/${instanceName}`, {
+        number: remoteJid,
+        text,
+        delay: 0,
+        linkPreview: true
+      }, {
+        headers: { apikey: token }
+      });
+
+      const sentMessage = normalizeMessage(response.data, {
+        remoteJid,
+        fallbackText: text,
+      });
+
+      set((state) => {
+        const updatedChats = upsertChatWithLatestMessage(state.chats, state.selectedChat, sentMessage);
+        const selectedChat = state.selectedChat?.remoteJid === remoteJid
+          ? updatedChats.find((chat) => chat.remoteJid === remoteJid) ?? state.selectedChat
+          : state.selectedChat;
+
+        return {
+          chats: updatedChats,
+          selectedChat,
+          messages: mergeMessages(state.messages, [sentMessage]),
+        };
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  },
+ 
+  updateContact: async (instanceName, remoteJid, data) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      const response = await axios.patch(`/chat/updateContact/${instanceName}`, { remoteJid, ...data }, {
+        headers: { apikey: token }
+      });
+      const updatedContact = response.data;
+      set((state) => ({
+        chats: state.chats.map((c) => c.remoteJid === remoteJid ? { 
+          ...c, 
+          pushName: updatedContact.pushName || c.pushName,
+          phoneNumber: updatedContact.phoneNumber || c.phoneNumber,
+          email: updatedContact.email || c.email
+        } : c),
+        selectedChat: state.selectedChat?.remoteJid === remoteJid ? { 
+          ...state.selectedChat, 
+          pushName: updatedContact.pushName || state.selectedChat.pushName,
+          phoneNumber: updatedContact.phoneNumber || state.selectedChat.phoneNumber,
+          email: updatedContact.email || state.selectedChat.email
+        } : state.selectedChat
+      }));
+    } catch (error) {
+      console.error('Error updating contact:', error);
+    }
+  },
+
+  muteChat: async (instanceName, remoteJid, muteTime = -1) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      await axios.post(`/chat/muteChat/${instanceName}`, { remoteJid, muteTime }, {
+        headers: { apikey: token }
+      });
+      alert('Chat silenciado');
+    } catch (error) {
+      console.error('Error muting chat:', error);
+      alert('Error al silenciar el chat');
+    }
+  },
+
+  deleteChat: async (instanceName, remoteJid) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      await axios.delete(`/chat/deleteChat/${instanceName}?remoteJid=${remoteJid}`, {
+        headers: { apikey: token }
+      });
+      set((state) => ({
+        chats: state.chats.filter((c) => c.remoteJid !== remoteJid),
+        selectedChat: state.selectedChat?.remoteJid === remoteJid ? null : state.selectedChat
+      }));
+      alert('Chat eliminado');
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      alert('Error al eliminar el chat');
+    }
   }
 }));
+
+function normalizeChats(data: unknown): Chat[] {
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .filter(Boolean)
+    .map((raw: any) => {
+      const controlMode: Chat['controlMode'] = raw.controlMode === 'HUMAN' ? 'HUMAN' : 'AI';
+      const remoteJid = String(raw.remoteJid ?? '');
+
+      const rawPushName = raw.pushName || raw.name || '';
+      
+      const phoneNumber: string | undefined =
+        raw.phoneNumber ??
+        (isRealPhoneJid(remoteJid) ? jidToNumber(remoteJid) : undefined);
+
+      let displayName = rawPushName;
+      if (!displayName || displayName === remoteJid || displayName === jidToNumber(remoteJid)) {
+        displayName = phoneNumber ? `+${phoneNumber}` : 'Contacto sin nombre';
+      }
+
+      return {
+        id: String(raw.id ?? remoteJid ?? crypto.randomUUID()),
+        remoteJid,
+        pushName: String(displayName),
+        profilePicUrl: raw.profilePicUrl ?? undefined,
+        lastMessage: raw.lastMessage
+          ? {
+              message: extractMessagePreview(raw.lastMessage.message),
+              messageTimestamp: normalizeTimestamp(raw.lastMessage.messageTimestamp),
+            }
+          : undefined,
+        unreadCount: Number(raw.unreadCount ?? raw.unreadMessages ?? 0),
+        controlMode,
+        phoneNumber,
+        email: raw.email ?? undefined,
+        updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
+      };
+    })
+    .filter((chat) => chat.remoteJid);
+}
+
+function normalizeMessage(raw: RawMessage, options?: { remoteJid?: string; fallbackText?: string }): Message {
+  const keyId = raw?.key?.id ?? raw?.id ?? `local-${Date.now()}`;
+  const remoteJid = raw?.key?.remoteJid ?? options?.remoteJid ?? '';
+  const message = raw?.message ?? createFallbackMessage(options?.fallbackText);
+
+  return {
+    id: raw?.id ?? keyId,
+    key: {
+      remoteJid,
+      fromMe: Boolean(raw?.key?.fromMe),
+      id: keyId,
+    },
+    pushName: raw?.pushName ?? undefined,
+    messageType: raw?.messageType ?? inferMessageType(message),
+    message,
+    messageTimestamp: normalizeTimestamp(raw?.messageTimestamp),
+    status: raw?.status ?? raw?.MessageUpdate?.[0]?.status,
+  };
+}
+
+function upsertChatWithLatestMessage(chats: Chat[], selectedChat: Chat | null, message: Message): Chat[] {
+  const preview = extractMessagePreview(message.message);
+  const timestamp = message.messageTimestamp;
+
+  const existingChat =
+    chats.find((c) => c.remoteJid === message.key.remoteJid) ??
+    chats.find((c) => jidToNumber(c.remoteJid) === jidToNumber(message.key.remoteJid) && jidToNumber(c.remoteJid) !== '');
+  
+  const source = existingChat ?? selectedChat;
+  const canonicalRemoteJid = existingChat?.remoteJid ?? message.key.remoteJid;
+
+  const baseChat: Chat = {
+    ...(source ?? {}),
+    id: source?.id ?? canonicalRemoteJid,
+    remoteJid: canonicalRemoteJid,
+    pushName: (() => {
+      const currentName = source?.pushName;
+      const isPlaceholder = !currentName || currentName === 'Contacto sin nombre' || currentName === source?.remoteJid || currentName === jidToNumber(source?.remoteJid || '');
+      
+      if (!isPlaceholder) return currentName;
+      if (message.pushName) return message.pushName;
+      if (source?.phoneNumber) return `+${source.phoneNumber}`;
+      if (isRealPhoneJid(canonicalRemoteJid)) return `+${jidToNumber(canonicalRemoteJid)}`;
+      return 'Contacto sin nombre';
+    })(),
+    profilePicUrl: source?.profilePicUrl,
+    phoneNumber: source?.phoneNumber,
+    email: source?.email,
+    lastMessage: {
+      message: preview,
+      messageTimestamp: timestamp,
+    },
+    unreadCount: 0,
+    controlMode: source?.controlMode ?? 'AI',
+    updatedAt: new Date(timestamp * 1000).toISOString(),
+  };
+
+  const updated = existingChat
+    ? chats.map((chat) => chat.remoteJid === existingChat.remoteJid ? { ...chat, ...baseChat } : chat)
+    : [baseChat, ...chats];
+
+  return updated.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+}
+
+function mergeMessages(existing: Message[], incoming: Message[]): Message[] {
+  const byId = new Map<string, Message>();
+
+  [...existing, ...incoming].forEach((message) => {
+    byId.set(getMessageIdentity(message), message);
+  });
+
+  return [...byId.values()].sort((a, b) => a.messageTimestamp - b.messageTimestamp);
+}
+
+function getMessageIdentity(message: Message): string {
+  return `${jidToNumber(message.key.remoteJid)}:${message.key.id || message.id}`;
+}
+
+function isLocalOnlyMessage(message: Message): boolean {
+  return message.id.startsWith('local-');
+}
+
+function normalizeTimestamp(value?: number | string): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return Math.floor(Date.now() / 1000);
+}
+
+function inferMessageType(message: Record<string, any>): string {
+  const types = Object.keys(message ?? {}).filter((key) => key !== 'messageContextInfo');
+  return types[0] ?? 'conversation';
+}
+
+function createFallbackMessage(text?: string): Record<string, any> {
+  return text ? { conversation: text } : {};
+}
+
+function extractMessagePreview(message: Record<string, any> | undefined): string {
+  if (!message) return '';
+
+  return (
+    message.conversation ||
+    message.extendedTextMessage?.text ||
+    message.imageMessage?.caption ||
+    message.videoMessage?.caption ||
+    message.documentMessage?.caption ||
+    message.documentWithCaptionMessage?.caption ||
+    message.pollCreationMessage?.name ||
+    '[Tipo de mensaje no soportado]'
+  );
+}
+
+// ─── JID Utilities ───────────────────────────────────────────────────────────
+
+/**
+ * Extracts only the numeric/alphanumeric base from a WhatsApp JID.
+ */
+function jidToNumber(jid: string): string {
+  return jid ? jid.split('@')[0] : '';
+}
+
+/**
+ * Returns true if the JID corresponds to a real E.164 phone number.
+ */
+function isRealPhoneJid(jid: string): boolean {
+  if (!jid) return false;
+  const [base, suffix] = jid.split('@');
+  if (!suffix) return false;
+  if (suffix === 'g.us' || suffix === 'lid') return false;
+  if (suffix === 'broadcast') return false;
+  if (!/^\d+$/.test(base)) return false;
+  if (base.length === 15 && base.startsWith('1')) return false;
+  
+  return true;
+}
