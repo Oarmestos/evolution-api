@@ -239,26 +239,42 @@ export class WAMonitoringService {
 
   public async saveInstance(data: any) {
     try {
+      this.logger.info(`Saving instance: ${data.instanceName} with data: ${JSON.stringify(data)}`);
       const clientName = await this.configService.get<Database>('DATABASE').CONNECTION.CLIENT_NAME;
+      
+      const instanceData: any = {
+        id: data.instanceId,
+        name: data.instanceName,
+        ownerJid: data.ownerJid,
+        profileName: data.profileName,
+        profilePicUrl: data.profilePicUrl,
+        connectionStatus:
+          data.integration && data.integration === Integration.WHATSAPP_BAILEYS ? 'close' : (data.status ?? 'open'),
+        number: data.number,
+        integration: data.integration || Integration.WHATSAPP_BAILEYS,
+        token: data.hash,
+        clientName: clientName,
+        businessId: data.businessId,
+      };
+
+      if (data.userId && data.userId !== 'null' && data.userId !== 'undefined') {
+        const userExists = await this.prismaRepository.user.findUnique({
+          where: { id: data.userId },
+          select: { id: true },
+        });
+        if (userExists) {
+          instanceData.userId = data.userId;
+        } else {
+          this.logger.warn(`User ID ${data.userId} from token not found in database. Creating instance without userId.`);
+        }
+      }
+
       await this.prismaRepository.instance.create({
-        data: {
-          id: data.instanceId,
-          name: data.instanceName,
-          ownerJid: data.ownerJid,
-          profileName: data.profileName,
-          profilePicUrl: data.profilePicUrl,
-          connectionStatus:
-            data.integration && data.integration === Integration.WHATSAPP_BAILEYS ? 'close' : (data.status ?? 'open'),
-          number: data.number,
-          integration: data.integration || Integration.WHATSAPP_BAILEYS,
-          token: data.hash,
-          clientName: clientName,
-          businessId: data.businessId,
-          userId: data.userId,
-        },
+        data: instanceData,
       });
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error('Error in saveInstance:', error);
+      throw error; // Throw so the controller knows it failed
     }
   }
 

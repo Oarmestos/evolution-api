@@ -13,10 +13,12 @@ export interface Instance {
 
 interface InstanceState {
   instances: Instance[];
+  activeInstance: Instance | null;
   loading: boolean;
   error: string | null;
   lastQrCodeBase64: string | null;
   lastCreatedInstanceName: string | null;
+  setActiveInstance: (instance: Instance | null) => void;
   clearLastQrCode: () => void;
   fetchInstances: () => Promise<void>;
   createInstance: (name: string) => Promise<void>;
@@ -60,12 +62,33 @@ function normalizeInstances(data: unknown): Instance[] {
     .filter((i) => i.instanceId && i.instanceName);
 }
 
-export const useInstanceStore = create<InstanceState>((set) => ({
+const getStoredActiveInstance = (): Instance | null => {
+  const stored = localStorage.getItem('avri_active_instance');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+export const useInstanceStore = create<InstanceState>((set, get) => ({
   instances: [],
+  activeInstance: getStoredActiveInstance(),
   loading: false,
   error: null,
   lastQrCodeBase64: null,
   lastCreatedInstanceName: null,
+  setActiveInstance: (instance) => {
+    set({ activeInstance: instance });
+    if (instance) {
+      localStorage.setItem('avri_active_instance', JSON.stringify(instance));
+    } else {
+      localStorage.removeItem('avri_active_instance');
+    }
+  },
   clearLastQrCode: () => set({ lastQrCodeBase64: null, lastCreatedInstanceName: null }),
   fetchInstances: async () => {
     const token = localStorage.getItem('avri_token');
@@ -76,7 +99,35 @@ export const useInstanceStore = create<InstanceState>((set) => ({
       const response = await axios.get('/instance/fetchInstances', {
         headers: { apikey: token }
       });
-      set({ instances: normalizeInstances(response.data), loading: false });
+      const normalized = normalizeInstances(response.data);
+      set({ instances: normalized, loading: false });
+
+      // Auto-set active instance if none or if current one not in list.
+      // IMPORTANT: Only call setActiveInstance when strictly necessary to avoid
+      // creating a new object reference on every poll, which would cascade into
+      // re-renders and interval restarts across the whole app.
+      const currentActive = get().activeInstance;
+      if (normalized.length > 0) {
+        const matchInList = currentActive
+          ? normalized.find((i) => i.instanceId === currentActive.instanceId)
+          : null;
+
+        if (!currentActive || !matchInList) {
+          // No active instance or it was deleted \u2014 select the first one.
+          get().setActiveInstance(normalized[0]);
+        } else if (
+          matchInList.connectionStatus !== currentActive.connectionStatus ||
+          matchInList.profilePicUrl !== currentActive.profilePicUrl ||
+          matchInList.profileName !== currentActive.profileName ||
+          matchInList.number !== currentActive.number
+        ) {
+          // Silently update only the fields that changed without resetting the whole object reference.
+          set((state) => ({
+            activeInstance: state.activeInstance ? { ...state.activeInstance, ...matchInList } : matchInList,
+          }));
+          localStorage.setItem('avri_active_instance', JSON.stringify({ ...currentActive, ...matchInList }));
+        }
+      }
     } catch (err: any) {
       if (err.response?.status === 401) {
         import('../store/useAuthStore').then(m => m.useAuthStore.getState().logout());

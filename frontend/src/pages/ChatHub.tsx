@@ -23,13 +23,16 @@ import {
 } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
 import { useInstanceStore } from '../store/useInstanceStore';
+import { useThemeStore } from '../store/useThemeStore';
 import { cn } from '../utils/cn';
 import axios from 'axios';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 
 export const ChatHub: React.FC = () => {
-  const { instances, fetchInstances } = useInstanceStore();
+  const { activeInstance: activeInstanceObj, instances, fetchInstances } = useInstanceStore();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const activeInstance = activeInstanceObj?.instanceName;
   const { 
     chats, 
     messages, 
@@ -48,7 +51,6 @@ export const ChatHub: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [inputText, setInputText] = useState('');
-  const [activeInstance, setActiveInstance] = useState<string | null>(null);
   const [inputTab, setInputTab] = useState<'reply' | 'note'>('reply');
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
@@ -81,22 +83,22 @@ export const ChatHub: React.FC = () => {
   const token = localStorage.getItem('avri_token');
 
   useEffect(() => {
-    fetchInstances();
-  }, [fetchInstances]);
-
-  useEffect(() => {
-    if (instances.length > 0 && !activeInstance) {
-      setActiveInstance(instances[0].instanceName);
+    if (instances.length === 0) {
+      fetchInstances();
     }
-  }, [instances, activeInstance]);
+  }, [instances.length, fetchInstances]);
 
+  // Use instanceName (primitive string) as dependency — not the whole Instance object — so the
+  // interval is only recreated when the active instance truly changes, not on
+  // every Zustand re-render that produces a new object reference.
   useEffect(() => {
-    if (activeInstance) {
-      fetchChats(activeInstance);
-      const interval = setInterval(() => fetchChats(activeInstance), 10000);
-      return () => clearInterval(interval);
-    }
-  }, [activeInstance, fetchChats]);
+    if (!activeInstance) return;
+    fetchChats(activeInstance);
+    const interval = setInterval(() => fetchChats(activeInstance), 10000);
+    return () => clearInterval(interval);
+  // fetchChats is a stable Zustand action — safe to omit from deps.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeInstance]);
 
   // Effect 1: fires when the selected chat changes (new conversation opened)
   // Resets editInfo and fetches notes only when the remoteJid actually changes.
@@ -106,23 +108,33 @@ export const ChatHub: React.FC = () => {
       activeChatJid.current = selectedChat.remoteJid;
       fetchMessages(activeInstance, selectedChat.remoteJid);
       fetchNotes(activeInstance, selectedChat.remoteJid);
-      setEditInfo({
-        pushName: selectedChat.pushName || '',
-        phoneNumber: selectedChat.phoneNumber || selectedChat.remoteJid.split('@')[0],
-        email: selectedChat.email || ''
+      
+      // Initialize or update editInfo when selectedChat data changes.
+      // We only update if the current local state is empty or appears to be a technical ID (LID),
+      // ensuring we don't overwrite user changes but DO show the real name/phone once available.
+      setEditInfo(prev => {
+        const isLid = (val: string) => val.includes('@lid') || /^\d{15}$/.test(val) || val === 'Contacto sin nombre';
+        
+        return {
+          pushName: (!prev.pushName || isLid(prev.pushName)) ? (selectedChat.pushName || '') : prev.pushName,
+          phoneNumber: (!prev.phoneNumber || isLid(prev.phoneNumber)) ? (selectedChat.phoneNumber || '') : prev.phoneNumber,
+          email: prev.email || selectedChat.email || ''
+        };
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeInstance, selectedChat?.remoteJid]);
+  }, [activeInstance, selectedChat?.remoteJid, selectedChat?.pushName, selectedChat?.phoneNumber]);
 
   // Effect 2: message polling — refresh every 5s without touching editInfo
   useEffect(() => {
     if (!activeInstance || !selectedChat) return;
+    const remoteJid = selectedChat.remoteJid;
     const interval = setInterval(() => {
-      fetchMessages(activeInstance, selectedChat.remoteJid);
+      fetchMessages(activeInstance, remoteJid);
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeInstance, selectedChat?.remoteJid, fetchMessages]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeInstance, selectedChat?.remoteJid]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -319,12 +331,15 @@ export const ChatHub: React.FC = () => {
                 className={cn(
                   "w-full p-4 flex items-start gap-3 transition-all border-l-4 border-transparent",
                   selectedChat?.remoteJid === chat.remoteJid 
-                    ? "theme-surface-alt border-l-primary" 
-                    : "hover:bg-white/[0.02]"
+                    ? "theme-surface-alt border-l-primary shadow-lg" 
+                    : "hover:bg-surface-hover"
                 )}
               >
                 <div className="relative shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-[#2a2b2e] overflow-hidden flex items-center justify-center border border-white/5">
+                  <div className={cn(
+                    "w-12 h-12 rounded-full overflow-hidden flex items-center justify-center border border-border-soft",
+                    resolvedTheme === 'dark' ? "bg-[#2a2b2e]" : "bg-gray-100"
+                  )}>
                     {chat.profilePicUrl ? (
                       <img src={chat.profilePicUrl} alt={chat.pushName} className="w-full h-full object-cover" />
                     ) : (
@@ -332,14 +347,19 @@ export const ChatHub: React.FC = () => {
                     )}
                   </div>
                   {chat.controlMode === 'AI' && (
-                    <div className="absolute -bottom-1 -right-1 p-1 bg-primary rounded-full border-2 border-[#0f1012] shadow-[0_0_8px_rgba(0,255,136,0.5)]">
+                    <div className={cn(
+                      "absolute -bottom-1 -right-1 p-1 bg-primary rounded-full border-2 shadow-sm",
+                      resolvedTheme === 'dark' ? "border-[#0f1012]" : "border-white"
+                    )}>
                       <Bot className="w-2 h-2 text-dark" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 text-left min-w-0 pt-1">
                   <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-sm text-gray-200 truncate pr-2">{chat.pushName || (chat.phoneNumber ? `+${chat.phoneNumber}` : chat.remoteJid.split('@')[0])}</h4>
+                    <h4 className="font-bold text-sm text-theme-text truncate pr-2">
+                      {chat.pushName}
+                    </h4>
                     <span className="text-[10px] text-gray-600 font-medium">Reciente</span>
                   </div>
                   <p className={cn(
@@ -359,7 +379,10 @@ export const ChatHub: React.FC = () => {
       </div>
 
       {/* Column 2: Chat View */}
-      <div className="flex-1 flex flex-col relative bg-[#0f1012]">
+      <div className={cn(
+        "flex-1 flex flex-col relative",
+        resolvedTheme === 'dark' ? "bg-[#0f1012]" : "bg-white"
+      )}>
         {!selectedChat ? (
           <div className="flex-1 flex flex-col items-center justify-center opacity-50">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
@@ -372,7 +395,10 @@ export const ChatHub: React.FC = () => {
             {/* Header */}
             <div className="theme-surface-deep h-16 px-6 border-b border-white/5 flex items-center justify-between backdrop-blur-md relative z-10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#2a2b2e] overflow-hidden flex items-center justify-center border border-white/5 shrink-0">
+                <div className={cn(
+                  "w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border border-border-soft shrink-0",
+                  resolvedTheme === 'dark' ? "bg-[#2a2b2e]" : "bg-gray-100"
+                )}>
                   {selectedChat.profilePicUrl ? (
                     <img src={selectedChat.profilePicUrl} alt={selectedChat.pushName} className="w-full h-full object-cover" />
                   ) : (
@@ -383,7 +409,7 @@ export const ChatHub: React.FC = () => {
                   <h4 className="font-bold text-white text-sm leading-tight">{selectedChat.pushName}</h4>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] text-primary/70 font-bold uppercase tracking-tighter">
-                      {selectedChat.phoneNumber ? `+${selectedChat.phoneNumber}` : selectedChat.remoteJid.split('@')[0]}
+                      {selectedChat.phoneNumber ? `+${selectedChat.phoneNumber}` : 'Chat de WhatsApp'}
                     </span>
                     <span className="w-1 h-1 rounded-full bg-gray-700"></span>
                     <span className="text-[10px] text-gray-500">Activo</span>
@@ -403,11 +429,11 @@ export const ChatHub: React.FC = () => {
                     <MoreVertical className="w-5 h-5" />
                   </button>
                   {showMoreOptions && (
-                    <div className="absolute right-0 mt-2 w-48 theme-surface-alt border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] z-[100] py-2 animate-in fade-in slide-in-from-top-2">
-                      <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                    <div className="absolute right-0 mt-2 w-48 theme-surface-alt border border-border-strong rounded-xl shadow-2xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
+                      <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-theme-muted hover:text-theme-text hover:bg-surface-hover transition-colors flex items-center gap-2">
                         <User size={14} /> Ver Detalles
                       </button>
-                      <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                      <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-theme-muted hover:text-theme-text hover:bg-surface-hover transition-colors flex items-center gap-2">
                         <Bot size={14} /> Silenciar Chat
                       </button>
                       <div className="h-px bg-white/5 my-2"></div>
@@ -433,8 +459,16 @@ export const ChatHub: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')] relative">
-              <div className="absolute inset-0 bg-[#0f1012]/40 pointer-events-none"></div>
+            <div className={cn(
+              "flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar relative",
+              resolvedTheme === 'dark' 
+                ? "bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')]" 
+                : "bg-[url('https://www.transparenttextures.com/patterns/pinstripe-light.png')]"
+            )}>
+              <div className={cn(
+                "absolute inset-0 pointer-events-none",
+                resolvedTheme === 'dark' ? "bg-[#0f1012]/40" : "bg-white/10"
+              )}></div>
               <div className="relative z-10 space-y-6">
                 {loadingMessages && messages.length === 0 ? (
                   <div className="flex justify-center p-4">
@@ -452,10 +486,10 @@ export const ChatHub: React.FC = () => {
                         <div key={msg.id || i} className={cn("flex", fromMe ? "justify-end" : "justify-start")}>
                           <div className="max-w-[80%] flex flex-col gap-1">
                             <div className={cn(
-                              "rounded-2xl px-4 py-3 text-sm shadow-xl transition-all",
+                              "rounded-2xl px-4 py-3 text-sm shadow-sm transition-all",
                               fromMe 
-                                ? "bg-primary text-dark font-medium rounded-tr-none" 
-                                : "theme-surface-alt text-gray-100 border border-white/5 rounded-tl-none hover:border-white/10"
+                                ? "bg-primary text-black font-medium rounded-tr-none shadow-primary/10" 
+                                : "theme-surface-alt text-theme-text border border-border-soft rounded-tl-none hover:border-border-strong shadow-soft/5"
                             )}>
                               {msg.message?.conversation || msg.message?.extendedTextMessage?.text || "[Tipo de mensaje no soportado]"}
                             </div>
@@ -505,7 +539,7 @@ export const ChatHub: React.FC = () => {
                   {showEmojiPicker && (
                     <div className="absolute bottom-[110%] left-0 mb-2 z-50 shadow-2xl">
                       <EmojiPicker 
-                        theme={Theme.DARK}
+                        theme={resolvedTheme === 'dark' ? Theme.DARK : Theme.LIGHT}
                         onEmojiClick={(emojiData: EmojiClickData) => {
                           setInputText((prev) => prev + emojiData.emoji);
                           setShowEmojiPicker(false);
@@ -599,9 +633,12 @@ export const ChatHub: React.FC = () => {
 
       {/* Column 3: Context & CRM */}
       {selectedChat && (
-        <div className="theme-surface-deep w-[320px] border-l border-white/5 flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar">
+        <div className="theme-surface-deep w-[320px] border-l border-border-soft flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="w-20 h-20 rounded-full bg-[#2a2b2e] flex items-center justify-center text-2xl font-bold text-primary border-2 border-primary/20 shadow-[0_0_20px_rgba(0,255,136,0.1)]">
+            <div className={cn(
+              "w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-primary border-2 border-primary/20 shadow-lg",
+              resolvedTheme === 'dark' ? "bg-[#2a2b2e]" : "bg-white"
+            )}>
               {selectedChat.pushName?.substring(0, 2).toUpperCase()}
             </div>
             <div>
@@ -611,17 +648,19 @@ export const ChatHub: React.FC = () => {
                 <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">En Línea</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500 font-mono bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 w-full truncate">
-              {selectedChat.phoneNumber ? `+${selectedChat.phoneNumber}` : selectedChat.remoteJid.split('@')[0]}
-            </div>
+            {selectedChat.phoneNumber && (
+              <div className="text-xs text-theme-muted font-mono bg-surface-muted px-3 py-1.5 rounded-lg border border-border-soft w-full truncate">
+                +{selectedChat.phoneNumber}
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
             <div className="theme-surface-alt rounded-2xl p-4 space-y-3 border border-white/5">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted flex items-center gap-2">
                 <Bot className="w-3.5 h-3.5" /> Control de Flujo
               </h4>
-              <div className="bg-[#111113] flex p-1 rounded-xl">
+              <div className="bg-surface-deep flex p-1 rounded-xl">
                 <button 
                   onClick={() => activeInstance && updateControlMode(activeInstance, selectedChat.remoteJid, 'AI')}
                   className={cn(
@@ -646,7 +685,7 @@ export const ChatHub: React.FC = () => {
             <div className="space-y-3">
               <div 
                 onClick={() => setShowContactInfo(!showContactInfo)}
-                className="flex items-center justify-between p-4 bg-white/[0.02] rounded-2xl border border-white/5 hover:bg-white/[0.04] transition-all cursor-pointer group"
+                className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl border border-border-soft hover:bg-surface-hover transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
                   <User className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />
@@ -686,7 +725,7 @@ export const ChatHub: React.FC = () => {
                    </div>
                    <button 
                     onClick={handleUpdateContact}
-                    className="w-full py-2 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border border-white/5 hover:border-primary/30 text-gray-300 hover:text-primary"
+                    className="w-full py-2 bg-surface-muted hover:bg-surface-hover text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border border-border-soft hover:border-primary/30 text-theme-muted hover:text-primary"
                    >
                     Guardar Cambios
                    </button>
@@ -703,9 +742,9 @@ export const ChatHub: React.FC = () => {
                 </div>
               )}
               
-              <div className="theme-surface-alt rounded-2xl p-5 space-y-5 border border-white/5">
+              <div className="theme-surface-alt rounded-2xl p-5 space-y-5 border border-border-soft">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-muted flex items-center gap-2">
                     <Hash className="w-3.5 h-3.5" /> Ventas / Leads
                   </h4>
                 </div>
@@ -759,128 +798,3 @@ export const ChatHub: React.FC = () => {
         </div>
       )}
     </div>
-
-      {/* Product Selector Modal */}
-      {showProductSelector && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setShowProductSelector(false)}>
-          <div className="theme-overlay-card w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Package className="text-primary" /> Seleccionar Producto</h2>
-              <button onClick={() => setShowProductSelector(false)} className="text-white/40 hover:text-white transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {allProducts.filter(p => p.enabled).map(product => (
-                  <div 
-                    key={product.id}
-                    onClick={() => sendProduct(product)}
-                    className="theme-surface-alt p-4 rounded-2xl border border-white/5 hover:border-primary/40 cursor-pointer transition-all group flex gap-4"
-                  >
-                    <div className="w-16 h-16 rounded-xl bg-black/40 overflow-hidden flex-shrink-0">
-                      {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white/10"><Package size={24} /></div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-white truncate">{product.name}</h4>
-                      <p className="text-[10px] text-white/40 line-clamp-1 mt-1">{product.description}</p>
-                      <p className="text-sm font-bold text-primary mt-2">${product.price.toLocaleString()}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {allProducts.length === 0 && (
-                <div className="text-center py-10 text-white/20">
-                  <Package size={48} className="mx-auto mb-4 opacity-10" />
-                  <p>No hay productos registrados en el catálogo.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Order Registration Modal */}
-      {showOrderModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setShowOrderModal(false)}>
-          <div className="theme-overlay-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <h2 className="text-xl font-bold text-white">Registrar Venta</h2>
-              <button onClick={() => setShowOrderModal(false)} className="text-white/40 hover:text-white transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 space-y-6">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Agregar Productos</label>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                  {allProducts.map(product => (
-                    <div key={product.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                      <span className="text-xs text-white/60 font-medium">{product.name}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-primary">${product.price.toLocaleString()}</span>
-                        <button 
-                          onClick={() => addToCart(product)}
-                          className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {cart.length > 0 && (
-                <div className="pt-6 border-t border-white/5">
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Carrito</label>
-                  <div className="space-y-3">
-                    {cart.map(item => (
-                      <div key={item.product.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <button onClick={() => removeFromCart(item.product.id)} className="text-red-500/40 hover:text-red-500"><X size={14} /></button>
-                          <span className="text-xs text-white/80">{item.product.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
-                            <button onClick={() => updateQuantity(item.product.id, -1)} className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white rounded-md hover:bg-white/10">-</button>
-                            <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product.id, 1)} className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white rounded-md hover:bg-white/10">+</button>
-                          </div>
-                          <span className="text-xs font-bold text-white w-16 text-right">${(item.product.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="pt-4 flex justify-between items-center border-t border-white/5">
-                      <span className="text-sm font-bold text-white">Total</span>
-                      <span className="text-lg font-black text-primary">${cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={sendCartToClient}
-                  disabled={cart.length === 0}
-                  className="flex-1 py-4 bg-white/5 text-white font-bold uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all disabled:opacity-50 text-[10px] flex items-center justify-center gap-2 border border-white/5"
-                >
-                  <MessageSquare size={14} /> Enviar al Chat
-                </button>
-                <button 
-                  onClick={registerOrder}
-                  disabled={cart.length === 0}
-                  className="flex-[1.5] py-4 bg-primary text-dark font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 disabled:grayscale text-[10px]"
-                >
-                  Cobrar y Registrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
-
-export default ChatHub;
