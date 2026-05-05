@@ -30,6 +30,35 @@ export const getSwaggerOptions = (configService: ConfigService) => {
             description: 'Global API Key or Instance Token',
           },
         },
+        schemas: {
+          StoreTheme: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              storeName: { type: 'string' },
+              logoUrl: { type: 'string' },
+              primaryColor: { type: 'string' },
+              buttonColor: { type: 'string' },
+              bgColor: { type: 'string' },
+              fontFamily: { type: 'string' },
+              ctaText: { type: 'string' },
+              borderRadius: { type: 'number' },
+              instagramUrl: { type: 'string' },
+              tiktokUrl: { type: 'string' },
+            },
+          },
+          Product: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              description: { type: 'string' },
+              price: { type: 'number' },
+              imageUrl: { type: 'string' },
+              stock: { type: 'number' },
+            },
+          },
+        },
       },
       security: [
         {

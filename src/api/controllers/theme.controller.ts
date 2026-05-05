@@ -39,14 +39,67 @@ export class ThemeController {
     return res.status(200).json(response);
   }
 
+  /**
+   * @openapi
+   * /store-api/{instanceName}:
+   *   get:
+   *     summary: Get store data by instance
+   *     tags: [Store]
+   *     parameters:
+   *       - name: instanceName
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - name: page
+   *         in: query
+   *         schema:
+   *           type: integer
+   *           default: 1
+   *       - name: limit
+   *         in: query
+   *         schema:
+   *           type: integer
+   *           default: 20
+   *     responses:
+   *       200:
+   *         description: Store data with theme and paginated products
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 theme:
+   *                   $ref: '#/components/schemas/StoreTheme'
+   *                 products:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Product'
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     page:
+   *                       type: integer
+   *                     limit:
+   *                       type: integer
+   *                     total:
+   *                       type: integer
+   *                     totalPages:
+   *                       type: integer
+   *       404:
+   *         description: Instance not found
+   */
   public async getStoreByInstance(req: Request, res: Response) {
     const instanceName = req.params.instanceName;
     if (!instanceName) {
       return res.status(400).json({ error: 'Nombre de instancia requerido' });
     }
 
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
     try {
-      const data = await this.themeService.getThemeByInstance(instanceName);
+      const data = await this.themeService.getThemeByInstance(instanceName, page, limit);
       return res.status(200).json(data);
     } catch (error) {
       return res.status(404).json({ error: (error as Error).message });

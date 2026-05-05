@@ -23,6 +23,9 @@ export class ThemeRouter extends RouterBroker {
       })
       .get('/store/:instanceName', async (req, res) => {
         return themeController.getStoreByInstance(req, res);
+      })
+      .get('/store-api/:instanceName', async (req, res) => {
+        return themeController.getStoreByInstance(req, res);
       });
   }
 }

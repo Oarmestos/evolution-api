@@ -43,7 +43,16 @@ export class ThemeService {
 
       // Sync with WhatsApp if enabled
       if (data.syncWhatsapp) {
-        await this.syncWithWhatsapp(userId, data);
+        const instance = await this.prisma.instance.findFirst({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (instance) {
+          await this.syncWithWhatsapp(instance.name, data);
+        } else {
+          this.logger.warn(`No instance found for user ${userId}, skipping WhatsApp sync`);
+        }
       }
 
       return result;
@@ -76,44 +85,68 @@ export class ThemeService {
     }
   }
 
-  public async getThemeByInstance(instanceName: string) {
+  public async getThemeByInstance(instanceName: string, page = 1, limit = 20) {
     try {
       const instance = await this.prisma.instance.findUnique({
         where: { name: instanceName },
         include: { User: true },
       });
 
-      if (!instance || !instance.User) {
+      if (!instance) {
         throw new BadRequestException('Instancia no encontrada');
       }
 
-      const theme = await this.getTheme(instance.User.id);
-      const products = await this.prisma.product.findMany({
-        where: { instanceId: instance.id },
-      });
+      const userId = instance.userId || instance.User?.id;
+      if (!userId) {
+        throw new BadRequestException('Usuario no encontrado para la instancia');
+      }
 
-      return { theme, products };
+      const theme = await this.getTheme(userId);
+
+      const skip = (page - 1) * limit;
+      const [products, total] = await Promise.all([
+        this.prisma.product.findMany({
+          where: { instanceId: instance.id },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.product.count({
+          where: { instanceId: instance.id },
+        }),
+      ]);
+
+      return {
+        theme,
+        products,
+        instanceName: instance.name,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Error al obtener la tienda');
     }
   }
 
-  private async syncWithWhatsapp(userId: string, data: StoreThemeDto) {
+  public async syncWithWhatsapp(instanceName: string, data: StoreThemeDto) {
     try {
-      const instance = await this.prisma.instance.findFirst({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
+      const instance = await this.prisma.instance.findUnique({
+        where: { name: instanceName },
       });
 
       if (!instance) {
-        this.logger.warn('No instance found for user');
+        this.logger.warn(`Instance ${instanceName} not found`);
         return;
       }
 
-      const waInstance = (waMonitor as any).waInstances?.[instance.name];
+      const waInstance = (waMonitor as any).waInstances?.[instanceName];
       if (!waInstance) {
-        this.logger.warn('WhatsApp instance not connected');
+        this.logger.warn(`WhatsApp instance ${instanceName} not connected`);
         return;
       }
 
@@ -127,7 +160,7 @@ export class ThemeService {
         await waInstance.updateProfilePicture(data.logoUrl);
       }
 
-      this.logger.info(`Synced theme with WhatsApp for instance: ${instance.name}`);
+      this.logger.info(`Synced theme with WhatsApp for instance: ${instanceName}`);
     } catch (error) {
       this.logger.error(`Error syncing with WhatsApp: ${error.message || error}`);
     }
