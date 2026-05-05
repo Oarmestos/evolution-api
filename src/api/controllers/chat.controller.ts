@@ -4,6 +4,7 @@ import {
   DeleteMessage,
   getBase64FromMediaMessageDto,
   MarkChatUnreadDto,
+  MuteChatDto,
   NumberDto,
   PrivacySettingDto,
   ProfileNameDto,
@@ -135,5 +136,13 @@ export class ChatController {
   ) {
     const { remoteJid, ...updateData } = data;
     return await this.waMonitor.waInstances[instanceName].updateContact(remoteJid, updateData);
+  }
+
+  public async muteChat({ instanceName }: InstanceDto, data: MuteChatDto) {
+    return await this.waMonitor.waInstances[instanceName].muteChat(data);
+  }
+
+  public async deleteChat({ instanceName }: InstanceDto, { remoteJid }: { remoteJid: string }) {
+    return await this.waMonitor.waInstances[instanceName].deleteChat(remoteJid);
   }
 }
