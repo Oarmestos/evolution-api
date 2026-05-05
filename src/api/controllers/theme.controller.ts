@@ -21,9 +21,8 @@ export class ThemeController {
       return res.status(400).json({ error: 'ID de instancia requerido' });
     }
     const data: StoreThemeDto = req.body;
-    // Remove instanceId from data to avoid prisma errors if it's not in the DTO
-    const { instanceId: _, ...themeData } = data as any;
-    
+    const themeData = { ...data };
+    delete (themeData as any).instanceId;
     const response = await this.themeService.updateTheme(instanceId, themeData);
     return res.status(200).json(response);
   }
