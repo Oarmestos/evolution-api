@@ -5,6 +5,7 @@ import {
   DeleteMessage,
   getBase64FromMediaMessageDto,
   MarkChatUnreadDto,
+  MuteChatDto,
   NumberDto,
   PrivacySettingDto,
   ProfileNameDto,
@@ -120,7 +121,6 @@ export class ChatRouter extends RouterBroker {
 
         return res.status(HttpStatus.CREATED).json(response);
       })
-      // TODO: corrigir updateMessage para medias tambem
       .post(this.routerPath('updateMessage'), ...guards, async (req, res) => {
         const response = await this.dataValidate<UpdateMessageDto>({
           request: req,
@@ -201,7 +201,6 @@ export class ChatRouter extends RouterBroker {
 
         return res.status(HttpStatus.OK).json(response);
       })
-      // Profile routes
       .post(this.routerPath('fetchBusinessProfile'), ...guards, async (req, res) => {
         const response = await this.dataValidate<ProfilePictureDto>({
           request: req,
@@ -301,6 +300,22 @@ export class ChatRouter extends RouterBroker {
       .patch(this.routerPath('updateContact'), ...guards, async (req, res) => {
         const instance = req.params as unknown as InstanceDto;
         const response = await chatController.updateContact(instance, req.body);
+        return res.status(HttpStatus.OK).json(response);
+      })
+      .post(this.routerPath('muteChat'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<MuteChatDto>({
+          request: req,
+          schema: null,
+          ClassRef: MuteChatDto,
+          execute: (instance, data) => chatController.muteChat(instance, data),
+        });
+
+        return res.status(HttpStatus.OK).json(response);
+      })
+      .delete(this.routerPath('deleteChat'), ...guards, async (req, res) => {
+        const instance = req.params as unknown as InstanceDto;
+        const { remoteJid } = req.query as unknown as { remoteJid: string };
+        const response = await chatController.deleteChat(instance, { remoteJid });
         return res.status(HttpStatus.OK).json(response);
       });
   }
