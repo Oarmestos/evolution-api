@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { 
   ShoppingBag, 
-  Instagram, 
+  Globe, 
   Send, 
   ShoppingCart, 
   ArrowRight,
@@ -192,7 +192,7 @@ export const PublicStore: React.FC = () => {
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5"
                 style={{ color: mutedTextColor }}
               >
-                <Instagram className="w-5 h-5" />
+                <Globe className="w-5 h-5" />
               </a>
             )}
             <button 
@@ -491,7 +491,7 @@ export const PublicStore: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-6">
             {theme.instagramUrl && (
               <a href={theme.instagramUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-8 py-4 rounded-full border transition-all hover:bg-black/5 dark:hover:bg-white/5 font-bold text-[10px] uppercase tracking-widest" style={{ borderColor: borderColor }}>
-                <Instagram className="w-4 h-4" />
+                <Globe className="w-4 h-4" />
                 Instagram
               </a>
             )}
