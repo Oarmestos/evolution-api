@@ -1,13 +1,11 @@
-import { Router } from 'express';
-import { ChatController } from '@api/controllers/chat.controller';
 import { RouterBroker } from '@api/abstract/abstract.router';
-import { chatController } from '@api/server.module';
 import {
   ArchiveChatDto,
   BlockUserDto,
   DeleteMessage,
   getBase64FromMediaMessageDto,
   MarkChatUnreadDto,
+  MuteChatDto,
   NumberDto,
   PrivacySettingDto,
   ProfileNameDto,
@@ -16,13 +14,12 @@ import {
   ReadMessageDto,
   SendPresenceDto,
   UpdateMessageDto,
-  MuteChatDto,
   WhatsAppNumberDto,
 } from '@api/dto/chat.dto';
 import { InstanceDto } from '@api/dto/instance.dto';
 import { Query } from '@api/repository/repository.service';
+import { chatController } from '@api/server.module';
 import { Contact, Message, MessageUpdate } from '@prisma/client';
-import { HttpStatus } from './index.router';
 import {
   archiveChatSchema,
   blockUserSchema,
@@ -32,16 +29,19 @@ import {
   markChatUnreadSchema,
   messageUpSchema,
   messageValidateSchema,
+  presenceSchema,
   privacySettingsSchema,
   profileNameSchema,
   profilePictureSchema,
   profileSchema,
   profileStatusSchema,
   readMessageSchema,
-  presenceSchema,
   updateMessageSchema,
   whatsappNumberSchema,
 } from '@validate/chat.schema';
+import { Router } from 'express';
+
+import { HttpStatus } from './index.router';
 
 export class ChatRouter extends RouterBroker {
   constructor(...guards: any[]) {

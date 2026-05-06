@@ -27,14 +27,14 @@ Este archivo contiene la información necesaria para acceder y gestionar tu inst
 - **URL de Dashboard:** `http://localhost:8080/dashboard.html`
 
 ## 🔐 Cuenta Super-Administrador
-- **Email:** `admin@avri.com`
-- **Contraseña:** `admin123`
+- **Email:** `owner@evolution.com`
+- **Contraseña:** `owner123`
 - **Rol:** Acceso Total (Multi-tenant Admin).
 
 ## 📊 Dashboard y Métricas (Infraestructura)
 - **Endpoint de Métricas:** `http://localhost:8080/metrics`
-- **Usuario:** `admin`
-- **Contraseña:** `admin123`
+- **Usuario:** `owner`
+- **Contraseña:** `owner123`
 
 ## 📲 Instancias de WhatsApp
 - **Aislamiento:** Ahora las instancias están vinculadas a un `userId`.

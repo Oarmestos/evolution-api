@@ -54,3 +54,6 @@ lerna-debug.log*
 .tool-versions
 
 /prisma/migrations/*
+
+# Scratch scripts
+scratch/

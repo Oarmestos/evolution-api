@@ -42,7 +42,8 @@ export class ChatwootController {
     const urlServer = this.configService.get<HttpServer>('SERVER').URL;
 
     const response = {
-      ...result,
+      ...(result as any),
+      ignoreJids: Array.isArray(result?.ignoreJids) ? result.ignoreJids : [],
       webhook_url: `${urlServer}/chatwoot/webhook/${encodeURIComponent(instance.instanceName)}`,
     };
 
@@ -69,7 +70,8 @@ export class ChatwootController {
     }
 
     const response = {
-      ...result,
+      ...(result as any),
+      ignoreJids: Array.isArray(result?.ignoreJids) ? result.ignoreJids : [],
       webhook_url: `${urlServer}/chatwoot/webhook/${encodeURIComponent(instance.instanceName)}`,
     };
 

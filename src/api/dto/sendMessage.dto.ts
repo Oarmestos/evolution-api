@@ -163,7 +163,7 @@ export class SendContactDto extends Metadata {
   contact: ContactMessage[];
 }
 
-export class SendReactionDto {
+export class SendReactionDto extends Metadata {
   key: proto.IMessageKey;
   reaction: string;
 }
