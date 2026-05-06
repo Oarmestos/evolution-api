@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, MoreVertical, MessageSquare, CheckCheck, Paperclip, Smile, Mic, X, Package, Store } from 'lucide-react';
+import { Bot, Send, MoreVertical, MessageSquare, CheckCheck, Paperclip, Smile, Mic, X, Package, Store, Check as CheckIcon } from 'lucide-react';
 import { useChatStore, extractMessagePreview } from '../../store/useChatStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { cn } from '../../utils/cn';
@@ -19,6 +19,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
   const [inputTab, setInputTab] = useState<'reply' | 'note'>('reply');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [storeCopied, setStoreCopied] = useState(false);
   
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -255,24 +257,32 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                   </button>
                   <button 
                     type="button" 
-                    onClick={() => alert('Catalogo de productos (Proximamente)')}
+                    onClick={() => setShowCatalogModal(true)}
                     className="p-2 text-gray-500 hover:text-primary transition-all hover:bg-primary/10 rounded-xl"
-                    title="Catalogo de Productos"
+                    title="Catálogo de Productos"
                   >
                     <Package className="w-5 h-5" />
                   </button>
                   <button 
                     type="button" 
                     onClick={() => {
-                      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-                      const storeUrl = `${backendUrl}/store/index.html?instance=${activeInstance}`;
-                      navigator.clipboard.writeText(storeUrl);
-                      alert('Enlace de la tienda copiado al portapapeles');
+                      const frontendOrigin = window.location.origin;
+                      const storeUrl = `${frontendOrigin}/store/${activeInstance}`;
+                      navigator.clipboard.writeText(storeUrl).then(() => {
+                        setStoreCopied(true);
+                        setTimeout(() => setStoreCopied(false), 2000);
+                      });
+                      window.open(storeUrl, '_blank');
                     }}
-                    className="p-2 text-gray-500 hover:text-green-500 transition-all hover:bg-green-500/10 rounded-xl"
-                    title="Copiar enlace de la Tienda"
+                    className={cn(
+                      "p-2 transition-all rounded-xl",
+                      storeCopied
+                        ? "text-green-400 bg-green-500/10"
+                        : "text-gray-500 hover:text-green-500 hover:bg-green-500/10"
+                    )}
+                    title="Abrir Tienda"
                   >
-                    <Store className="w-5 h-5" />
+                    {storeCopied ? <CheckIcon className="w-5 h-5" /> : <Store className="w-5 h-5" />}
                   </button>
                   <button 
                     type="button" 
@@ -325,6 +335,41 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
             </div>
           </div>
         </>
+      )}
+
+      {/* Catalog Coming Soon Modal */}
+      {showCatalogModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          onClick={() => setShowCatalogModal(false)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative z-10 theme-surface border theme-border-strong rounded-[32px] shadow-2xl p-10 max-w-sm w-full text-center animate-in fade-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowCatalogModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10">
+              <Package className="w-10 h-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-black tracking-tight theme-text mb-2">
+              Catálogo de Productos
+            </h3>
+            <p className="text-sm theme-muted leading-relaxed mb-6">
+              Pronto podrás enviar productos directamente desde el chat a tus clientes.
+              Esta función estará disponible muy pronto.
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-black text-primary uppercase tracking-widest">Próximamente</span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
