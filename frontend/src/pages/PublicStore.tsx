@@ -30,6 +30,10 @@ interface Theme {
   fontFamily: string;
   ctaText: string;
   borderRadius: number;
+  heroTitle: string | null;
+  heroSubtitle: string | null;
+  heroImageUrl: string | null;
+  footerText: string | null;
   instagramUrl: string | null;
   tiktokUrl: string | null;
 }
@@ -184,27 +188,38 @@ export const PublicStore: React.FC = () => {
         }}
       >
         {/* Background Elements for Modern/Divertido */}
-        {theme.template !== 'minimalista' && (
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div 
-              className="absolute -top-1/2 -right-1/4 w-[1000px] h-[1000px] rounded-full opacity-10 blur-[120px]"
-              style={{ backgroundColor: isPrimaryLight ? '#000' : '#fff' }}
-            />
+        {theme.heroImageUrl ? (
+          <div className="absolute inset-0 z-0">
+            <img src={theme.heroImageUrl} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
           </div>
+        ) : (
+          theme.template !== 'minimalista' && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div 
+                className="absolute -top-1/2 -right-1/4 w-[1000px] h-[1000px] rounded-full opacity-10 blur-[120px]"
+                style={{ backgroundColor: isPrimaryLight ? '#000' : '#fff' }}
+              />
+            </div>
+          )
         )}
 
         <div className="max-w-7xl mx-auto w-full relative z-10">
           <div className="max-w-3xl space-y-8">
             <h1 className="text-6xl md:text-9xl font-black uppercase tracking-tighter leading-[0.8] animate-in slide-in-from-bottom duration-700">
-              {theme.storeName || 'Catálogo'}
+              {theme.heroTitle || theme.storeName || 'Catálogo'}
             </h1>
             
             <p className="text-xl md:text-2xl opacity-80 leading-tight max-w-xl font-bold italic">
-              Descubre nuestra selección exclusiva curada para ti. Haz tu pedido hoy mismo.
+              {theme.heroSubtitle || 'Descubre nuestra selección exclusiva curada para ti. Haz tu pedido hoy mismo.'}
             </p>
 
             <div className="pt-4">
               <button 
+                onClick={() => {
+                  const productsSection = document.getElementById('products-grid');
+                  productsSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="px-10 py-5 font-black uppercase tracking-widest text-xs flex items-center gap-4 transition-all hover:gap-6 shadow-2xl"
                 style={{ 
                   backgroundColor: theme.buttonColor, 
@@ -221,7 +236,7 @@ export const PublicStore: React.FC = () => {
       </section>
 
       {/* Grid de Productos Olipop Style */}
-      <section className="py-24 px-6">
+      <section id="products-grid" className="py-24 px-6">
         <div className="max-w-7xl mx-auto space-y-20">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b-2 pb-10" style={{ borderColor: borderColor }}>
             <div className="space-y-4">
@@ -316,10 +331,10 @@ export const PublicStore: React.FC = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
           <div className="space-y-8">
             <h4 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none opacity-20">
-              {theme.storeName || 'Store'}
+              {theme.storeName || 'Avri'}
             </h4>
             <p className="text-xl font-bold opacity-40 max-w-sm">
-              La plataforma líder para vender por WhatsApp con un diseño que enamora a tus clientes.
+              {theme.heroSubtitle || 'La plataforma líder para vender por WhatsApp con un diseño que enamora a tus clientes.'}
             </p>
           </div>
           
@@ -332,8 +347,10 @@ export const PublicStore: React.FC = () => {
               )}
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black uppercase tracking-[0.5em] opacity-20 mb-4">Evolution API Premium Store</p>
-              <p className="text-[10px] opacity-20 uppercase tracking-widest">© {new Date().getFullYear()} - Todos los derechos reservados.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.5em] opacity-20 mb-4">Avri Premium Store</p>
+              <p className="text-[10px] opacity-20 uppercase tracking-widest">
+                {theme.footerText || `© ${new Date().getFullYear()} - Todos los derechos reservados.`}
+              </p>
             </div>
           </div>
         </div>

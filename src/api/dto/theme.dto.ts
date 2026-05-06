@@ -2,6 +2,10 @@ export class StoreThemeDto {
   template?: string;
   storeName?: string;
   logoUrl?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  footerText?: string;
   primaryColor?: string;
   buttonColor?: string;
   bgColor?: string;

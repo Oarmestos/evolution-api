@@ -6,6 +6,10 @@ export interface ThemeConfig {
   template: string;
   storeName: string;
   logoUrl: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImageUrl: string;
+  footerText: string;
   primaryColor: string;
   buttonColor: string;
   bgColor: string;
@@ -26,6 +30,7 @@ interface ThemeState {
   updateTheme: (data: Partial<ThemeConfig>) => void;
   saveTheme: () => Promise<void>;
   uploadLogo: (file: File) => Promise<string | null>;
+  uploadHeroImage: (file: File) => Promise<string | null>;
   resetToDefaults: () => void;
   applyTemplate: (templateName: string) => void;
 }
@@ -34,6 +39,10 @@ const DEFAULT_THEME: ThemeConfig = {
   template: 'moderno',
   storeName: 'Mi Tienda',
   logoUrl: '',
+  heroTitle: 'Tu Tienda Online',
+  heroSubtitle: 'Los mejores productos al alcance de un clic',
+  heroImageUrl: '',
+  footerText: '© 2024 Avri. Todos los derechos reservados.',
   primaryColor: '#6366f1',
   buttonColor: '#000000',
   bgColor: '#f8fafc',
@@ -143,6 +152,33 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
         theme: { ...state.theme, logoUrl }
       }));
       return logoUrl;
+    } catch (err: unknown) {
+      set({ error: (err as any).response?.data?.error || (err as Error).message });
+      return null;
+    }
+  },
+
+  uploadHeroImage: async (file: File) => {
+    const token = localStorage.getItem('avri_token');
+    const activeInstance = useInstanceStore.getState().activeInstance;
+    if (!token || !activeInstance) return null;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('instanceId', activeInstance.instanceId);
+
+    try {
+      const response = await axios.post('/theme/hero-image', formData, {
+        headers: { 
+          apikey: token,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const heroImageUrl = response.data.heroImageUrl;
+      set((state) => ({
+        theme: { ...state.theme, heroImageUrl }
+      }));
+      return heroImageUrl;
     } catch (err: unknown) {
       set({ error: (err as any).response?.data?.error || (err as Error).message });
       return null;

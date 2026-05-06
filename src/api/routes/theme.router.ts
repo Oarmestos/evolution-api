@@ -21,6 +21,9 @@ export class ThemeRouter extends RouterBroker {
       .post(this.routerPath('logo', false), ...guards, upload.single('file'), async (req, res) => {
         return themeController.uploadLogo(req, res);
       })
+      .post(this.routerPath('hero-image', false), ...guards, upload.single('file'), async (req, res) => {
+        return themeController.uploadHeroImage(req, res);
+      })
       .get('/store/:instanceName', async (req, res) => {
         return themeController.getStoreByInstance(req, res);
       })

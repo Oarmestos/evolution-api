@@ -41,6 +41,20 @@ export class ThemeController {
     return res.status(200).json(response);
   }
 
+  public async uploadHeroImage(req: Request, res: Response) {
+    const instanceId = req.body.instanceId || req.query.instanceId;
+    if (!instanceId) {
+      return res.status(400).json({ error: 'ID de instancia requerido' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    }
+
+    const response = await this.themeService.uploadHeroImage(instanceId, req.file as Express.Multer.File);
+    return res.status(200).json(response);
+  }
+
   /**
    * @openapi
    * /store-api/{instanceName}:

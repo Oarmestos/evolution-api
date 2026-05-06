@@ -15,7 +15,10 @@ import {
   MoreVertical,
   ArrowLeft,
   User,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Type,
+  AlignLeft,
+  Copyright
 } from 'lucide-react';
 import { useThemeConfigStore } from '../store/useThemeConfigStore';
 import { useInstanceStore } from '../store/useInstanceStore';
@@ -31,12 +34,14 @@ export const Appearance: React.FC = () => {
     updateTheme, 
     saveTheme, 
     uploadLogo, 
+    uploadHeroImage,
     resetToDefaults, 
     applyTemplate,
     error
   } = useThemeConfigStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const heroFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchTheme();
@@ -321,6 +326,103 @@ export const Appearance: React.FC = () => {
                     onChange={(e) => updateTheme({ tiktokUrl: e.target.value })}
                     placeholder="TikTok URL"
                     className="w-full bg-[#0f1016] border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-primary/30"
+                  />
+                </div>
+              </div>
+
+              {/* Banner Content (Hero) */}
+              <div className="md:col-span-2 bg-[#0f1016]/50 p-6 rounded-3xl border border-white/[0.03] space-y-6">
+                <div className="flex items-center gap-2 text-primary">
+                  <ImageIcon className="w-4 h-4" />
+                  <h3 className="text-sm font-black uppercase tracking-widest">Banner Principal (Hero)</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                      Título del Banner <Type className="w-3 h-3" />
+                    </label>
+                    <input 
+                      type="text" 
+                      value={theme.heroTitle}
+                      onChange={(e) => updateTheme({ heroTitle: e.target.value })}
+                      placeholder="Ej: Tu Tienda Online"
+                      className="w-full bg-[#0f1016] border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-primary/30"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                      Subtítulo del Banner <AlignLeft className="w-3 h-3" />
+                    </label>
+                    <input 
+                      type="text" 
+                      value={theme.heroSubtitle}
+                      onChange={(e) => updateTheme({ heroSubtitle: e.target.value })}
+                      placeholder="Ej: Los mejores productos al alcance de un clic"
+                      className="w-full bg-[#0f1016] border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-primary/30"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Imagen de Fondo del Banner</label>
+                    <div className="flex gap-3">
+                      <div className="w-24 h-14 bg-[#0f1016] border border-white/5 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {theme.heroImageUrl ? (
+                          <img src={theme.heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-gray-700" />
+                        )}
+                      </div>
+                      <div className="flex-1 flex gap-2">
+                        <input 
+                          type="text" 
+                          value={theme.heroImageUrl}
+                          onChange={(e) => updateTheme({ heroImageUrl: e.target.value })}
+                          placeholder="https://ejemplo.com/mi-banner.jpg"
+                          className="flex-1 bg-[#0f1016] border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-primary/30"
+                        />
+                        <button 
+                          onClick={() => heroFileInputRef.current?.click()}
+                          className="flex items-center gap-2 px-4 bg-white/5 border border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest text-white/70 hover:bg-white/10 transition-all whitespace-nowrap"
+                        >
+                          <Upload className="w-3 h-3" />
+                          Subir
+                        </button>
+                        <input 
+                          type="file" 
+                          ref={heroFileInputRef}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) await uploadHeroImage(file);
+                          }}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-gray-600 italic ml-1">Recomendado: 1920x600px o similar. Formatos: JPG, PNG, WebP.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Content */}
+              <div className="md:col-span-2 bg-[#0f1016]/50 p-6 rounded-3xl border border-white/[0.03] space-y-6">
+                <div className="flex items-center gap-2 text-primary">
+                  <Copyright className="w-4 h-4" />
+                  <h3 className="text-sm font-black uppercase tracking-widest">Pie de Página (Footer)</h3>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    Texto de Copyright <AlignLeft className="w-3 h-3" />
+                  </label>
+                  <input 
+                    type="text" 
+                    value={theme.footerText}
+                    onChange={(e) => updateTheme({ footerText: e.target.value })}
+                    placeholder="Ej: © 2024 Avri. Todos los derechos reservados."
+                    className="w-full bg-[#0f1016] border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-primary/30"
                   />
                 </div>
               </div>

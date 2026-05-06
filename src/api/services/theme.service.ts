@@ -84,6 +84,29 @@ export class ThemeService {
     }
   }
 
+  public async uploadHeroImage(instanceId: string, file: Express.Multer.File) {
+    try {
+      const fileName = `hero-${instanceId}-${uuidv4()}-${file.originalname}`;
+      const folder = 'store-hero-images';
+
+      await uploadTempFile(folder, fileName, file.buffer, file.size, { 'Content-Type': file.mimetype });
+
+      const heroImageUrl = await getObjectUrl(`${folder}/${fileName}`);
+
+      // Update theme with new hero image URL
+      await this.prisma.storeTheme.upsert({
+        where: { instanceId },
+        update: { heroImageUrl },
+        create: { instanceId, heroImageUrl },
+      });
+
+      return { heroImageUrl };
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Error al subir la imagen del banner');
+    }
+  }
+
   public async getThemeByInstance(instanceName: string, page = 1, limit = 20) {
     try {
       const instance = await this.prisma.instance.findUnique({
