@@ -8,12 +8,8 @@ import {
   ShoppingCart, 
   ArrowRight,
   AlertCircle,
-  ExternalLink,
-  Package,
-  CheckCircle2,
-  Clock
+  Package
 } from 'lucide-react';
-import { cn } from '../utils/cn';
 
 interface Product {
   id: string;
@@ -130,7 +126,6 @@ export const PublicStore: React.FC = () => {
   const isLightBg = isLightColor(theme.bgColor || '#0f1016');
   const cardBg = isLightBg ? '#ffffff' : adjustColor(theme.bgColor || '#0f1016', 10);
   const textColor = isLightBg ? '#111827' : '#ffffff';
-  const mutedTextColor = isLightBg ? '#6b7280' : '#9ca3af';
   const borderColor = isLightBg ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
 
   return (
