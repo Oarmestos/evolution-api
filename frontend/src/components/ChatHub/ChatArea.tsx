@@ -266,16 +266,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                   <button 
                     type="button" 
                     onClick={() => {
-                      // In dev: backend is on 8080, frontend SPA is on 5173.
-                      // In prod: same origin serves both, so window.location.origin is correct.
-                      const apiUrl = import.meta.env.VITE_API_URL || '';
-                      const origin = window.location.origin;
-                      // If we're being served directly from the backend dev server,
-                      // the React /store route won't exist there — point to Vite instead.
-                      const frontendOrigin = origin === apiUrl
-                        ? origin.replace(':8080', ':5173')
-                        : origin;
-                      const storeUrl = `${frontendOrigin}/store/${activeInstance}`;
+                      const storeUrl = `${window.location.origin}/store/${activeInstance}`;
                       navigator.clipboard.writeText(storeUrl).then(() => {
                         setStoreCopied(true);
                         setTimeout(() => setStoreCopied(false), 2000);
