@@ -31,11 +31,13 @@ export const useThemeStore = create<ThemeState>()(
 
         set({ resolvedTheme: resolved });
 
-        // Update DOM
-        if (resolved === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
+        // Sync CSS custom properties via data-theme attribute
+        if (resolved === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
           document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          document.documentElement.classList.add('dark');
         }
       },
       syncSystemTheme: () => {

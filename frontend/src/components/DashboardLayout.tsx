@@ -13,11 +13,12 @@ export const DashboardLayout: React.FC = () => {
   }, [fetchInstances]);
 
   return (
-    <div className="theme-shell min-h-screen">
+    <div className="theme-shell min-h-screen flex">
       <Sidebar />
-      <div className="flex flex-col flex-1">
+      {/* ml-64 offsets the fixed sidebar (w-64) */}
+      <div className="ml-64 flex flex-col flex-1 min-h-screen min-w-0">
         <Header />
-        <main className="ml-64 p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <main className="flex-1 p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <Outlet />
         </main>
       </div>
