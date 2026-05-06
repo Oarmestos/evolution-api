@@ -106,7 +106,7 @@ export const PublicStore: React.FC = () => {
             <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
             <ShoppingBag className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary" />
           </div>
-          <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px] animate-pulse">Cargando Experiencia</p>
+          <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px] animate-pulse">Cargando Tienda</p>
         </div>
       </div>
     );
@@ -121,12 +121,6 @@ export const PublicStore: React.FC = () => {
           </div>
           <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Tienda No Disponible</h2>
           <p className="text-gray-400 text-sm leading-relaxed">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-8 py-3 bg-white/5 border border-white/10 rounded-2xl text-white font-bold uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all"
-          >
-            Reintentar Conexión
-          </button>
         </div>
       </div>
     );
@@ -137,7 +131,7 @@ export const PublicStore: React.FC = () => {
   const cardBg = isLightBg ? '#ffffff' : adjustColor(theme.bgColor || '#0f1016', 10);
   const textColor = isLightBg ? '#111827' : '#ffffff';
   const mutedTextColor = isLightBg ? '#6b7280' : '#9ca3af';
-  const borderColor = isLightBg ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+  const borderColor = isLightBg ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
 
   return (
     <div 
@@ -151,66 +145,53 @@ export const PublicStore: React.FC = () => {
         '--card-radius': `${theme.borderRadius * 1.5}px`
       } as React.CSSProperties}
     >
-      {/* Navbar Premium */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6">
+      {/* Navbar Minimalista */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
         <div 
-          className="max-w-7xl mx-auto flex items-center justify-between backdrop-blur-2xl border p-4 shadow-2xl transition-all duration-500"
+          className="max-w-7xl mx-auto flex items-center justify-between backdrop-blur-xl border p-3 transition-all duration-500"
           style={{ 
-            backgroundColor: isLightBg ? 'rgba(255,255,255,0.7)' : 'rgba(15,16,22,0.7)',
+            backgroundColor: isLightBg ? 'rgba(255,255,255,0.8)' : 'rgba(15,16,22,0.8)',
             borderColor: borderColor,
-            borderRadius: 'var(--card-radius)'
+            borderRadius: 'var(--card-radius)',
+            boxShadow: isLightBg ? '0 10px 30px rgba(0,0,0,0.03)' : 'none'
           }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div 
-              className="w-12 h-12 overflow-hidden flex items-center justify-center border shadow-inner transition-transform hover:scale-105"
+              className="w-10 h-10 overflow-hidden flex items-center justify-center border bg-white"
               style={{ borderRadius: 'var(--btn-radius)', borderColor: borderColor }}
             >
               {theme.logoUrl ? (
-                <img src={theme.logoUrl} alt={theme.storeName || ''} className="w-full h-full object-cover" />
+                <img src={theme.logoUrl} alt={theme.storeName || ''} className="w-full h-full object-contain" />
               ) : (
-                <ShoppingBag className="w-6 h-6 text-primary" style={{ color: theme.primaryColor }} />
+                <ShoppingBag className="w-5 h-5" style={{ color: theme.primaryColor }} />
               )}
             </div>
             <div className="flex flex-col">
-              <span className="font-black uppercase tracking-tight text-xl leading-none">
-                {theme.storeName || 'Store'}
+              <span className="font-bold uppercase tracking-tight text-lg leading-none">
+                {theme.storeName || 'Tienda'}
               </span>
               <div className="flex items-center gap-1.5 mt-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[9px] font-bold uppercase tracking-widest text-green-500">En Línea</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <span className="text-[8px] font-bold uppercase tracking-widest text-green-500">En Línea</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {theme.instagramUrl && (
-              <a 
-                href={theme.instagramUrl} 
-                target="_blank" 
-                rel="noreferrer"
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ color: mutedTextColor }}
-              >
-                <Globe className="w-5 h-5" />
-              </a>
-            )}
             <button 
               onClick={handleCheckout}
-              className="relative px-6 h-12 flex items-center gap-3 font-black uppercase tracking-widest text-[10px] shadow-lg transition-all hover:scale-105 active:scale-95 group overflow-hidden"
+              className="relative px-5 h-10 flex items-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all hover:opacity-90 active:scale-95"
               style={{ 
-                backgroundColor: theme.primaryColor, 
+                backgroundColor: theme.buttonColor, 
                 borderRadius: 'var(--btn-radius)',
-                color: isLightColor(theme.primaryColor) ? '#000000' : '#ffffff'
+                color: isLightColor(theme.buttonColor) ? '#000000' : '#ffffff'
               }}
             >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <ShoppingCart className="w-4 h-4 relative z-10" />
-              <span className="relative z-10 hidden sm:inline">Carrito</span>
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Carrito</span>
               {cart.length > 0 && (
-                <span 
-                  className="relative z-10 w-5 h-5 bg-white/90 text-black rounded-full flex items-center justify-center text-[9px] font-black shadow-sm animate-in zoom-in"
-                >
+                <span className="w-4 h-4 bg-white/90 text-black rounded-full flex items-center justify-center text-[8px] font-black">
                   {cart.length}
                 </span>
               )}
@@ -219,177 +200,119 @@ export const PublicStore: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero Section Adaptable */}
-      <section className="pt-40 pb-20 px-6">
+      {/* Hero Section Simplificado */}
+      <section className="pt-32 pb-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div 
-            className={cn(
-              "relative p-10 md:p-20 overflow-hidden border transition-all duration-700",
-              theme.template === 'minimalista' ? "border-none !bg-transparent !p-0" : "shadow-3xl"
-            )}
+            className="relative p-8 md:p-16 overflow-hidden border transition-all duration-700"
             style={{ 
-              backgroundColor: theme.template === 'minimalista' ? 'transparent' : cardBg,
+              backgroundColor: cardBg,
               borderColor: borderColor,
-              borderRadius: 'calc(var(--card-radius) * 1.5)'
+              borderRadius: 'var(--card-radius)',
+              boxShadow: isLightBg ? '0 20px 50px rgba(0,0,0,0.02)' : 'none'
             }}
           >
-            {/* Ambient Background Effect */}
-            {theme.template !== 'minimalista' && (
-              <div 
-                className="absolute -top-24 -right-24 w-96 h-96 opacity-20 blur-[100px] rounded-full animate-pulse"
-                style={{ backgroundColor: theme.primaryColor }}
-              />
-            )}
-
-            <div className={cn(
-              "relative z-10 space-y-8",
-              theme.template === 'minimalista' ? "max-w-3xl" : "max-w-2xl"
-            )}>
-              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                <Package className="w-3.5 h-3.5 text-primary" style={{ color: theme.primaryColor }} />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary" style={{ color: theme.primaryColor }}>
-                  Catálogo {new Date().getFullYear()}
-                </span>
-              </div>
-
-              <h1 className={cn(
-                "font-black uppercase tracking-tighter leading-[0.85] animate-in slide-in-from-left duration-700",
-                theme.template === 'minimalista' ? "text-6xl md:text-8xl" : "text-5xl md:text-7xl"
-              )}>
-                {theme.template === 'divertido' && "✨ "}
+            <div className="relative z-10 max-w-2xl space-y-6">
+              <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
                 {theme.storeName || 'Bienvenido'}
-                {theme.template === 'divertido' && " 🚀"}
               </h1>
 
-              <p className="text-lg md:text-xl opacity-70 leading-relaxed font-medium">
-                Descubre nuestra selección exclusiva de productos de alta calidad. 
-                Haz tu pedido ahora y recíbelo directamente a través de WhatsApp.
+              <p className="text-base md:text-lg opacity-60 leading-relaxed max-w-xl">
+                Descubre nuestra selección exclusiva. Haz tu pedido y recíbelo directamente a través de WhatsApp de forma rápida y segura.
               </p>
 
-              <div className="flex flex-wrap gap-4 pt-4">
+              <div className="pt-2">
                 <button 
-                  className="px-10 py-5 font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:translate-x-2 shadow-xl group"
+                  className="px-8 py-4 font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all hover:gap-5"
                   style={{ 
                     backgroundColor: theme.buttonColor, 
                     color: isLightColor(theme.buttonColor) ? '#000000' : '#ffffff',
                     borderRadius: 'var(--btn-radius)' 
                   }}
                 >
-                  Explorar Colección
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  {theme.ctaText || 'Ver Catálogo'}
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-                {theme.template === 'moderno' && (
-                  <div className="flex items-center gap-2 px-6 py-2">
-                    <div className="flex -space-x-2">
-                      {[1,2,3].map(i => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-background bg-gray-200" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-bold uppercase opacity-50">+500 Clientes felices</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Products Grid with Premium Cards */}
-      <section className="py-20 px-6 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto space-y-16">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-[2px] bg-primary" style={{ backgroundColor: theme.primaryColor }} />
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary" style={{ color: theme.primaryColor }}>
-                  Nuestra Selección
-                </p>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">
-                Productos Destacados
+      {/* Grid de Productos */}
+      <section className="py-12 px-6">
+        <div className="max-w-7xl mx-auto space-y-12">
+          <div className="flex items-end justify-between border-b pb-6" style={{ borderColor: borderColor }}>
+            <div className="space-y-1">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40">
+                Catálogo de Productos
+              </p>
+              <h2 className="text-3xl font-black uppercase tracking-tighter">
+                Nuestra Selección
               </h2>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest opacity-50" style={{ borderColor: borderColor }}>
-                {products.length} Resultados
-              </div>
+            <div className="px-3 py-1 rounded-full border text-[8px] font-bold uppercase tracking-widest opacity-40" style={{ borderColor: borderColor }}>
+              {products.length} Items
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {products.map((product) => (
               <div 
                 key={product.id}
-                className={cn(
-                  "group relative border transition-all duration-500 hover:shadow-3xl hover:-translate-y-2 overflow-hidden",
-                  theme.template === 'minimalista' ? "border-none bg-transparent" : "p-4"
-                )}
+                className="group relative border transition-all duration-300 hover:shadow-xl p-3"
                 style={{ 
-                  backgroundColor: theme.template === 'minimalista' ? 'transparent' : cardBg,
+                  backgroundColor: cardBg,
                   borderColor: borderColor,
                   borderRadius: 'var(--card-radius)' 
                 }}
               >
-                {/* Product Image Container */}
+                {/* Imagen del Producto */}
                 <div 
-                  className="aspect-[4/5] overflow-hidden mb-6 relative shadow-inner"
+                  className="aspect-square overflow-hidden mb-4 relative"
                   style={{ 
-                    backgroundColor: isLightBg ? '#f3f4f6' : adjustColor(theme.bgColor || '#0f1016', -5),
-                    borderRadius: 'calc(var(--card-radius) - 8px)'
+                    backgroundColor: isLightBg ? '#f9fafb' : adjustColor(theme.bgColor || '#0f1016', -5),
+                    borderRadius: 'calc(var(--card-radius) - 10px)'
                   }}
                 >
                   {product.imageUrl ? (
                     <img 
                       src={product.imageUrl} 
                       alt={product.name} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center opacity-10">
-                      <ShoppingBag className="w-24 h-24" />
+                    <div className="w-full h-full flex items-center justify-center opacity-5">
+                      <ShoppingBag className="w-16 h-16" />
                     </div>
                   )}
                   
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-6">
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                     <button 
                       onClick={() => addToCart(product)}
-                      className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-full transform translate-y-8 group-hover:translate-y-0 transition-all duration-500 shadow-2xl"
+                      className="w-full py-3 bg-white text-black font-black uppercase tracking-widest text-[9px] rounded-lg shadow-xl translate-y-2 group-hover:translate-y-0 transition-transform"
                     >
                       Añadir al Carrito
                     </button>
                   </div>
-
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    <div className="px-3 py-1 bg-primary text-black text-[9px] font-black rounded-full shadow-lg" style={{ backgroundColor: theme.primaryColor }}>
-                      NUEVO
-                    </div>
-                  </div>
                 </div>
                 
-                {/* Product Info */}
-                <div className="space-y-4 px-2">
-                  <div className="space-y-1">
-                    <h3 className="font-black text-xl leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3 h-3 text-green-500" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-green-500">En Stock</span>
-                    </div>
-                  </div>
+                {/* Info del Producto */}
+                <div className="space-y-3 px-1">
+                  <h3 className="font-bold text-base uppercase tracking-tight line-clamp-1">
+                    {product.name}
+                  </h3>
                   
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-2xl font-black tracking-tighter">
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xl font-black tracking-tighter">
                       ${product.price.toLocaleString()}
                     </span>
                     <button 
                       onClick={handleCheckout}
-                      className="p-3 border rounded-full transition-all hover:bg-primary hover:text-black group/btn"
+                      className="w-8 h-8 flex items-center justify-center border rounded-full transition-all hover:bg-black hover:text-white"
                       style={{ borderColor: borderColor }}
                     >
-                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -397,124 +320,86 @@ export const PublicStore: React.FC = () => {
             ))}
           </div>
 
-          {/* Empty State Premium */}
+          {/* Estado Vacío */}
           {products.length === 0 && (
-            <div className="py-32 text-center space-y-8 max-w-lg mx-auto animate-in fade-in zoom-in duration-700">
-              <div className="relative inline-block">
-                <div className="w-24 h-24 bg-primary/10 rounded-[30px] flex items-center justify-center mx-auto border border-primary/20 rotate-12 transition-transform hover:rotate-0 duration-500">
-                  <Package className="w-12 h-12 text-primary" style={{ color: theme.primaryColor }} />
-                </div>
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg">
-                  <Clock className="w-5 h-5 text-yellow-500" />
-                </div>
+            <div className="py-24 text-center space-y-6 max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto">
+                <Package className="w-8 h-8 opacity-20" />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black uppercase tracking-tight">Próximamente más productos</h3>
-                <p className="text-sm opacity-60 leading-relaxed">
-                  Estamos actualizando nuestro catálogo. Si buscas algo específico, 
-                  no dudes en contactarnos directamente.
-                </p>
+              <div className="space-y-1">
+                <h3 className="text-xl font-black uppercase">Sin productos aún</h3>
+                <p className="text-xs opacity-50">Pronto tendremos novedades para ti.</p>
               </div>
               <button 
                 onClick={() => window.open(`https://wa.me/${data.instanceName}`, '_blank')}
-                className="px-8 py-4 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-3 mx-auto"
+                className="px-6 py-3 border rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all flex items-center gap-2 mx-auto"
+                style={{ borderColor: borderColor }}
               >
-                <Send className="w-4 h-4" />
-                Consultar por WhatsApp
+                <Send className="w-3 h-3" />
+                Contactar por WhatsApp
               </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* Floating Cart Button (Mobile Optimized) */}
+      {/* Resumen de Carrito Flotante */}
       {cart.length > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-6 animate-in slide-in-from-bottom-10 duration-500">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-6">
           <div 
-            className="rounded-[35px] p-4 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-6 border"
+            className="rounded-full p-2 pl-6 shadow-2xl flex items-center justify-between border backdrop-blur-lg"
             style={{ 
-              backgroundColor: isLightBg ? 'rgba(255,255,255,0.95)' : 'rgba(31,31,39,0.95)',
-              borderColor: borderColor,
-              backdropFilter: 'blur(20px)'
+              backgroundColor: isLightBg ? 'rgba(255,255,255,0.9)' : 'rgba(31,31,39,0.9)',
+              borderColor: borderColor
             }}
           >
-            <div className="space-y-0.5 px-2">
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Resumen</p>
-              <p className="text-2xl font-black">
+            <div className="flex items-center gap-3">
+              <ShoppingCart className="w-4 h-4 opacity-40" />
+              <p className="text-lg font-black">
                 ${cart.reduce((sum, p) => sum + p.price, 0).toLocaleString()}
               </p>
             </div>
             <button 
               onClick={handleCheckout}
-              className="flex-1 py-5 font-black uppercase tracking-widest text-[11px] rounded-[24px] flex items-center justify-center gap-3 shadow-xl transition-all hover:scale-[1.02] active:scale-95 relative overflow-hidden group"
+              className="px-8 h-12 font-black uppercase tracking-widest text-[9px] rounded-full flex items-center gap-2 shadow-lg"
               style={{ 
                 backgroundColor: theme.buttonColor, 
                 color: isLightColor(theme.buttonColor) ? '#000000' : '#ffffff'
               }}
             >
-              <div className="absolute inset-0 bg-white/20 translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              Finalizar Pedido
-              <Send className="w-4 h-4 relative z-10" />
+              Comprar por WhatsApp
+              <Send className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Footer Refinado */}
+      {/* Footer Limpio */}
       <footer 
-        className="py-32 px-6 border-t mt-20 transition-colors duration-500"
+        className="py-20 px-6 border-t mt-12"
         style={{ 
-          backgroundColor: isLightBg ? '#f9fafb' : adjustColor(theme.bgColor || '#0f1016', 5),
+          backgroundColor: isLightBg ? '#fcfcfc' : adjustColor(theme.bgColor || '#0f1016', 5),
           borderColor: borderColor
         }}
       >
-        <div className="max-w-7xl mx-auto flex flex-col items-center gap-16">
-          <div className="flex flex-col items-center gap-6">
-            <div 
-              className="w-20 h-20 overflow-hidden flex items-center justify-center border shadow-2xl transition-transform hover:rotate-6"
-              style={{ borderRadius: 'var(--card-radius)', borderColor: borderColor }}
-            >
-              {theme.logoUrl ? (
-                <img src={theme.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <ShoppingBag className="w-10 h-10 text-primary" style={{ color: theme.primaryColor }} />
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-10">
+          <div className="text-center space-y-4">
+            <span className="font-black uppercase tracking-tighter text-2xl block opacity-60">
+              {theme.storeName || 'Tienda'}
+            </span>
+            <div className="flex justify-center gap-4">
+              {theme.instagramUrl && (
+                <a href={theme.instagramUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full border flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity" style={{ borderColor: borderColor }}>
+                  <Globe className="w-4 h-4" />
+                </a>
               )}
-            </div>
-            <div className="text-center space-y-2">
-              <span className="font-black uppercase tracking-tighter text-4xl block">
-                {theme.storeName || 'Store'}
-              </span>
-              <p className="text-sm opacity-50 font-medium">La mejor selección al mejor precio.</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-6">
-            {theme.instagramUrl && (
-              <a href={theme.instagramUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-8 py-4 rounded-full border transition-all hover:bg-black/5 dark:hover:bg-white/5 font-bold text-[10px] uppercase tracking-widest" style={{ borderColor: borderColor }}>
-                <Globe className="w-4 h-4" />
-                Instagram
-              </a>
-            )}
-            {theme.tiktokUrl && (
-              <a href={theme.tiktokUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-8 py-4 rounded-full border transition-all hover:bg-black/5 dark:hover:bg-white/5 font-bold text-[10px] uppercase tracking-widest" style={{ borderColor: borderColor }}>
-                <ExternalLink className="w-4 h-4" />
-                TikTok
-              </a>
-            )}
-          </div>
-
-          <div className="w-full max-w-xs h-px bg-current opacity-10" />
-
-          <div className="text-center space-y-6">
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.5em] opacity-30">Evolution API</span>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border" style={{ borderColor: borderColor }}>
-                <CheckCircle2 className="w-3 h-3 text-primary" style={{ color: theme.primaryColor }} />
-                <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">Plataforma Verificada</span>
-              </div>
-            </div>
-            <p className="text-[9px] opacity-40 uppercase tracking-widest">
-              © {new Date().getFullYear()} {theme.storeName}. Todos los derechos reservados.
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[8px] font-black uppercase tracking-[0.4em] opacity-20">Powered by Evolution API</span>
+            <p className="text-[8px] opacity-20 uppercase tracking-widest">
+              © {new Date().getFullYear()} - Todos los derechos reservados.
             </p>
           </div>
         </div>
