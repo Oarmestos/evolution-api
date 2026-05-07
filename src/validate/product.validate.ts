@@ -10,6 +10,7 @@ export const productSchema: JSONSchema7 = {
     price: { type: 'number', minimum: 0 },
     imageUrl: { type: 'string' },
     stock: { type: 'integer', minimum: 0 },
+    sku: { type: 'string' },
     enabled: { type: 'boolean' },
   },
   required: ['name', 'price'],

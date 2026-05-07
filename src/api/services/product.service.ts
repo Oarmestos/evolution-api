@@ -1,7 +1,9 @@
+import { getObjectUrl, uploadTempFile } from '@api/integrations/storage/s3/libs/minio.server';
 import { PrismaRepository } from '@api/repository/repository.service';
 import { Logger } from '@config/logger.config';
 import { ProductDto } from '@dto/product.dto';
-import { NotFoundException } from '@exceptions';
+import { BadRequestException, NotFoundException } from '@exceptions';
+import { v4 as uuidv4 } from 'uuid';
 
 export class ProductService {
   constructor(private readonly prisma: PrismaRepository) {}
@@ -44,5 +46,21 @@ export class ProductService {
     return this.prisma.product.delete({
       where: { id },
     });
+  }
+
+  public async uploadProductImage(instanceId: string, file: Express.Multer.File) {
+    try {
+      const fileName = `product-${instanceId}-${uuidv4()}-${file.originalname}`;
+      const folder = 'product-images';
+
+      await uploadTempFile(folder, fileName, file.buffer, file.size, { 'Content-Type': file.mimetype });
+
+      const imageUrl = await getObjectUrl(`${folder}/${fileName}`);
+
+      return { imageUrl };
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Error al subir la imagen del producto');
+    }
   }
 }

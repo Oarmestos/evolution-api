@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Search, Trash2, Edit3, X, Loader2, Save } from 'lucide-react';
+import { Package, Plus, Search, Trash2, Edit3, X, Loader2, Save, Upload, Image as ImageIcon } from 'lucide-react';
 import axios from 'axios';
 import { useInstanceStore } from '../store/useInstanceStore';
 
@@ -10,6 +10,7 @@ interface Product {
   price: number;
   stock: number;
   imageUrl?: string;
+  sku?: string;
   enabled: boolean;
 }
 
@@ -27,9 +28,12 @@ export const Products = () => {
     description: '',
     price: '',
     stock: '',
+    sku: '',
     imageUrl: '',
     enabled: true
   });
+
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchProducts = async () => {
     if (!token || !activeInstance) return;
@@ -58,7 +62,8 @@ export const Products = () => {
     const payload = {
       ...form,
       price: parseFloat(form.price),
-      stock: parseInt(form.stock)
+      stock: parseInt(form.stock),
+      sku: form.sku
     };
 
     try {
@@ -73,7 +78,7 @@ export const Products = () => {
       }
       setIsModalOpen(false);
       setEditingProduct(null);
-      setForm({ name: '', description: '', price: '', stock: '', imageUrl: '', enabled: true });
+      setForm({ name: '', description: '', price: '', stock: '', sku: '', imageUrl: '', enabled: true });
       fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
@@ -99,6 +104,7 @@ export const Products = () => {
       description: product.description || '',
       price: product.price.toString(),
       stock: product.stock.toString(),
+      sku: product.sku || '',
       imageUrl: product.imageUrl || '',
       enabled: product.enabled
     });
@@ -186,6 +192,11 @@ export const Products = () => {
                   <span className="text-primary font-bold text-lg">${product.price.toLocaleString()}</span>
                 </div>
                 <p className="text-white/40 text-sm line-clamp-2 mb-4 h-10">{product.description || 'Sin descripción'}</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {product.sku && (
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-wider">SKU: {product.sku}</span>
+                  )}
+                </div>
                 <div className="flex items-center justify-between pt-4 border-t border-white/5">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -218,95 +229,191 @@ export const Products = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="theme-overlay-card w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <h2 className="text-xl font-bold text-white">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-white/40 hover:text-white transition-colors">
+          <div className="theme-overlay-card w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-white/5 shrink-0">
+              <h2 className="text-xl font-bold theme-text">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-theme-muted hover:theme-text transition-colors">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Nombre del Producto</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
-                    placeholder="Ej. Hamburguesa Especial"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Descripción</label>
-                  <textarea 
-                    value={form.description}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none h-24 resize-none"
-                    placeholder="Detalles del producto..."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            
+            <form onSubmit={handleSubmit} className="overflow-y-auto p-6 scrollbar-hide">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Columna Izquierda: Multimedia */}
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Precio ($)</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-3">Imagen del Producto</label>
+                    <div className="space-y-3">
+                      {/* Vista previa compacta */}
+                      <div className="theme-input rounded-2xl h-48 flex items-center justify-center relative overflow-hidden bg-black/20 border border-white/5">
+                        {form.imageUrl ? (
+                          <>
+                            <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <button 
+                              type="button"
+                              onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
+                              className="absolute top-3 right-3 p-1.5 bg-red-500/80 hover:bg-red-500 rounded-lg text-white shadow-xl hover:scale-110 transition-all z-20 backdrop-blur-sm"
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center text-white/5">
+                            <ImageIcon size={48} />
+                            <span className="text-[10px] font-bold uppercase mt-3 tracking-[0.2em]">Sin imagen</span>
+                          </div>
+                        )}
+                        
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
+                            <Loader2 className="animate-spin text-primary mb-2" size={24} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Subiendo...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Botón de carga sutil */}
+                      <div className="mt-4">
+                        <label className="relative flex items-center gap-2 text-primary hover:text-primary-hover transition-colors cursor-pointer group w-fit">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file || !activeInstance || !token) return;
+                              try {
+                                setIsUploading(true);
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                const { data } = await axios.post(`/product/upload/${activeInstance.instanceName}`, formData, {
+                                  headers: { apikey: token, 'Content-Type': 'multipart/form-data' }
+                                });
+                                setForm(f => ({ ...f, imageUrl: data.imageUrl }));
+                              } catch (error) {
+                                console.error('Error uploading image:', error);
+                              } finally {
+                                setIsUploading(false);
+                              }
+                            }}
+                            className="hidden"
+                            disabled={isUploading}
+                          />
+                          <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                            <Upload size={14} />
+                          </div>
+                          <span className="text-[11px] font-black uppercase tracking-widest">Cargar imagen local</span>
+                        </label>
+                      </div>
+
+                      <div className="relative py-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-white/5"></div>
+                        </div>
+                        <div className="relative flex justify-center text-[9px] uppercase font-black tracking-[0.2em]">
+                          <span className="bg-theme-modal px-3 text-theme-muted">O URL EXTERNA</span>
+                        </div>
+                      </div>
+
+                      <input 
+                        type="text" 
+                        value={form.imageUrl}
+                        onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                        className="theme-input w-full rounded-xl px-4 py-3 text-[12px] focus:outline-none"
+                        placeholder="https://images.unsplash.com/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Columna Derecha: Información */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-2">Nombre del Producto</label>
                     <input 
-                      type="number" 
+                      type="text" 
                       required
-                      value={form.price}
-                      onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
-                      placeholder="0.00"
+                      placeholder="Ej. Hamburguesa Especial"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Stock</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-2">SKU / Referencia</label>
                     <input 
-                      type="number" 
-                      required
-                      value={form.stock}
-                      onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+                      type="text" 
+                      value={form.sku}
+                      onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
                       className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
-                      placeholder="0"
+                      placeholder="Ej. PROD-001"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-2">Precio ($)</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={form.price}
+                        onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                        className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-2">Stock</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={form.stock}
+                        onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+                        className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-2">Descripción</label>
+                    <textarea 
+                      value={form.description}
+                      onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                      className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none h-32 resize-none"
+                      placeholder="Detalles del producto..."
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-4">
+                    <input 
+                      type="checkbox" 
+                      id="enabled"
+                      checked={form.enabled}
+                      onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))}
+                      className="w-5 h-5 rounded-lg border-white/10 bg-white/5 text-primary focus:ring-primary/20"
+                    />
+                    <label htmlFor="enabled" className="text-sm text-theme-muted font-medium cursor-pointer">Producto habilitado para la venta</label>
+                  </div>
+                  
+                    <div className="pt-6 flex gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="flex-1 px-6 py-4 rounded-2xl font-bold text-theme-muted hover:theme-text hover:bg-white/5 transition-all uppercase text-[10px] tracking-widest border border-transparent hover:border-white/5"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        type="submit"
+                        style={{ backgroundColor: '#00f2ff', color: '#0a0a0f' }}
+                        className="flex-[2] py-4 rounded-full font-black shadow-lg hover:scale-[1.05] transition-all flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest"
+                      >
+                        <Save size={18} style={{ color: '#0a0a0f' }} />
+                        {editingProduct ? 'Guardar Cambios' : 'Crear Producto'}
+                      </button>
+                    </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">URL de la Imagen</label>
-                  <input 
-                    type="text" 
-                    value={form.imageUrl}
-                    onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
-                    className="theme-input w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="flex items-center gap-3 py-2">
-                  <input 
-                    type="checkbox" 
-                    id="enabled"
-                    checked={form.enabled}
-                    onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))}
-                    className="w-5 h-5 rounded-lg border-white/10 bg-white/5 text-primary focus:ring-primary/20"
-                  />
-                  <label htmlFor="enabled" className="text-sm text-white/60 font-medium">Producto habilitado para la venta</label>
-                </div>
-              </div>
-              <div className="pt-6 flex gap-3">
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-6 py-4 rounded-2xl font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white rounded-2xl font-bold transition-all shadow-lg shadow-primary/20"
-                >
-                  <Save size={20} />
-                  {editingProduct ? 'Guardar Cambios' : 'Crear Producto'}
-                </button>
               </div>
             </form>
           </div>

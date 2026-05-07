@@ -311,8 +311,8 @@ const SalesFunnel: React.FC = () => {
         {[
           { label: 'Leads Totales', value: stages.reduce((acc, s) => acc + s.leads.length, 0), icon: Users, color: 'text-primary' },
           { label: 'Valor Total', value: `$${stages.reduce((acc, s) => acc + s.leads.reduce((lacc, l) => lacc + l.value, 0), 0).toLocaleString()}`, icon: DollarSign, color: 'text-green-400' },
-          { label: 'Tasa Conversión', value: '12.5%', icon: TrendingUp, color: 'text-purple-400' },
-          { label: 'Tiempo Promedio', value: '3.5 días', icon: Loader2, color: 'text-orange-400' },
+          { label: 'Tasa Conversión', value: '0%', icon: TrendingUp, color: 'text-purple-400' },
+          { label: 'Tiempo Promedio', value: '0 días', icon: Loader2, color: 'text-orange-400' },
         ].map((stat, i) => (
           <div key={i} className="theme-surface p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">

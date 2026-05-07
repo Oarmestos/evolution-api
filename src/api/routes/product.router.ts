@@ -4,8 +4,11 @@ import { productController } from '@api/server.module';
 import { ProductDto } from '@dto/product.dto';
 import { productSchema } from '@validate/product.validate';
 import { RequestHandler, Router } from 'express';
+import multer from 'multer';
 
 import { HttpStatus } from './index.router';
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 export class ProductRouter extends RouterBroker {
   public readonly router: Router = Router();
@@ -58,6 +61,15 @@ export class ProductRouter extends RouterBroker {
           execute: (instance) => productController.deleteProduct(instance, req.params.id),
         });
         return res.status(HttpStatus.OK).json(response);
+      })
+      .post(this.routerPath('upload'), ...guards, upload.single('file'), async (req, res) => {
+        const response = await this.dataValidate<any>({
+          request: req,
+          schema: {},
+          ClassRef: InstanceDto,
+          execute: (instance) => productController.uploadProductImage(instance, req.file as Express.Multer.File),
+        });
+        return res.status(HttpStatus.CREATED).json(response);
       });
   }
 }

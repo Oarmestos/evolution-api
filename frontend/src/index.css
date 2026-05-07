@@ -254,6 +254,17 @@
   border-color: var(--border-strong) !important;
 }
 
+/* Forced Utility for Premium Buttons (Primary background / Dark text) */
+.btn-avri-force-dark {
+  background-color: var(--primary) !important;
+  color: #0a0a0f !important;
+  border: none !important;
+}
+
+.btn-avri-force-dark * {
+  color: #0a0a0f !important;
+}
+
 .bg-avri-gradient {
   background-color: var(--app-bg-solid) !important;
   background-image: var(--app-gradient) !important;

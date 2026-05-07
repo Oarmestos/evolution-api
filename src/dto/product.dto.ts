@@ -4,5 +4,6 @@ export class ProductDto {
   price: number;
   imageUrl?: string;
   stock: number;
+  sku?: string;
   enabled: boolean;
 }

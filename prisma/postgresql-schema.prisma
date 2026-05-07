@@ -920,6 +920,7 @@ model Product {
   price       Float    @default(0.0)
   imageUrl    String?  @db.VarChar(500)
   stock       Int      @default(0)
+  sku         String?  @db.VarChar(100)
   enabled     Boolean  @default(true)
   createdAt   DateTime @default(now()) @db.Timestamp(6)
   updatedAt   DateTime @updatedAt @db.Timestamp(6)
@@ -930,6 +931,7 @@ model Product {
   orderItems  OrderItem[]
 
   @@index([instanceId])
+  @@index([sku])
 }
 
 model Order {
