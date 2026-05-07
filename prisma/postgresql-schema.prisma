@@ -921,6 +921,7 @@ model Product {
   imageUrl    String?  @db.VarChar(500)
   stock       Int      @default(0)
   sku         String?  @db.VarChar(100)
+  category    String?  @db.VarChar(100)
   enabled     Boolean  @default(true)
   createdAt   DateTime @default(now()) @db.Timestamp(6)
   updatedAt   DateTime @updatedAt @db.Timestamp(6)
@@ -932,6 +933,7 @@ model Product {
 
   @@index([instanceId])
   @@index([sku])
+  @@index([category])
 }
 
 model Order {

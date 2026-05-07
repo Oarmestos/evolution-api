@@ -27,4 +27,8 @@ export class ProductController {
   public async uploadProductImage(instance: any, file: Express.Multer.File) {
     return this.productService.uploadProductImage(instance.id, file);
   }
+
+  public async importProducts(instance: any, file: Express.Multer.File) {
+    return this.productService.importProducts(instance.id, file);
+  }
 }
