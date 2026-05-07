@@ -167,7 +167,7 @@ AppRegistry.register(
       providerFiles,
     ),
 );
-AppRegistry.register(SendMessageController, () => new SendMessageController(waMonitor));
+AppRegistry.register(SendMessageController, () => new SendMessageController(waMonitor, productService));
 AppRegistry.register(CallController, () => new CallController(waMonitor));
 AppRegistry.register(ChatController, () => new ChatController(waMonitor));
 AppRegistry.register(BusinessController, () => new BusinessController(waMonitor));

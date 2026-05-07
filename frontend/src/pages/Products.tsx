@@ -110,50 +110,43 @@ export const Products = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <Package className="text-primary" size={24} />
-            </div>
-            Gestión de Productos
-          </h1>
-          <p className="text-white/40 text-sm mt-1">Crea y administra tu catálogo de productos manual.</p>
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase mb-2">Gestión de Productos</h1>
+          <p className="theme-muted text-sm font-medium">Crea y administra tu catálogo de productos manual</p>
         </div>
-        <button 
-          onClick={() => {
-            setEditingProduct(null);
-            setForm({ name: '', description: '', price: '', stock: '', imageUrl: '', enabled: true });
-            setIsModalOpen(true);
-          }}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold transition-all shadow-lg shadow-primary/20"
-        >
-          <Plus size={20} />
-          Nuevo Producto
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="theme-input pl-11 pr-4 py-3 rounded-2xl w-64 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setEditingProduct(null);
+              setForm({ name: '', description: '', price: '', stock: '', imageUrl: '', enabled: true });
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-primary text-dark font-black px-6 py-3 rounded-2xl hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 uppercase text-xs tracking-widest"
+          >
+            <Plus size={18} /> Nuevo Producto
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="theme-overlay-card rounded-2xl p-4 flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
-          <input 
-            type="text" 
-            placeholder="Buscar productos..." 
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="theme-input w-full pl-12 pr-4 py-3 rounded-xl text-sm focus:outline-none"
-          />
-        </div>
-      </div>
 
       {/* Grid */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-white/40 gap-4">
-          <Loader2 className="animate-spin" size={40} />
-          <p>Cargando catálogo...</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Cargando catálogo...</p>
         </div>
       ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -207,15 +200,15 @@ export const Products = () => {
           ))}
         </div>
       ) : (
-        <div className="theme-overlay-card rounded-3xl py-20 flex flex-col items-center text-center px-6">
-          <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-white/20 mb-4">
-            <Package size={32} />
+        <div className="theme-surface rounded-3xl py-24 flex flex-col items-center text-center px-6 border border-white/5">
+          <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center text-primary mb-6 shadow-lg shadow-primary/5">
+            <Package size={40} />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">No hay productos</h3>
-          <p className="text-white/40 max-w-sm mb-8">Comienza a construir tu catálogo manual agregando tu primer producto.</p>
+          <h3 className="text-2xl font-black text-white tracking-tight uppercase mb-2">No hay productos</h3>
+          <p className="theme-muted text-sm max-w-sm mb-10">Comienza a construir tu catálogo manual agregando tu primer producto.</p>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10"
+            className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl transition-all border border-white/10 font-black uppercase text-xs tracking-widest"
           >
             Agregar mi primer producto
           </button>

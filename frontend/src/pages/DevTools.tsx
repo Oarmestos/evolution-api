@@ -304,28 +304,22 @@ export const DevTools: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="theme-surface border-b border-white/5 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Code2 size={18} />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-white">API Reference</h1>
-              <p className="text-[11px] text-white/30">Todo lo que ves en la UI está disponible via API</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-black text-white tracking-tight uppercase">API Reference</h1>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[9px] font-black uppercase tracking-widest">v2.3.7</span>
+              <span className="px-2 py-0.5 bg-white/5 text-white/40 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">REST / JSON</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/30">v2.3.7</span>
-            <span className="px-2 py-1 bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/20 rounded-lg text-[10px] font-bold">REST / JSON</span>
-          </div>
+          <p className="theme-muted text-sm font-medium">Todo lo que ves en la UI está disponible via API</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="space-y-8">
 
           {/* Config Bar */}
           <div className="theme-surface rounded-2xl p-5 space-y-4">
@@ -428,8 +422,6 @@ export const DevTools: React.FC = () => {
               </div>
             </div>
           </div>
-
-        </div>
       </div>
     </div>
   );

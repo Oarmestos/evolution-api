@@ -447,3 +447,18 @@ export const buttonsMessageSchema: JSONSchema7 = {
   },
   required: ['number'],
 };
+
+export const sendProductMessageSchema: JSONSchema7 = {
+  $id: v4(),
+  type: 'object',
+  properties: {
+    number: { ...numberDefinition },
+    productId: { type: 'string' },
+    delay: {
+      type: 'integer',
+      description: 'Enter a value in milliseconds',
+    },
+    quoted: { ...quotedOptionsSchema },
+  },
+  required: ['number', 'productId'],
+};

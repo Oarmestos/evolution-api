@@ -363,28 +363,23 @@ export const AIAgents: React.FC = () => {
   const agentType = (type: AgentType | '') => AGENT_TYPES.find(t => t.id === type);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-white/5 px-6 py-4 bg-[#0a0a0b] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-            <Bot size={18} />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-white">IA & Agentes</h1>
-            <p className="text-[11px] text-white/30">Conecta Avri con los mejores motores de inteligencia artificial</p>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase mb-2">IA & Agentes</h1>
+          <p className="theme-muted text-sm font-medium">Conecta Avri con los mejores motores de inteligencia artificial</p>
         </div>
         <button
           onClick={() => setShowWizard(true)}
-          className="h-9 px-4 bg-primary text-dark font-bold rounded-lg text-sm hover:bg-primary/90 flex items-center gap-2 shadow-[0_0_15px_rgba(0,242,255,0.25)] transition-all"
+          className="bg-primary text-dark font-bold px-6 py-3 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(0,242,255,0.3)] group active:scale-95"
         >
-          <Plus size={16} /> Nuevo Agente de IA
+          <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+          Nuevo Agente de IA
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-6 space-y-8">
+      <div className="space-y-8">
 
           {/* Agent List or Empty State */}
           {agents.length === 0 ? (
@@ -480,7 +475,6 @@ export const AIAgents: React.FC = () => {
           </div>
 
         </div>
-      </div>
 
       {showWizard && (
         <CreateAgentWizard onClose={() => setShowWizard(false)} onCreated={handleCreated} />

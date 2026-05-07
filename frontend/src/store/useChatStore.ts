@@ -71,6 +71,7 @@ interface ChatState {
   setSelectedChat: (chat: Chat | null) => void;
   muteChat: (instanceName: string, remoteJid: string, muteTime?: number | null) => Promise<void>;
   deleteChat: (instanceName: string, remoteJid: string) => Promise<void>;
+  sendProduct: (instanceName: string, remoteJid: string, productId: string) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -225,6 +226,39 @@ export const useChatStore = create<ChatState>((set) => ({
       });
     } catch (error) {
       console.error('Error sending message:', error);
+    }
+  },
+
+  sendProduct: async (instanceName, remoteJid, productId) => {
+    const token = localStorage.getItem('avri_token');
+    try {
+      const response = await axios.post(`/message/sendProduct/${instanceName}`, {
+        number: remoteJid,
+        productId,
+        delay: 0
+      }, {
+        headers: { apikey: token }
+      });
+
+      const sentMessage = normalizeMessage(response.data, {
+        remoteJid,
+      });
+
+      set((state) => {
+        const updatedChats = upsertChatWithLatestMessage(state.chats, state.selectedChat, sentMessage);
+        const selectedChat = state.selectedChat?.remoteJid === remoteJid
+          ? updatedChats.find((chat) => chat.remoteJid === remoteJid) ?? state.selectedChat
+          : state.selectedChat;
+
+        return {
+          chats: updatedChats,
+          selectedChat,
+          messages: mergeMessages(state.messages, [sentMessage]),
+        };
+      });
+    } catch (error) {
+      console.error('Error sending product:', error);
+      alert('Error al enviar el producto');
     }
   },
  

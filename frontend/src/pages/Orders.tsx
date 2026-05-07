@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Filter, Loader2, Calendar, User, DollarSign, ChevronRight, CheckCircle2, Clock, Truck, XCircle, Package } from 'lucide-react';
+import { ShoppingCart, Search, Loader2, Calendar, User, DollarSign, ChevronRight, CheckCircle2, Clock, Truck, XCircle, Package } from 'lucide-react';
 import axios from 'axios';
 import { useInstanceStore } from '../store/useInstanceStore';
 
@@ -81,41 +81,35 @@ export const Orders = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <ShoppingCart className="text-primary" size={24} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase mb-2">Registro de Pedidos</h1>
+          <p className="theme-muted text-sm font-medium">Monitorea y gestiona las ventas realizadas manualmente por chat</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Buscar por cliente o ID..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="theme-input pl-11 pr-4 py-3 rounded-2xl w-64 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
           </div>
-          Registro de Pedidos
-        </h1>
-        <p className="text-white/40 text-sm mt-1">Monitorea y gestiona las ventas realizadas manualmente por chat.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Orders List */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="theme-overlay-card rounded-2xl p-4 flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
-              <input 
-                type="text" 
-                placeholder="Buscar por cliente o ID..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="theme-input w-full pl-12 pr-4 py-3 rounded-xl text-sm focus:outline-none"
-              />
-            </div>
-            <button className="p-3 bg-white/5 hover:bg-white/10 text-white/60 rounded-xl transition-colors">
-              <Filter size={20} />
-            </button>
-          </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-white/40 gap-4 theme-overlay-card rounded-3xl">
-              <Loader2 className="animate-spin" size={40} />
-              <p>Cargando pedidos...</p>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-widest">Cargando pedidos...</p>
             </div>
           ) : filteredOrders.length > 0 ? (
             <div className="space-y-3">
@@ -155,12 +149,12 @@ export const Orders = () => {
               })}
             </div>
           ) : (
-            <div className="theme-overlay-card rounded-3xl py-20 flex flex-col items-center text-center px-6">
-              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-white/20 mb-4">
-                <ShoppingCart size={32} />
+            <div className="theme-surface rounded-[32px] py-24 flex flex-col items-center text-center px-6 border border-white/5">
+              <div className="w-20 h-20 bg-primary/10 rounded-[24px] flex items-center justify-center text-primary mb-6 shadow-lg shadow-primary/5">
+                <ShoppingCart size={40} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">No hay pedidos</h3>
-              <p className="text-white/40 max-w-sm">Los pedidos aparecerán aquí cuando registres una venta desde el chat.</p>
+              <h3 className="text-2xl font-black text-white tracking-tight uppercase mb-2">No hay pedidos</h3>
+              <p className="theme-muted text-sm max-w-sm">Los pedidos aparecerán aquí cuando registres una venta desde el chat.</p>
             </div>
           )}
         </div>

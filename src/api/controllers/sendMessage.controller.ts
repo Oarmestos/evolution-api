@@ -7,6 +7,7 @@ import {
   SendLocationDto,
   SendMediaDto,
   SendPollDto,
+  SendProductDto,
   SendPtvDto,
   SendReactionDto,
   SendStatusDto,
@@ -15,6 +16,7 @@ import {
   SendTextDto,
 } from '@api/dto/sendMessage.dto';
 import { WAMonitoringService } from '@api/services/monitor.service';
+import { ProductService } from '@api/services/product.service';
 import { BadRequestException } from '@exceptions';
 import { isBase64, isURL } from 'class-validator';
 import emojiRegex from 'emoji-regex';
@@ -29,7 +31,10 @@ function isEmoji(str: string) {
 }
 
 export class SendMessageController {
-  constructor(private readonly waMonitor: WAMonitoringService) {}
+  constructor(
+    private readonly waMonitor: WAMonitoringService,
+    private readonly productService: ProductService,
+  ) {}
 
   public async sendTemplate({ instanceName }: InstanceDto, data: SendTemplateDto) {
     return await this.waMonitor.waInstances[instanceName].templateMessage(data);
@@ -103,5 +108,24 @@ export class SendMessageController {
 
   public async sendStatus({ instanceName }: InstanceDto, data: SendStatusDto, file?: any) {
     return await this.waMonitor.waInstances[instanceName].statusMessage(data, file);
+  }
+
+  public async sendProduct({ instanceName, instanceId }: InstanceDto, data: SendProductDto) {
+    const product = await this.productService.findUnique(instanceId, data.productId);
+    const origin = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const storeUrl = `${origin}/store/${instanceName}#product-${product.id}`;
+
+    const caption = `🛍️ *${product.name}*\n💰 *Precio:* $${product.price.toLocaleString()}\n\n${
+      product.description || ''
+    }\n\n🔗 _Ver detalle:_ ${storeUrl}`;
+
+    return await this.waMonitor.waInstances[instanceName].mediaMessage({
+      number: data.number,
+      mediatype: 'image',
+      media: product.imageUrl,
+      caption: caption,
+      delay: data.delay,
+      quoted: data.quoted,
+    });
   }
 }

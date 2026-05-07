@@ -5,6 +5,7 @@ import { useThemeStore } from '../../store/useThemeStore';
 import { cn } from '../../utils/cn';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
+import { ProductSelectorModal } from './ProductSelectorModal';
 
 interface ChatAreaProps {
   activeInstance: string | undefined;
@@ -12,7 +13,17 @@ interface ChatAreaProps {
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowContactInfo }) => {
-  const { messages, loadingMessages, selectedChat, setSelectedChat, sendMessage, createInternalNote, muteChat, deleteChat } = useChatStore();
+  const { 
+    messages, 
+    loadingMessages, 
+    selectedChat, 
+    setSelectedChat, 
+    sendMessage, 
+    sendProduct,
+    createInternalNote, 
+    muteChat, 
+    deleteChat 
+  } = useChatStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   const [inputText, setInputText] = useState('');
@@ -50,6 +61,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
       await createInternalNote(activeInstance, selectedChat.remoteJid, inputText);
     }
     setInputText('');
+  };
+
+  const handleSendProduct = async (productId: string) => {
+    if (!activeInstance || !selectedChat) return;
+    await sendProduct(activeInstance, selectedChat.remoteJid, productId);
+    setShowCatalogModal(false);
   };
 
   return (
@@ -336,39 +353,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
         </>
       )}
 
-      {/* Catalog Coming Soon Modal */}
-      {showCatalogModal && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          onClick={() => setShowCatalogModal(false)}
-        >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div
-            className="relative z-10 theme-surface border theme-border-strong rounded-[32px] shadow-2xl p-10 max-w-sm w-full text-center animate-in fade-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowCatalogModal(false)}
-              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10">
-              <Package className="w-10 h-10 text-primary" />
-            </div>
-            <h3 className="text-xl font-black tracking-tight theme-text mb-2">
-              Catálogo de Productos
-            </h3>
-            <p className="text-sm theme-muted leading-relaxed mb-6">
-              Pronto podrás enviar productos directamente desde el chat a tus clientes.
-              Esta función estará disponible muy pronto.
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs font-black text-primary uppercase tracking-widest">Próximamente</span>
-            </div>
-          </div>
-        </div>
+      {/* Product Selector Modal */}
+      {activeInstance && (
+        <ProductSelectorModal
+          isOpen={showCatalogModal}
+          onClose={() => setShowCatalogModal(false)}
+          onSelect={handleSendProduct}
+          instanceName={activeInstance}
+        />
       )}
     </div>
   );

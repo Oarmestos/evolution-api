@@ -167,3 +167,7 @@ export class SendReactionDto extends Metadata {
   key: proto.IMessageKey;
   reaction: string;
 }
+
+export class SendProductDto extends Metadata {
+  productId: string;
+}
