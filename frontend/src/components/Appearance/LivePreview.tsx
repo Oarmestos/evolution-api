@@ -62,14 +62,14 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ theme, previewProduct 
                       {previewProduct.category && (
                         <span className="text-[8px] font-black text-primary uppercase tracking-widest">{previewProduct.category}</span>
                       )}
-                      <h2 className="text-xl font-bold dark:text-white uppercase leading-none">{previewProduct.name}</h2>
+                      <h2 className="text-xl font-bold uppercase leading-none" style={{ color: theme.textColor }}>{previewProduct.name}</h2>
                       <p className="text-[10px] text-gray-500 font-medium leading-relaxed opacity-80">
                         {previewProduct.description || 'Especificaciones premium disponibles para entrega inmediata.'}
                       </p>
                    </div>
 
                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold dark:text-white">${previewProduct.price.toLocaleString('es-CO')}</span>
+                      <span className="text-2xl font-bold" style={{ color: theme.textColor }}>${previewProduct.price.toLocaleString('es-CO')}</span>
                       <span className="text-[8px] font-bold opacity-30 uppercase">IVA Inc.</span>
                    </div>
 
@@ -177,7 +177,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ theme, previewProduct 
                 </div>
               </div>
               <div className="p-4 space-y-2">
-                <h4 className="font-bold text-sm text-black dark:text-white truncate">
+                <h4 className="font-bold text-sm truncate" style={{ color: theme.textColor }}>
                   {previewProduct?.name || 'Producto de Ejemplo'}
                 </h4>
                 <p className="text-[10px] text-primary font-black">

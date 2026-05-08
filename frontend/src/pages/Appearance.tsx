@@ -133,8 +133,9 @@ export const Appearance: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { id: 'moderno', name: 'Moderno (Default)', desc: 'Diseño limpio con emojis sutiles y enfoque en la claridad.', color: 'bg-indigo-500' },
-                { id: 'minimalista', name: 'Minimalista', desc: 'Sin distracciones. Ideal para marcas de lujo o servicios.', color: 'bg-black border border-white/20' },
+                { id: 'moderno', name: 'Moderno (Default)', desc: 'Diseño limpio con enfoque en la claridad.', color: 'bg-indigo-500' },
+                { id: 'luxury', name: 'Avri Luxury', desc: 'Diseño exclusivo Glassmorphic de ultra-lujo.', color: 'bg-gradient-to-br from-[#00327d] to-[#7b41b3] shadow-[0_0_15px_rgba(0,50,125,0.4)]' },
+                { id: 'minimalista', name: 'Minimalista', desc: 'Sin distracciones. Ideal para marcas de lujo.', color: 'bg-black border border-white/20' },
                 { id: 'divertido', name: 'Divertido', desc: 'Muchos emojis, fuentes amigables y un tono cercano.', color: 'bg-pink-500' },
               ].map((tpl) => (
                 <button
@@ -199,8 +200,15 @@ export const Appearance: React.FC = () => {
                     type="text" 
                     value={theme.primaryColor}
                     onChange={(e) => updateTheme({ primaryColor: e.target.value })}
-                    className="bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
+                    className="flex-1 bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
                   />
+                  <button 
+                    onClick={() => updateTheme({ primaryColor: '#6366f1' })}
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 transition-colors"
+                    title="Restablecer color original"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -219,36 +227,76 @@ export const Appearance: React.FC = () => {
                     type="text" 
                     value={theme.buttonColor}
                     onChange={(e) => updateTheme({ buttonColor: e.target.value })}
-                    className="bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
+                    className="flex-1 bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
                   />
+                  <button 
+                    onClick={() => updateTheme({ buttonColor: '#000000' })}
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 transition-colors"
+                    title="Restablecer color original"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Tipografía */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Tipografía</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {fonts.map((f) => (
-                    <button
-                      key={f.value}
-                      onClick={() => updateTheme({ fontFamily: f.value })}
-                      className={cn(
-                        "py-3 px-2 rounded-xl text-[10px] font-bold transition-all border",
-                        theme.fontFamily === f.value 
-                          ? "bg-primary/10 border-primary text-primary" 
-                          : "bg-white/5 border-transparent text-white/50 hover:bg-white/10"
-                      )}
-                      style={{ fontFamily: f.value }}
-                    >
-                      {f.name}
-                    </button>
-                  ))}
+              {/* Tipografía y Color de Texto */}
+              <div className="md:col-span-2 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Fuentes */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Tipografía</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {fonts.map((f) => (
+                        <button
+                          key={f.value}
+                          onClick={() => updateTheme({ fontFamily: f.value })}
+                          className={cn(
+                            "py-3 px-2 rounded-xl text-[10px] font-bold transition-all border",
+                            theme.fontFamily === f.value 
+                              ? "bg-primary/10 border-primary text-primary" 
+                              : "bg-white/5 border-transparent text-white/50 hover:bg-white/10"
+                          )}
+                          style={{ fontFamily: f.value }}
+                        >
+                          {f.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Color de Texto */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Color de Texto</label>
+                    <div className="flex items-center gap-3 bg-[#0f1016] border border-white/5 rounded-2xl px-4 py-2">
+                      <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-white/10">
+                        <input 
+                          type="color" 
+                          value={theme.textColor}
+                          onChange={(e) => updateTheme({ textColor: e.target.value })}
+                          className="absolute inset-0 w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
+                        />
+                      </div>
+                      <input 
+                        type="text" 
+                        value={theme.textColor}
+                        onChange={(e) => updateTheme({ textColor: e.target.value })}
+                        className="flex-1 bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
+                      />
+                      <button 
+                        onClick={() => updateTheme({ textColor: '#1c1b1b' })}
+                        className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 transition-colors"
+                        title="Restablecer color original"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Color Secundario */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Color Secundario (Fondo)</label>
+              {/* Fondo de la Tienda (Color Secundario) */}
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Color Secundario (Fondo de Tienda)</label>
                 <div className="flex items-center gap-3 bg-[#0f1016] border border-white/5 rounded-2xl px-4 py-2">
                   <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-white/10">
                     <input 
@@ -262,8 +310,15 @@ export const Appearance: React.FC = () => {
                     type="text" 
                     value={theme.bgColor}
                     onChange={(e) => updateTheme({ bgColor: e.target.value })}
-                    className="bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
+                    className="flex-1 bg-transparent border-none text-xs text-white uppercase focus:outline-none font-mono"
                   />
+                  <button 
+                    onClick={() => updateTheme({ bgColor: '#f8fafc' })}
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 transition-colors"
+                    title="Restablecer color original"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -349,7 +404,7 @@ export const Appearance: React.FC = () => {
               </div>
 
               {/* Banner Content (Hero) */}
-              <div className="md:col-span-2 bg-[#0f1016]/50 p-6 rounded-3xl border border-white/[0.03] space-y-6">
+              <div className="md:col-span-2 bg-white/5 p-6 rounded-3xl border border-white/10 space-y-6">
                 <div className="flex items-center gap-2 text-primary">
                   <ImageIcon className="w-4 h-4" />
                   <h3 className="text-sm font-black uppercase tracking-widest">Banner Principal (Hero)</h3>
@@ -425,7 +480,7 @@ export const Appearance: React.FC = () => {
               </div>
 
               {/* Footer Content */}
-              <div className="md:col-span-2 bg-[#0f1016]/50 p-6 rounded-3xl border border-white/[0.03] space-y-6">
+              <div className="md:col-span-2 bg-white/5 p-6 rounded-3xl border border-white/10 space-y-6">
                 <div className="flex items-center gap-2 text-primary">
                   <Copyright className="w-4 h-4" />
                   <h3 className="text-sm font-black uppercase tracking-widest">Pie de Página (Footer)</h3>

@@ -14,6 +14,7 @@ export interface ThemeConfig {
   buttonColor: string;
   bgColor: string;
   fontFamily: string;
+  textColor: string;
   ctaText: string;
   borderRadius: number;
   instagramUrl: string;
@@ -47,6 +48,7 @@ const DEFAULT_THEME: ThemeConfig = {
   buttonColor: '#000000',
   bgColor: '#f8fafc',
   fontFamily: 'Inter',
+  textColor: '#1c1b1b',
   ctaText: 'Ver Detalles',
   borderRadius: 12,
   instagramUrl: '',
@@ -75,6 +77,14 @@ const TEMPLATES: Record<string, Partial<ThemeConfig>> = {
     bgColor: '#fef2f2',
     fontFamily: 'Poppins',
     borderRadius: 24,
+  },
+  luxury: {
+    primaryColor: '#00327d',
+    buttonColor: '#00327d',
+    bgColor: '#fcf9f8',
+    fontFamily: 'Montserrat',
+    textColor: '#1c1b1b',
+    borderRadius: 16,
   },
 };
 

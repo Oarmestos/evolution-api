@@ -94,6 +94,7 @@ model StoreTheme {
   buttonColor  String   @default("#000000") @db.VarChar(20)
   bgColor      String   @default("#f8fafc") @db.VarChar(20)
   fontFamily   String   @default("Inter") @db.VarChar(50)
+  textColor    String   @default("#1c1b1b") @db.VarChar(20)
   ctaText      String   @default("Ver Detalles") @db.VarChar(100)
   borderRadius Int      @default(12)
   instagramUrl String?  @db.VarChar(500)
@@ -937,17 +938,23 @@ model Product {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  remoteJid   String      @db.VarChar(100)
-  total       Float       @default(0.0)
-  status      OrderStatus @default(PENDING)
-  createdAt   DateTime    @default(now()) @db.Timestamp(6)
-  updatedAt   DateTime    @updatedAt @db.Timestamp(6)
+  id              String      @id @default(cuid())
+  remoteJid       String      @db.VarChar(100)
+  customerName    String?     @db.VarChar(255)
+  customerPhone   String?     @db.VarChar(100)
+  shippingAddress String?     @db.Text
+  shippingCity    String?     @db.VarChar(100)
+  paymentMethod   String?     @db.VarChar(100)
+  transactionId   String?     @db.VarChar(255)
+  total           Float       @default(0.0)
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime    @updatedAt @db.Timestamp(6)
 
-  instanceId  String
-  Instance    Instance    @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId      String
+  Instance        Instance    @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   
-  items       OrderItem[]
+  items           OrderItem[]
 
   @@index([instanceId])
   @@index([remoteJid])

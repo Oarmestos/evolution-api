@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  ShoppingBag, 
-  Globe, 
-  Send, 
-  ShoppingCart, 
-  ArrowRight,
-  AlertCircle,
-  Package
-} from 'lucide-react';
+import { ShoppingBag, Globe, ShoppingCart, ArrowRight, AlertCircle, Package, Heart, Eye, Check } from 'lucide-react';
+import { CheckoutModal } from '../components/Store/CheckoutModal';
+import { ProductPreviewModal } from '../components/Store/ProductPreviewModal';
+import { cn } from '../utils/cn';
 
 interface Product {
   id: string;
@@ -36,6 +31,7 @@ interface Theme {
   footerText: string | null;
   instagramUrl: string | null;
   tiktokUrl: string | null;
+  textColor: string;
 }
 
 interface StoreData {
@@ -43,6 +39,28 @@ interface StoreData {
   products: Product[];
   instanceName: string;
 }
+
+const ForceWhiteStyles = ({ isLightBg }: { isLightBg: boolean }) => (
+  <style>{`
+    .cart-force-white { color: ${isLightBg ? '#111827' : '#ffffff'} !important; }
+    .cart-force-white-soft { color: ${isLightBg ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)'} !important; }
+    .cart-badge-text { color: #ffffff !important; }
+    .glass-card {
+        background: ${isLightBg ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)'} !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid ${isLightBg ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)'} !important;
+    }
+    .soft-glow-hover:hover {
+        box-shadow: 0 0 40px ${isLightBg ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 50, 125, 0.15)'} !important;
+    }
+    .eye-icon-fix { color: #000000 !important; transition: color 0.2s; }
+    .eye-btn:hover .eye-icon-fix { color: #ffffff !important; }
+    
+    .quick-add-btn-text { color: ${isLightBg ? '#ffffff' : '#000000'} !important; transition: color 0.2s; }
+    .quick-add-btn:hover .quick-add-btn-text { color: ${isLightBg ? '#000000' : '#ffffff'} !important; }
+  `}</style>
+);
 
 // Utility to determine if a hex color is light or dark
 const isLightColor = (color: string) => {
@@ -58,7 +76,16 @@ const isLightColor = (color: string) => {
 // Utility to lighten/darken hex color for depth
 const adjustColor = (color: string, amount: number) => {
   if (!color) return '#16171d';
-  return '#' + color.replace(/^#/, '').replace(/../g, color => ('0' + Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).slice(-2));
+  return '#' + color.replace(/^#/, '').replace(/../g, c => ('0' + Math.min(255, Math.max(0, parseInt(c, 16) + amount)).toString(16)).slice(-2));
+};
+// Utility to fix double encoding issues (e.g. CÃ¡MARA -> CÁMARA)
+const decodeText = (text: string | null) => {
+  if (!text) return '';
+  try {
+    return decodeURIComponent(escape(text));
+  } catch {
+    return text;
+  }
 };
 
 export const PublicStore: React.FC = () => {
@@ -67,6 +94,10 @@ export const PublicStore: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<Product[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [addedToCartId, setAddedToCartId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -74,8 +105,9 @@ export const PublicStore: React.FC = () => {
         setLoading(true);
         const response = await axios.get(`/theme/store-api/${instanceName}`);
         setData(response.data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'No pudimos cargar la tienda. Verifica el nombre.');
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? (err as { response?: { data?: { error?: string } } }).response?.data?.error : 'No pudimos cargar la tienda. Verifica el nombre.';
+        setError(errorMsg || 'No pudimos cargar la tienda. Verifica el nombre.');
       } finally {
         setLoading(false);
       }
@@ -88,14 +120,70 @@ export const PublicStore: React.FC = () => {
 
   const addToCart = (product: Product) => {
     setCart([...cart, product]);
+    setAddedToCartId(product.id);
+    setTimeout(() => setAddedToCartId(null), 2000);
+  };
+
+  const toggleFavorite = (productId: string) => {
+    setFavorites(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId) 
+        : [...prev, productId]
+    );
   };
 
   const handleCheckout = () => {
-    if (!data) return;
-    
-    const message = `¡Hola! Me interesa comprar:\n\n${cart.map(p => `- ${p.name} ($${p.price})`).join('\n')}\n\nTotal: $${cart.reduce((sum, p) => sum + p.price, 0)}`;
-    const whatsappUrl = `https://wa.me/${data.instanceName}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    if (!data || cart.length === 0) return;
+    setIsCheckoutOpen(true);
+  };
+
+  const handleFinalSubmit = async (formData: {
+    customerName: string;
+    customerPhone: string;
+    shippingAddress: string;
+    shippingCity: string;
+    paymentMethod: string;
+    transactionId: string;
+  }) => {
+    if (!data || !instanceName) return;
+
+    try {
+      // 1. Construct valid JID from phone (remove non-digits, add suffix)
+      const cleanPhone = formData.customerPhone.replace(/\D/g, '');
+      const remoteJid = cleanPhone ? `${cleanPhone}@s.whatsapp.net` : instanceName;
+
+      // 2. Save order to Database
+      const orderPayload = {
+        remoteJid,
+        ...formData,
+        items: cart.map(p => ({
+          productId: p.id,
+          quantity: 1
+        }))
+      };
+
+      const response = await axios.post(`/order/${instanceName}`, orderPayload);
+      const order = response.data;
+
+      // 3. Open WhatsApp with order details
+      const message = `¡Hola! 👋 He realizado un pedido (#${order.id.slice(-6).toUpperCase()}) en su tienda:\n\n` +
+        `👤 *Cliente:* ${formData.customerName}\n` +
+        `📍 *Dirección:* ${formData.shippingAddress}, ${formData.shippingCity}\n` +
+        `💳 *Pago:* ${formData.paymentMethod}\n\n` +
+        `📦 *Productos:*\n${cart.map(p => `- ${p.name} ($${p.price})`).join('\n')}\n\n` +
+        `💰 *Total:* $${cart.reduce((sum, p) => sum + p.price, 0).toLocaleString()}\n\n` +
+        `Por favor, confírmenme para proceder con el envío.`;
+
+      const whatsappUrl = `https://wa.me/${data.instanceName}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      // Clear cart and close modal
+      setCart([]);
+      setIsCheckoutOpen(false);
+    } catch (err: unknown) {
+      console.error('Error creating order:', err);
+      alert('Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');
+    }
   };
 
   if (loading) {
@@ -129,8 +217,7 @@ export const PublicStore: React.FC = () => {
   const { theme, products } = data;
   const isLightBg = isLightColor(theme.bgColor || '#0f1016');
   const isPrimaryLight = isLightColor(theme.primaryColor);
-  const cardBg = isLightBg ? '#ffffff' : adjustColor(theme.bgColor || '#0f1016', 10);
-  const textColor = isLightBg ? '#111827' : '#ffffff';
+  const textColor = theme.textColor || (isLightBg ? '#111827' : '#ffffff');
   const borderColor = isLightBg ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
 
   return (
@@ -145,36 +232,40 @@ export const PublicStore: React.FC = () => {
         '--card-radius': `${theme.borderRadius * 1.5}px`
       } as React.CSSProperties}
     >
-      {/* Navbar Transparente / Olipop Style */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 transition-all duration-300">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 overflow-hidden flex items-center justify-center bg-white shadow-sm border"
-              style={{ borderRadius: 'var(--btn-radius)', borderColor: borderColor }}
-            >
-              {theme.logoUrl ? (
-                <img src={theme.logoUrl} alt={theme.storeName || ''} className="w-full h-full object-contain" />
-              ) : (
-                <ShoppingBag className="w-5 h-5" style={{ color: theme.primaryColor }} />
-              )}
-            </div>
-            <span className="font-black uppercase tracking-tighter text-xl">
-              {theme.storeName || 'Tienda'}
-            </span>
-          </div>
+      <ForceWhiteStyles isLightBg={isLightBg} />
+      {/* Navbar Luxury Design */}
+      <nav 
+        className={cn(
+          "fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-16 py-4 transition-all duration-500",
+          theme.template === 'luxury' 
+            ? "bg-gradient-to-r from-primary to-[#7b41b3] shadow-lg backdrop-blur-md" 
+            : (isLightBg ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-black/80 backdrop-blur-md shadow-sm")
+        )}
+      >
+        <div className={cn(
+          "text-2xl md:text-3xl font-black uppercase tracking-tighter",
+          theme.template === 'luxury' ? "text-white" : (isLightBg ? "text-black" : "text-white")
+        )}>
+          {theme.storeName || 'Avri'}
+        </div>
 
+        <div className="flex items-center gap-6">
           <button 
             onClick={handleCheckout}
-            className="relative px-6 h-11 flex items-center gap-2 font-black uppercase tracking-widest text-[10px] transition-all hover:scale-105 active:scale-95 shadow-xl"
+            className={cn(
+              "relative px-6 h-11 flex items-center gap-2 font-black uppercase tracking-widest text-[10px] transition-all hover:scale-105 active:scale-95",
+              theme.template === 'luxury' 
+                ? "bg-white/10 border border-white/30 text-white backdrop-blur-sm shadow-xl rounded-full"
+                : "shadow-xl"
+            )}
             style={{ 
-              backgroundColor: isLightBg ? '#111827' : '#ffffff', 
-              borderRadius: 'var(--btn-radius)',
-              color: isLightBg ? '#ffffff' : '#111827'
+              backgroundColor: theme.template === 'luxury' ? undefined : (isLightBg ? '#111827' : '#ffffff'), 
+              borderRadius: theme.template === 'luxury' ? undefined : 'var(--btn-radius)',
+              color: theme.template === 'luxury' ? undefined : (isLightBg ? '#ffffff' : '#111827')
             }}
           >
             <ShoppingCart className="w-4 h-4" />
-            <span>Carrito ({cart.length})</span>
+            <span>CARRITO ({cart.length})</span>
           </button>
         </div>
       </nav>
@@ -183,10 +274,22 @@ export const PublicStore: React.FC = () => {
       <section 
         className="relative pt-32 pb-24 md:pt-48 md:pb-40 px-6 overflow-hidden flex items-center"
         style={{ 
-          backgroundColor: theme.template === 'moderno' ? theme.primaryColor : 'transparent',
-          color: theme.template === 'moderno' ? (isPrimaryLight ? '#000000' : '#ffffff') : textColor
+          backgroundColor: theme.template === 'moderno' ? theme.primaryColor : (theme.template === 'luxury' ? '#001946' : 'transparent'),
+          background: theme.template === 'luxury' ? 'linear-gradient(to bottom right, #001946, #00327d, #54118a)' : undefined,
+          color: (theme.template === 'moderno' || theme.template === 'luxury') ? '#ffffff' : textColor
         }}
       >
+        {/* Luxury Background Effects - Glass Orbs */}
+        {theme.template === 'luxury' && (
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <div 
+              className="absolute top-[10%] left-[5%] w-[400px] h-[400px] bg-[#7b41b3]/30 rounded-full filter blur-[100px] opacity-70 animate-pulse"
+            />
+            <div 
+              className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-[#0047ab]/40 rounded-full filter blur-[120px] opacity-60"
+            />
+          </div>
+        )}
         {/* Background Elements for Modern/Divertido */}
         {theme.heroImageUrl ? (
           <div className="absolute inset-0 z-0">
@@ -252,48 +355,113 @@ export const PublicStore: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-10 gap-y-16">
             {products.map((product) => (
               <div 
-                key={product.id}
-                className="group relative flex flex-col transition-all duration-500"
+                key={product.id} 
+                className={cn(
+                  "relative flex flex-col items-center transition-all duration-500",
+                  theme.template === 'luxury' && "glass-card p-6 soft-glow-hover group cursor-pointer"
+                )}
+                style={{ borderRadius: theme.template === 'luxury' ? '24px' : undefined }}
               >
-                {/* Imagen del Producto con Fondo de Bloque */}
                 <div 
-                  className="aspect-square overflow-hidden mb-6 relative transition-transform duration-500 group-hover:-translate-y-2"
-                  style={{ 
-                    backgroundColor: cardBg,
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: 'var(--card-radius)',
-                    boxShadow: isLightBg ? '0 10px 40px rgba(0,0,0,0.02)' : 'none'
-                  }}
+                  className={cn(
+                    "relative w-full aspect-square overflow-hidden bg-[#fcf9f8] mb-6 transition-all duration-700",
+                    theme.template === 'luxury' ? "rounded-xl" : "rounded-[40px]"
+                  )}
+                  onClick={() => setSelectedProduct(product)}
                 >
+                  {/* Floating Action Icons (Top Right) */}
+                  <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-500">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }}
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-all",
+                        favorites.includes(product.id) 
+                          ? "bg-red-500 text-white border-red-500" 
+                          : "bg-white text-black hover:bg-black hover:text-white"
+                      )}
+                    >
+                      <Heart size={16} fill={favorites.includes(product.id) ? "currentColor" : "none"} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}
+                      className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-black eye-btn transition-colors"
+                    >
+                      <Eye size={16} className="eye-icon-fix" />
+                    </button>
+                  </div>
+
                   {product.imageUrl ? (
                     <img 
                       src={product.imageUrl} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover p-2" 
+                      alt={decodeText(product.name)} 
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center opacity-10">
-                      <ShoppingBag className="w-20 h-20" />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-white/5 p-4">
+                      <ShoppingBag className="w-10 h-10 opacity-5 mb-3" />
+                      <span className="text-[7px] font-black uppercase tracking-[0.4em] opacity-10 text-center line-clamp-2 px-2">
+                        {decodeText(product.name)}
+                      </span>
                     </div>
                   )}
                   
-                  {/* Overlay en Hover */}
-                  <div className="absolute inset-x-4 bottom-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
+                  {/* Quick Add Button (Bottom) */}
+                  <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 z-30">
                     <button 
-                      onClick={() => addToCart(product)}
-                      className="w-full py-4 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-full shadow-2xl"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product);
+                      }}
+                      className={cn(
+                        "w-full py-4 font-black uppercase text-[10px] tracking-[0.2em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 quick-add-btn",
+                        addedToCartId === product.id 
+                          ? "bg-green-500 text-white border-green-500" 
+                          : isLightBg
+                            ? "bg-black border-black hover:bg-white"
+                            : "bg-white border-white hover:bg-transparent"
+                      )}
                     >
-                      Añadir al Carrito
+                      <span className="quick-add-btn-text">
+                        {addedToCartId === product.id ? (
+                          <>
+                            <Check size={14} className="inline mr-2" />
+                            AÑADIDO
+                          </>
+                        ) : (
+                          'AGREGAR RÁPIDAMENTE'
+                        )}
+                      </span>
                     </button>
                   </div>
                 </div>
                 
-                {/* Información del Producto Estilizada */}
-                <div className="text-center space-y-2">
-                  <h3 className="font-black text-2xl uppercase tracking-tighter group-hover:text-primary transition-colors" style={{ '--primary': theme.primaryColor } as React.CSSProperties}>
-                    {product.name}
+                {/* Product Info - Luxury Style */}
+                <div className={cn(
+                  "text-center w-full mt-auto space-y-2",
+                  theme.template === 'luxury' ? "pt-4" : "max-w-[90%] mx-auto"
+                )}>
+                  <h3 className={cn(
+                    "font-black uppercase tracking-tighter",
+                    theme.template === 'luxury' ? "text-xl" : "text-[11px] tracking-[0.15em] opacity-90"
+                  )}
+                  style={{ color: textColor }}
+                  >
+                    {decodeText(product.name)}
                   </h3>
-                  <p className="text-3xl font-black tracking-tight opacity-50">
+                  <p className={cn(
+                    "uppercase tracking-widest",
+                    theme.template === 'luxury' ? "text-[10px] opacity-70" : "text-[9px] opacity-50"
+                  )}
+                  style={{ color: textColor }}
+                  >
+                    {decodeText(product.description) || 'Luxury Selection'}
+                  </p>
+                  <p className={cn(
+                    "font-black tracking-tighter",
+                    theme.template === 'luxury' ? "text-primary text-base pt-2" : "text-sm pt-1"
+                  )}
+                  style={{ color: theme.template === 'luxury' ? theme.primaryColor : undefined }}
+                  >
                     ${product.price.toLocaleString()}
                   </p>
                 </div>
@@ -356,26 +524,57 @@ export const PublicStore: React.FC = () => {
         </div>
       </footer>
 
-      {/* Cart Summary Flotante */}
+      {/* Floating Badge - Luxury Style */}
       {cart.length > 0 && (
-        <div className="fixed bottom-10 right-10 z-50">
-          <button 
-            onClick={handleCheckout}
-            className="group flex items-center gap-4 bg-black dark:bg-white text-white dark:text-black p-2 pl-6 rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.4)] transition-all hover:scale-105"
+        <div 
+          onClick={handleCheckout}
+          className={cn(
+            "fixed bottom-8 right-8 z-50 flex items-center gap-3 shadow-[0_0_30px_rgba(0,50,125,0.15)] cursor-pointer hover:scale-105 transition-all duration-300",
+            theme.template === 'luxury' 
+              ? "glass-card pl-4 pr-6 py-3 rounded-full" 
+              : "bg-[#111827] p-2.5 pl-8 rounded-full shadow-2xl"
+          )}
+        >
+          <div 
+            className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center text-white",
+              theme.template === 'luxury' ? "bg-primary" : "bg-black"
+            )}
+            style={{ backgroundColor: theme.template === 'luxury' ? theme.primaryColor : undefined }}
           >
-            <div className="flex flex-col items-start">
-              <span className="text-[8px] font-black uppercase tracking-widest opacity-50">Completar</span>
-              <span className="text-xl font-black">${cart.reduce((sum, p) => sum + p.price, 0).toLocaleString()}</span>
-            </div>
-            <div 
-              className="w-14 h-14 rounded-full flex items-center justify-center transition-transform group-hover:rotate-12"
-              style={{ backgroundColor: theme.primaryColor, color: isPrimaryLight ? '#000' : '#fff' }}
-            >
-              <Send className="w-6 h-6" />
-            </div>
-          </button>
+            <ShoppingCart className="w-6 h-6" />
+          </div>
+          <div className={theme.template === 'luxury' ? "block" : "hidden md:block"}>
+            <p className={cn(
+              "text-[9px] font-black uppercase tracking-[0.2em] opacity-50",
+              theme.template !== 'luxury' && "cart-force-white-soft"
+            )}>Total Carrito</p>
+            <p className={cn(
+              "text-sm font-black",
+              theme.template !== 'luxury' && "text-xl text-white cart-force-white"
+            )}>
+              ${cart.reduce((acc, p) => acc + p.price, 0).toLocaleString()}
+            </p>
+          </div>
         </div>
       )}
+      {/* Checkout Modal */}
+      <CheckoutModal 
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        onSubmit={handleFinalSubmit}
+        total={cart.reduce((sum, p) => sum + p.price, 0)}
+        theme={theme}
+      />
+
+      {/* Product Preview Modal */}
+      <ProductPreviewModal 
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={addToCart}
+        theme={theme}
+      />
     </div>
   );
 };

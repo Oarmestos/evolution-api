@@ -41,6 +41,7 @@ export const getSwaggerOptions = (configService: ConfigService) => {
               buttonColor: { type: 'string' },
               bgColor: { type: 'string' },
               fontFamily: { type: 'string' },
+              textColor: { type: 'string' },
               ctaText: { type: 'string' },
               borderRadius: { type: 'number' },
               instagramUrl: { type: 'string' },

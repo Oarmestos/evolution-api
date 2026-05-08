@@ -10,6 +10,7 @@ export class StoreThemeDto {
   buttonColor?: string;
   bgColor?: string;
   fontFamily?: string;
+  textColor?: string;
   ctaText?: string;
   borderRadius?: number;
   instagramUrl?: string;
