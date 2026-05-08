@@ -36,6 +36,12 @@ export class OrderService {
       data: {
         instanceId,
         remoteJid: data.remoteJid,
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        shippingAddress: data.shippingAddress,
+        shippingCity: data.shippingCity,
+        paymentMethod: data.paymentMethod,
+        transactionId: data.transactionId,
         total,
         status: data.status || 'PENDING',
         items: {

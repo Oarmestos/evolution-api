@@ -6,6 +6,12 @@ export const orderSchema: JSONSchema7 = {
   type: 'object',
   properties: {
     remoteJid: { type: 'string', minLength: 1 },
+    customerName: { type: 'string' },
+    customerPhone: { type: 'string' },
+    shippingAddress: { type: 'string' },
+    shippingCity: { type: 'string' },
+    paymentMethod: { type: 'string' },
+    transactionId: { type: 'string' },
     status: { type: 'string', enum: ['PENDING', 'PAID', 'SHIPPED', 'CANCELED'] },
     items: {
       type: 'array',

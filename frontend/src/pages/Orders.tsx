@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Loader2, Calendar, User, DollarSign, ChevronRight, CheckCircle2, Clock, Truck, XCircle, Package } from 'lucide-react';
+import { ShoppingCart, Search, Loader2, Calendar, User, DollarSign, ChevronRight, CheckCircle2, Clock, Truck, XCircle, Package, MapPin, CreditCard, Phone } from 'lucide-react';
 import axios from 'axios';
 import { useInstanceStore } from '../store/useInstanceStore';
 
@@ -17,6 +17,12 @@ interface OrderItem {
 interface Order {
   id: string;
   remoteJid: string;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  paymentMethod?: string;
+  transactionId?: string;
   total: number;
   status: 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELED';
   createdAt: string;
@@ -128,11 +134,12 @@ export const Orders = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-white font-bold">{order.remoteJid.split('@')[0]}</span>
+                            <span className="text-white font-bold">{order.customerName || order.remoteJid.split('@')[0]}</span>
                             <span className="text-[10px] text-white/20 font-mono">#{order.id.slice(-6).toUpperCase()}</span>
                           </div>
                           <div className="flex items-center gap-4 text-xs text-white/40">
                             <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(order.createdAt).toLocaleDateString()}</span>
+                            {order.shippingCity && <span className="flex items-center gap-1"><MapPin size={12} /> {order.shippingCity}</span>}
                             <span className="flex items-center gap-1 font-bold text-white/60"><DollarSign size={12} /> {order.total.toLocaleString()}</span>
                           </div>
                         </div>
@@ -154,7 +161,7 @@ export const Orders = () => {
                 <ShoppingCart size={40} />
               </div>
               <h3 className="text-2xl font-black text-white tracking-tight uppercase mb-2">No hay pedidos</h3>
-              <p className="theme-muted text-sm max-w-sm">Los pedidos aparecerán aquí cuando registres una venta desde el chat.</p>
+              <p className="theme-muted text-sm max-w-sm">Los pedidos aparecerán aquí cuando registres una venta desde el chat o la tienda.</p>
             </div>
           )}
         </div>
@@ -173,8 +180,14 @@ export const Orders = () => {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
                     <User size={16} className="text-white/20" />
-                    <span className="text-white/60">{selectedOrder.remoteJid}</span>
+                    <span className="text-white/60">{selectedOrder.customerName || selectedOrder.remoteJid}</span>
                   </div>
+                  {selectedOrder.customerPhone && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Phone size={16} className="text-white/20" />
+                      <span className="text-white/60">{selectedOrder.customerPhone}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 text-sm">
                     <Calendar size={16} className="text-white/20" />
                     <span className="text-white/60">{new Date(selectedOrder.createdAt).toLocaleString()}</span>
@@ -182,60 +195,96 @@ export const Orders = () => {
                 </div>
               </div>
 
-              <div className="p-6">
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-4">Productos ({selectedOrder.items.length})</h3>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                  {selectedOrder.items.map(item => (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-black/40 overflow-hidden flex-shrink-0">
-                        {item.Product.imageUrl ? (
-                          <img src={item.Product.imageUrl} alt={item.Product.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/10">
-                            <Package size={20} />
-                          </div>
-                        )}
+              <div className="p-6 space-y-8">
+                {/* Shipping Info */}
+                {(selectedOrder.shippingAddress || selectedOrder.shippingCity) && (
+                  <div>
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3 flex items-center gap-2">
+                      <Truck size={12} /> Información de Entrega
+                    </h3>
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2">
+                      <p className="text-sm text-white font-medium">{selectedOrder.shippingAddress}</p>
+                      <p className="text-xs text-white/40 font-bold uppercase tracking-wider">{selectedOrder.shippingCity}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Info */}
+                {(selectedOrder.paymentMethod || selectedOrder.transactionId) && (
+                  <div>
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3 flex items-center gap-2">
+                      <CreditCard size={12} /> Detalles de Pago
+                    </h3>
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-white/40">Método</span>
+                        <span className="text-xs font-black uppercase text-primary tracking-widest">{selectedOrder.paymentMethod}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-white truncate">{item.Product.name}</h4>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-xs text-white/40">{item.quantity} x ${item.priceAtTime.toLocaleString()}</span>
-                          <span className="text-sm font-bold text-white">${(item.quantity * item.priceAtTime).toLocaleString()}</span>
+                      {selectedOrder.transactionId && (
+                        <div className="pt-2 border-t border-white/5">
+                          <span className="text-[9px] block text-white/20 uppercase font-black mb-1">ID Transacción</span>
+                          <span className="text-xs font-mono text-white/60 break-all">{selectedOrder.transactionId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-4">Productos ({selectedOrder.items.length})</h3>
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {selectedOrder.items.map(item => (
+                      <div key={item.id} className="flex gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-black/40 overflow-hidden flex-shrink-0">
+                          {item.Product.imageUrl ? (
+                            <img src={item.Product.imageUrl} alt={item.Product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/10">
+                              <Package size={20} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-white truncate">{item.Product.name}</h4>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-xs text-white/40">{item.quantity} x ${item.priceAtTime.toLocaleString()}</span>
+                            <span className="text-sm font-bold text-white">${(item.quantity * item.priceAtTime).toLocaleString()}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-white/40">Subtotal</span>
-                    <span className="text-white/60">${selectedOrder.total.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white font-bold">Total</span>
-                    <span className="text-xl font-black text-primary">${selectedOrder.total.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 space-y-2">
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Actualizar Estado</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(statusConfig).map(([key, config]) => (
-                      <button
-                        key={key}
-                        onClick={() => updateStatus(selectedOrder.id, key)}
-                        disabled={selectedOrder.status === key}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                          selectedOrder.status === key 
-                            ? `${config.bg} ${config.color} border border-transparent` 
-                            : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white border border-white/5'
-                        }`}
-                      >
-                        <config.icon size={14} />
-                        {config.label}
-                      </button>
                     ))}
+                  </div>
+
+                  <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-white/40">Subtotal</span>
+                      <span className="text-white/60">${selectedOrder.total.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-bold">Total</span>
+                      <span className="text-xl font-black text-primary">${selectedOrder.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 space-y-2">
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Actualizar Estado</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(statusConfig).map(([key, config]) => (
+                        <button
+                          key={key}
+                          onClick={() => updateStatus(selectedOrder.id, key)}
+                          disabled={selectedOrder.status === key}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                            selectedOrder.status === key 
+                              ? `${config.bg} ${config.color} border border-transparent` 
+                              : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white border border-white/5'
+                          }`}
+                        >
+                          <config.icon size={14} />
+                          {config.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
