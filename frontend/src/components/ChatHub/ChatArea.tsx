@@ -86,6 +86,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
     setShowCatalogModal(false);
   };
 
+  const handleQuickStoreSend = async () => {
+    if (!activeInstance || !selectedChat) return;
+
+    const storeUrl = `${window.location.origin}/store/${activeInstance}`;
+    const message = `¡Hola! 👋 Te invito a conocer nuestra tienda oficial. Aquí podrás realizar tus compras de forma rápida y segura: \n\n${storeUrl}`;
+
+    setStoreCopied(true);
+    await sendMessage(activeInstance, selectedChat.remoteJid, message);
+    setTimeout(() => setStoreCopied(false), 2000);
+  };
+
   return (
     <div className={cn(
       "flex-1 flex flex-col relative",
@@ -299,21 +310,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                   </button>
                   <button 
                     type="button" 
-                    onClick={() => {
-                      const storeUrl = `${window.location.origin}/store/${activeInstance}`;
-                      navigator.clipboard.writeText(storeUrl).then(() => {
-                        setStoreCopied(true);
-                        setTimeout(() => setStoreCopied(false), 2000);
-                      });
-                      window.open(storeUrl, '_blank');
-                    }}
+                    onClick={handleQuickStoreSend}
                     className={cn(
                       "p-2 transition-all rounded-xl",
                       storeCopied
                         ? "text-green-400 bg-green-500/10"
                         : "text-gray-500 hover:text-green-500 hover:bg-green-500/10"
                     )}
-                    title="Abrir Tienda"
+                    title="Enviar Link de Tienda"
                   >
                     {storeCopied ? <CheckIcon className="w-5 h-5" /> : <Store className="w-5 h-5" />}
                   </button>

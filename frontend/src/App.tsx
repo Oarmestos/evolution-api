@@ -18,6 +18,7 @@ import { Landing } from './pages/Landing';
 import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { PublicStore } from './pages/PublicStore';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/useAuthStore';
 import { useEffect } from 'react';
 
@@ -30,6 +31,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         {/* Rutas Públicas */}
         <Route path="/" element={<Landing />} />
@@ -56,7 +58,6 @@ function App() {
         </Route>
 
         {/* Redirección por defecto */}
-        {/* Redirección por defecto */}
         <Route path="*" element={<Navigate to={localStorage.getItem('avri_token') ? "/dashboard" : "/"} replace />} />
       </Routes>
     </BrowserRouter>
@@ -64,4 +65,3 @@ function App() {
 }
 
 export default App;
-
