@@ -63,9 +63,26 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
     setInputText('');
   };
 
-  const handleSendProduct = async (productId: string) => {
+  const handleSendProduct = async (productIds: string[]) => {
+    if (!activeInstance || !selectedChat || productIds.length === 0) return;
+    
+    setShowCatalogModal(false);
+    
+    // Send each product with a small delay to avoid flooding/rate-limits if many are selected
+    for (const productId of productIds) {
+      await sendProduct(activeInstance, selectedChat.remoteJid, productId);
+      // Small delay between sends
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  const handleSendCatalogLink = async () => {
     if (!activeInstance || !selectedChat) return;
-    await sendProduct(activeInstance, selectedChat.remoteJid, productId);
+    
+    const storeUrl = `${window.location.origin}/store/${activeInstance}`;
+    const message = `¡Hola! 👋 Te comparto nuestro catálogo completo actualizado. Puedes verlo y hacer tu pedido directamente aquí: \n\n${storeUrl}`;
+    
+    await sendMessage(activeInstance, selectedChat.remoteJid, message);
     setShowCatalogModal(false);
   };
 
@@ -359,6 +376,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
           isOpen={showCatalogModal}
           onClose={() => setShowCatalogModal(false)}
           onSelect={handleSendProduct}
+          onSendCatalogLink={handleSendCatalogLink}
           instanceName={activeInstance}
         />
       )}
