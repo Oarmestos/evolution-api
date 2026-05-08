@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Package, Send, ShoppingBag } from 'lucide-react';
+import { X, ShoppingBag } from 'lucide-react';
 import axios from 'axios';
 import { cn } from '../../utils/cn';
 import { useThemeStore } from '../../store/useThemeStore';
+import { ProductDetailView } from './ProductDetailView';
+import { CatalogGridItem } from './CatalogGridItem';
+import { CatalogFilters } from './CatalogFilters';
 
 interface Product {
   id: string;
@@ -10,12 +13,14 @@ interface Product {
   price: number;
   imageUrl: string | null;
   description: string | null;
+  category?: string;
 }
 
 interface ProductSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (productId: string) => void;
+  onSelect: (productIds: string[]) => void;
+  onSendCatalogLink: () => void;
   instanceName: string;
 }
 
@@ -23,11 +28,16 @@ export const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
   isOpen,
   onClose,
   onSelect,
+  onSendCatalogLink,
   instanceName,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   useEffect(() => {
@@ -46,108 +56,118 @@ export const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
         setLoading(false);
       }
     };
-
     fetchProducts();
   }, [isOpen, instanceName]);
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category || 'General'))).sort()];
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || (p.category || 'General') === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const toggleSelect = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
-        onClick={onClose}
-      />
-      <div 
-        className={cn(
-          "relative z-10 w-full max-w-2xl h-[600px] flex flex-col theme-surface border theme-border-strong rounded-[32px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300",
-          resolvedTheme === 'dark' ? "bg-[#16171d]" : "bg-white"
-        )}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Package className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black tracking-tight theme-text">Seleccionar Producto</h3>
-              <p className="text-[10px] theme-muted font-bold uppercase tracking-widest">Catálogo de {instanceName}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="p-6 pb-0">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-primary transition-colors" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm theme-text focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-            />
-          </div>
-        </div>
-
-        {/* List */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-          {loading ? (
-            <div className="h-full flex flex-col items-center justify-center gap-4 opacity-50">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Cargando catálogo...</p>
-            </div>
-          ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {filteredProducts.map((product) => (
-                <div 
-                  key={product.id}
-                  className="group theme-surface-alt border border-white/5 rounded-2xl p-4 hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden"
-                  onClick={() => onSelect(product.id)}
-                >
-                  <div className="aspect-square rounded-xl bg-white/5 mb-4 overflow-hidden relative">
-                    {product.imageUrl ? (
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center opacity-10">
-                        <ShoppingBag className="w-10 h-10" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">
-                      <div className="bg-primary text-black p-2 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all shadow-xl">
-                        <Send className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-sm theme-text truncate">{product.name}</h4>
-                  <p className="text-primary font-black text-xs mt-1">
-                    ${product.price.toLocaleString()}
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
+      
+      <div className={cn(
+        "relative z-10 w-full flex flex-col theme-surface border border-white/10 rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300",
+        detailProduct ? "max-w-4xl h-[85vh]" : "max-w-6xl h-[90vh]",
+        resolvedTheme === 'dark' ? "bg-[#0a0b0d]" : "bg-white"
+      )}>
+        
+        {detailProduct ? (
+          <ProductDetailView 
+            product={detailProduct}
+            onClose={() => setDetailProduct(null)}
+            onToggleSelect={(id) => toggleSelect(id)}
+            isSelected={selectedIds.has(detailProduct.id)}
+          />
+        ) : (
+          <div className="flex-1 flex flex-col h-full animate-in fade-in duration-500">
+            {/* Cabecera */}
+            <div className="p-8 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                  <ShoppingBag className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black theme-text uppercase italic leading-none">Catálogo Profesional</h3>
+                  <p className="text-[9px] theme-muted font-black uppercase tracking-[0.3em] mt-2">
+                    {instanceName} <span className="w-1 h-1 rounded-full bg-white/20 mx-1" /> {products.length} Productos
                   </p>
                 </div>
-              ))}
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={onSendCatalogLink}
+                  className="px-6 py-3 bg-primary text-black hover:opacity-90 rounded-xl transition-all font-black uppercase text-[9px] tracking-widest shadow-xl shadow-primary/20"
+                >
+                  Enviar Link de Tienda
+                </button>
+                <button onClick={onClose} className="p-3 theme-muted hover:theme-text rounded-full transition-colors"><X size={24} /></button>
+              </div>
             </div>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center gap-4 opacity-30 text-center">
-              <Package className="w-16 h-16" />
-              <p className="text-sm font-bold">No se encontraron productos</p>
+
+            <CatalogFilters 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              categories={categories}
+            />
+
+            <div className="flex-1 overflow-y-auto p-8 pt-0 custom-scrollbar">
+              {loading ? (
+                <div className="h-full flex items-center justify-center"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                  {filteredProducts.map((product) => (
+                    <CatalogGridItem 
+                      key={product.id}
+                      product={product}
+                      isSelected={selectedIds.has(product.id)}
+                      onSelect={(p) => setDetailProduct(p)}
+                      onToggleSelect={(id, e) => toggleSelect(id, e)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* Footer */}
+            {selectedIds.size > 0 && (
+              <div className="p-8 border-t border-black/5 dark:border-white/5 bg-white/[0.02] flex justify-between items-center animate-in slide-in-from-bottom-8 duration-500">
+                <div className="flex items-center gap-8">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase opacity-40 tracking-widest">Seleccionados</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black theme-text">{selectedIds.size}</span>
+                      <span className="text-primary font-black uppercase text-[10px] italic">Ítems</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedIds(new Set())} className="text-[10px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors">Limpiar</button>
+                </div>
+                <button
+                  onClick={() => onSelect(Array.from(selectedIds))}
+                  className="px-12 py-5 bg-primary text-black font-black uppercase text-xs tracking-[0.2em] rounded-2xl hover:scale-[1.02] transition-all shadow-[0_20px_50px_rgba(0,255,255,0.2)]"
+                >
+                  Enviar a la Conversación
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
