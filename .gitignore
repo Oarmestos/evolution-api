@@ -57,3 +57,7 @@ lerna-debug.log*
 
 # Scratch scripts
 scratch/
+
+# User references and temp files
+interfaz_grafiga_tienda/
+test-files/
