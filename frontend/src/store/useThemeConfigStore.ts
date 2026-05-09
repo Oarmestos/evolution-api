@@ -20,6 +20,7 @@ export interface ThemeConfig {
   instagramUrl: string;
   tiktokUrl: string;
   syncWhatsapp: boolean;
+  layout?: any;
 }
 
 interface ThemeState {
@@ -36,24 +37,27 @@ interface ThemeState {
   applyTemplate: (templateName: string) => void;
 }
 
+import { AVRI_LUXURY_LAYOUT } from '../components/Appearance/VisualBuilder/defaultLayout';
+
 const DEFAULT_THEME: ThemeConfig = {
-  template: 'moderno',
+  template: 'luxury',
   storeName: 'Mi Tienda',
   logoUrl: '',
   heroTitle: 'Tu Tienda Online',
   heroSubtitle: 'Los mejores productos al alcance de un clic',
   heroImageUrl: '',
   footerText: '© 2024 Avri. Todos los derechos reservados.',
-  primaryColor: '#6366f1',
-  buttonColor: '#000000',
-  bgColor: '#f8fafc',
+  primaryColor: '#00E5FF',
+  buttonColor: '#00E5FF',
+  bgColor: '#0f1016',
   fontFamily: 'Inter',
-  textColor: '#1c1b1b',
+  textColor: '#ffffff',
   ctaText: 'Ver Detalles',
   borderRadius: 12,
   instagramUrl: '',
   tiktokUrl: '',
   syncWhatsapp: false,
+  layout: AVRI_LUXURY_LAYOUT,
 };
 
 const TEMPLATES: Record<string, Partial<ThemeConfig>> = {
@@ -106,7 +110,17 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
         params: { instanceId: activeInstance.instanceId }
       });
       if (response.data) {
-        set({ theme: { ...DEFAULT_THEME, ...response.data }, loading: false });
+        const serverLayout = response.data.layout;
+        const hasContent = serverLayout && Array.isArray(serverLayout.content) && serverLayout.content.length > 0;
+        
+        set({ 
+          theme: { 
+            ...DEFAULT_THEME, 
+            ...response.data, 
+            layout: hasContent ? serverLayout : AVRI_LUXURY_LAYOUT 
+          }, 
+          loading: false 
+        });
       } else {
         set({ loading: false });
       }

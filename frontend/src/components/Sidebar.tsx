@@ -24,7 +24,7 @@ const menuItems = [
   { icon: ShoppingCart, label: 'Pedidos', path: '/orders' },
   { icon: Package, label: 'Productos', path: '/products' },
   { icon: Zap, label: 'Instancias', path: '/channels' },
-  { icon: Palette, label: 'Tema', path: '/theme' },
+  { icon: Palette, label: 'Tema', path: '/appearance' },
   { icon: Bot, label: 'IA & Agentes', path: '/ai' },
   { icon: Zap, label: 'Flujos', path: '/flows' },
   { icon: Code2, label: 'Desarrollador', path: '/dev' },

@@ -1,10 +1,11 @@
-import { RotateCcw, Save, Globe, Smartphone } from 'lucide-react';
+import { RotateCcw, Save, Globe, Smartphone, Layout } from 'lucide-react';
 
 interface AppearanceHeaderProps {
   onSave: () => void;
   onReset: () => void;
   onPreview: () => void;
   onMobilePreview: () => void;
+  onOpenBuilder: () => void;
   saving: boolean;
 }
 
@@ -13,6 +14,7 @@ export const AppearanceHeader: React.FC<AppearanceHeaderProps> = ({
   onReset, 
   onPreview,
   onMobilePreview,
+  onOpenBuilder,
   saving 
 }) => {
   return (
@@ -22,6 +24,13 @@ export const AppearanceHeader: React.FC<AppearanceHeaderProps> = ({
         <p className="text-gray-400 text-sm">Personaliza cómo se ve tu tienda virtual y tus mensajes en WhatsApp.</p>
       </div>
       <div className="flex items-center gap-3">
+        <button 
+          onClick={onOpenBuilder}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#00daf3] to-[#00327d] text-white hover:opacity-90 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-cyan-500/20"
+        >
+          <Layout className="w-4 h-4" />
+          Constructor Visual
+        </button>
         <button 
           onClick={onMobilePreview}
           className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all font-bold uppercase tracking-widest text-[10px]"

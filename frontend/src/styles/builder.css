@@ -1,0 +1,36 @@
+.puck-glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #E2E8F0;
+}
+
+.puck-glow-btn {
+    background: linear-gradient(135deg, #00E5FF 0%, #00327D 100%);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
+    color: white;
+}
+
+.puck-glow-btn:hover {
+    box-shadow: 0 6px 20px rgba(0, 229, 255, 0.6);
+}
+
+.puck-canvas {
+    background-color: #f2f4f6;
+    min-height: 100%;
+    padding: 48px;
+    display: flex;
+    justify-content: center;
+}
+
+.puck-mock-device {
+    width: 100%;
+    max-width: 1024px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+    min-height: 800px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}

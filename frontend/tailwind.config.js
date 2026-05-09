@@ -15,6 +15,16 @@ export default {
         "dark-accent": "#1a1a2e",
         "card-bg": "rgba(255, 255, 255, 0.05)",
         glass: "rgba(255, 255, 255, 0.03)",
+        // New Builder Colors
+        "puck-primary": "#006875",
+        "puck-naviblue": "#00327D",
+        "puck-primary-container": "#00e5ff",
+        "puck-surface": "#f7f9fb",
+        "puck-surface-variant": "#e0e3e5",
+        "puck-outline": "#6b7a7d",
+        "puck-outline-variant": "#bac9cc",
+        "puck-on-surface": "#191c1e",
+        "puck-on-surface-variant": "#3b494c",
       },
       fontFamily: {
         outfit: ['Outfit', 'sans-serif'],
