@@ -1,54 +1,35 @@
  
 
 export const AVRI_LUXURY_LAYOUT: any = {
-  root: {
-    props: {
-      storeName: "Mi Tienda Luxury",
-      primaryColor: "#00E5FF",
-      fontFamily: "Inter",
-      logoUrl: "",
-    }
+  id: "root",
+  type: "Container",
+  props: {
+    storeName: "Mi Tienda Luxury",
+    primaryColor: "#00E5FF",
+    fontFamily: "Inter",
+    logoUrl: "",
+    backgroundColor: "#ffffff",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    minHeight: "100vh"
   },
-  content: [
+  children: [
     {
       id: "hero-section",
-      type: "Container",
+      type: "Hero",
       props: {
-        backgroundColor: "#ffffff",
-        paddingTop: "120px",
-        paddingBottom: "120px",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "24px"
-      },
-      children: [
-        {
-          id: "hero-title",
-          type: "Heading",
-          props: { text: "Avri Luxury Store", fontSize: "64px", fontWeight: "900", textAlign: "center", color: "#001946" }
-        },
-        {
-          id: "hero-subtitle",
-          type: "Text",
-          props: { text: "La experiencia premium para tu negocio de WhatsApp", fontSize: "18px", textAlign: "center", color: "#001946", opacity: 0.7 }
-        },
-        {
-          id: "hero-cta",
-          type: "Button",
-          props: { 
-            text: "Ver Catálogo", 
-            backgroundColor: "#00E5FF", 
-            color: "#001946",
-            borderRadius: "99px",
-            paddingTop: "16px",
-            paddingBottom: "16px",
-            paddingLeft: "40px",
-            paddingRight: "40px",
-            fontWeight: "900"
-          }
-        }
-      ]
+        title: "Avri Luxury Store",
+        subtitle: "La experiencia premium para tu negocio de WhatsApp",
+        ctaText: "Ver Catálogo",
+        btnBg: "#00E5FF",
+        btnColor: "#001946",
+        btnRadius: 99,
+        backgroundColor: "#001946",
+        paddingTop: 120,
+        paddingBottom: 120,
+        color: "#ffffff"
+      }
     },
     {
       id: "spacer-1",
@@ -61,26 +42,20 @@ export const AVRI_LUXURY_LAYOUT: any = {
       props: {
         title: "Nuestros Destacados",
         columns: 3,
-        paddingTop: "80px",
-        paddingBottom: "80px"
+        paddingTop: 80,
+        paddingBottom: 80
       }
     },
     {
       id: "footer-section",
-      type: "Container",
+      type: "Footer",
       props: {
+        text: "© 2024 Avri Platform. Todos los derechos reservados.",
         backgroundColor: "#f8fafc",
-        paddingTop: "60px",
-        paddingBottom: "60px",
+        paddingTop: 60,
+        paddingBottom: 60,
         alignItems: "center"
-      },
-      children: [
-        {
-          id: "footer-text",
-          type: "Text",
-          props: { text: "© 2024 Avri Platform. Todos los derechos reservados.", fontSize: "12px", color: "#64748b" }
-        }
-      ]
+      }
     }
   ]
 };

@@ -19,36 +19,36 @@ export const SizePanel: React.FC<SizePanelProps> = ({ block }) => {
         <div className="flex gap-4">
           <UnitInput 
             label="Width" 
-            value={p.width || 'auto'} 
+            value={p.width ?? 'auto'} 
             onChange={(val) => updateBlockProps(block.id, { width: val })}
           />
           <UnitInput 
             label="Height" 
-            value={p.height || 'auto'} 
+            value={p.height ?? 'auto'} 
             onChange={(val) => updateBlockProps(block.id, { height: val })}
           />
         </div>
         <div className="flex gap-4">
           <UnitInput 
             label="Min W" 
-            value={p.minWidth || '0px'} 
+            value={p.minWidth ?? '0px'} 
             onChange={(val) => updateBlockProps(block.id, { minWidth: val })}
           />
           <UnitInput 
             label="Min H" 
-            value={p.minHeight || '0px'} 
+            value={p.minHeight ?? '0px'} 
             onChange={(val) => updateBlockProps(block.id, { minHeight: val })}
           />
         </div>
         <div className="flex gap-4">
           <UnitInput 
             label="Max W" 
-            value={p.maxWidth || 'none'} 
+            value={p.maxWidth ?? 'none'} 
             onChange={(val) => updateBlockProps(block.id, { maxWidth: val })}
           />
           <UnitInput 
             label="Max H" 
-            value={p.maxHeight || 'none'} 
+            value={p.maxHeight ?? 'none'} 
             onChange={(val) => updateBlockProps(block.id, { maxHeight: val })}
           />
         </div>

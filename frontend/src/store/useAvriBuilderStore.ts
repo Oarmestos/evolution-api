@@ -48,7 +48,7 @@ interface AvriBuilderState {
   selectBlock: (id: string | null) => void;
   setActivePanel: (panel: 'blocks' | 'layers' | 'settings') => void;
   setDevice: (device: ViewportDevice) => void;
-  upgradeBlock: (id: string, target?: 'title' | 'subtitle' | 'button') => void;
+  upgradeBlock: (id: string, target?: 'title' | 'subtitle' | 'button' | 'link') => void;
   initFromTheme: () => void;
   
   // History
@@ -189,15 +189,29 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
       const { useThemeConfigStore } = await import('./useThemeConfigStore');
       const themeLayout = useThemeConfigStore.getState().theme.layout;
       
-      if (themeLayout && Array.isArray(themeLayout.content)) {
-        // Deep copy to avoid reference issues
-        const blocks = JSON.parse(JSON.stringify(themeLayout.content));
-        set({ 
-          blocks,
-          history: [blocks],
-          historyIndex: 0,
-          selectedBlockId: null
-        });
+      if (themeLayout) {
+        // If it's the new root structure
+        if (themeLayout.id === 'root' && themeLayout.type === 'Container') {
+          const blocks = JSON.parse(JSON.stringify(themeLayout.children || []));
+          set({ 
+            blocks,
+            history: [blocks],
+            historyIndex: 0,
+            selectedBlockId: null
+          });
+          return;
+        }
+
+        // If it's the old content array structure
+        if (Array.isArray(themeLayout.content)) {
+          const blocks = JSON.parse(JSON.stringify(themeLayout.content));
+          set({ 
+            blocks,
+            history: [blocks],
+            historyIndex: 0,
+            selectedBlockId: null
+          });
+        }
       }
     } catch (error) {
       console.error('Error initializing builder from theme:', error);
@@ -264,6 +278,68 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
               ]
             };
           }
+          if (b.type === 'ProductGrid') {
+            const titleId = generateId();
+            const viewAllId = generateId();
+            
+            if (target === 'title') selectedId = titleId;
+            else if (target === 'link') selectedId = viewAllId;
+            else selectedId = b.id;
+
+            return {
+              ...b,
+              type: 'Container',
+              props: {
+                ...b.props,
+                flexDirection: 'column',
+                gap: '32px',
+                padding: '80px 40px',
+              },
+              children: [
+                {
+                  id: generateId(),
+                  type: 'Container',
+                  props: { 
+                    flexDirection: 'row', 
+                    alignItems: 'flex-end', 
+                    justifyContent: 'space-between', 
+                    width: '100%', 
+                    paddingBottom: '16px',
+                    borderBottom: '1px solid #f1f5f9'
+                  },
+                  children: [
+                    {
+                      id: titleId,
+                      type: 'Heading',
+                      props: { 
+                        text: b.props.title || 'Nuestros Destacados', 
+                        fontSize: '24px', 
+                        fontWeight: '900', 
+                        textTransform: 'uppercase',
+                        color: '#001946'
+                      }
+                    },
+                    {
+                      id: viewAllId,
+                      type: 'Text',
+                      props: { 
+                        text: b.props.viewAllText || 'VER TODO', 
+                        fontSize: '10px', 
+                        fontWeight: '900', 
+                        color: '#00E5FF', 
+                        textTransform: 'uppercase'
+                      }
+                    }
+                  ]
+                },
+                {
+                  id: generateId(),
+                  type: 'ProductGrid',
+                  props: { columns: b.props.columns || 3, hideHeader: true }
+                }
+              ]
+            };
+          }
           if (b.type === 'Footer') {
             const textId = generateId();
             selectedId = textId;
@@ -313,11 +389,21 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     try {
       const { blocks } = get();
       const themeStore = (await import('./useThemeConfigStore')).useThemeConfigStore;
+      const currentLayout = themeStore.getState().theme.layout;
       
-      // Update the theme's layout content with our builder blocks
+      // Update the theme's layout with a proper root block
       themeStore.getState().updateTheme({
         layout: {
-          content: blocks
+          id: 'root',
+          type: 'Container',
+          props: currentLayout?.props || currentLayout?.root?.props || {
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            minHeight: '100vh',
+            backgroundColor: '#ffffff'
+          },
+          children: blocks
         }
       });
 

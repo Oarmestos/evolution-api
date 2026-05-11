@@ -2,10 +2,11 @@ import React from 'react';
 import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
 import type { Block } from '../../../store/useAvriBuilderStore';
 import { cn } from '../../../utils/cn';
+import { toCSSValue } from '../../../utils/toCSSValue';
 import { Trash2, Copy, MoveVertical } from 'lucide-react';
 import * as Library from './BlockLibrary';
 
-const components: Record<string, React.FC<{ block: Block; Renderer: React.FC<{ block: Block }> }>> = {
+const components: Record<string, React.FC<Library.LibraryProps>> = {
   Container: Library.Container,
   Heading: Library.Heading,
   Text: Library.Text,
@@ -27,11 +28,12 @@ const components: Record<string, React.FC<{ block: Block; Renderer: React.FC<{ b
   Label: Library.Label
 };
 
-export const BlockRenderer: React.FC<{ block: Block }> = ({ block }) => {
+export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean }> = ({ block, readOnly = false }) => {
   const { selectedBlockId, selectBlock, deleteBlock, addBlock } = useAvriBuilderStore();
-  const isSelected = selectedBlockId === block.id;
+  const isSelected = !readOnly && selectedBlockId === block.id;
 
   const handleDrop = (e: React.DragEvent) => {
+    if (readOnly) return;
     const droppableTypes = ['Container', 'Hero', 'Footer', 'Form'];
     if (!droppableTypes.includes(block.type)) return;
     
@@ -44,6 +46,7 @@ export const BlockRenderer: React.FC<{ block: Block }> = ({ block }) => {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (readOnly) return;
     const droppableTypes = ['Container', 'Hero', 'Footer', 'Form'];
     if (!droppableTypes.includes(block.type)) return;
     
@@ -53,23 +56,36 @@ export const BlockRenderer: React.FC<{ block: Block }> = ({ block }) => {
   };
 
   const Component = components[block.type] || (() => <div>{block.type}</div>);
+  const isSection = ['Container', 'Hero', 'Footer', 'Navbar', 'Form'].includes(block.type);
+  const blockWidth = block.props.width;
 
   return (
     <div 
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+      style={{
+        alignSelf: block.props.alignSelf || 'auto',
+        width: blockWidth === '100%' ? '100%' : (blockWidth === 'auto' ? 'fit-content' : (blockWidth || (isSection ? '100%' : 'fit-content'))),
+        maxWidth: '100%',
+        marginTop: toCSSValue(block.props.marginTop || block.props.margin),
+        marginRight: toCSSValue(block.props.marginRight || block.props.margin),
+        marginBottom: toCSSValue(block.props.marginBottom || block.props.margin),
+        marginLeft: toCSSValue(block.props.marginLeft || block.props.margin),
+      }}
       className={cn(
-        "group relative transition-all w-full cursor-pointer",
-        isSelected ? "ring-2 ring-[#00E5FF] ring-offset-2 ring-offset-white rounded-lg z-10" : "hover:ring-1 hover:ring-[#00E5FF]/30"
+        "group relative transition-all",
+        !readOnly && "cursor-pointer",
+        isSelected ? "ring-2 ring-[#00E5FF] ring-offset-4 ring-offset-white rounded-lg z-50" : (!readOnly && "hover:ring-1 hover:ring-[#00E5FF]/30 z-10")
       )}
       onClick={(e) => {
+        if (readOnly) return;
         e.preventDefault();
-        e.stopPropagation();
+        e.stopPropagation(); // CRITICAL: Stop propagation to prevent selecting parent
         selectBlock(block.id);
       }}
     >
       {isSelected && (
-        <div className="absolute -top-10 left-0 flex items-center bg-[#00E5FF] text-[#001946] rounded-md overflow-hidden shadow-xl z-20 h-8">
+        <div className="absolute -top-10 left-0 flex items-center bg-[#00E5FF] text-[#001946] rounded-md overflow-hidden shadow-2xl z-[100] h-8">
           <div className="px-3 border-r border-black/5 flex items-center gap-2 h-full">
             <MoveVertical className="w-3 h-3 opacity-40 cursor-grab" />
             <span className="text-[9px] font-black uppercase tracking-widest">{block.type}</span>
@@ -90,7 +106,11 @@ export const BlockRenderer: React.FC<{ block: Block }> = ({ block }) => {
       )}
 
       <div className={cn(block.type === 'Container' && "min-h-[20px]")}>
-        <Component block={block} Renderer={BlockRenderer} />
+        <Component 
+          block={block} 
+          readOnly={readOnly}
+          Renderer={(props: any) => <BlockRenderer {...props} readOnly={readOnly} />} 
+        />
       </div>
     </div>
   );
