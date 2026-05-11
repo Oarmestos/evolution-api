@@ -2,9 +2,26 @@ import { create } from 'zustand';
 
 const generateId = () => crypto.randomUUID();
 
+export type BlockType = 
+  | 'Container' 
+  | 'Heading' 
+  | 'Text' 
+  | 'Image' 
+  | 'Video' 
+  | 'Map' 
+  | 'Icon' 
+  | 'Divider' 
+  | 'Form' 
+  | 'Input' 
+  | 'Button' 
+  | 'Checkbox' 
+  | 'Radio' 
+  | 'Label' 
+  | 'Navbar';
+
 export interface Block {
   id: string;
-  type: string;
+  type: BlockType;
   props: any;
   children?: Block[];
 }
@@ -18,7 +35,7 @@ interface AvriBuilderState {
   
   // Actions
   setBlocks: (blocks: Block[]) => void;
-  addBlock: (type: string, parentId?: string) => void;
+  addBlock: (type: BlockType, parentId?: string) => void;
   updateBlockProps: (id: string, props: any) => void;
   deleteBlock: (id: string) => void;
   selectBlock: (id: string | null) => void;

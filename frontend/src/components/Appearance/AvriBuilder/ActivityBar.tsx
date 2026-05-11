@@ -13,7 +13,7 @@ export const ActivityBar: React.FC = () => {
   ] as const;
 
   return (
-    <div className="w-[60px] bg-[#0f1016] border-r border-white/5 flex flex-col items-center py-4 gap-4 z-50">
+    <div className="w-[60px] bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-4 z-50">
       <div className="mb-4">
         <Box className="w-8 h-8 text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)]" />
       </div>
@@ -26,7 +26,7 @@ export const ActivityBar: React.FC = () => {
             "p-3 rounded-xl transition-all group relative",
             activePanel === tool.id 
               ? "bg-[#00E5FF]/10 text-[#00E5FF]" 
-              : "text-gray-500 hover:text-white hover:bg-white/5"
+              : "text-gray-400 hover:text-[#001946] hover:bg-gray-50"
           )}
         >
           <tool.icon className="w-5 h-5" />
