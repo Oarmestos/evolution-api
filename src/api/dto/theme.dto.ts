@@ -16,4 +16,5 @@ export class StoreThemeDto {
   instagramUrl?: string;
   tiktokUrl?: string;
   syncWhatsapp?: boolean;
+  layout?: any;
 }

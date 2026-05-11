@@ -103,6 +103,34 @@ export const Appearance: React.FC = () => {
             </div>
           </div>
 
+          {/* New Avri Builder (Beta) Access */}
+          <div className="mt-8 theme-surface rounded-[40px] border border-[#00E5FF]/20 bg-gradient-to-r from-[#00E5FF]/5 to-transparent overflow-hidden group">
+            <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-white/5 rounded-[24px] flex items-center justify-center border border-white/10 group-hover:border-[#00E5FF]/40 transition-all">
+                  <Palette className="text-[#00E5FF] w-8 h-8" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-[#00E5FF] text-black px-2 py-0.5 rounded">BETA</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Próxima Generación</span>
+                  </div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">Avri Builder</h3>
+                  <p className="text-sm text-gray-500 font-medium max-w-sm mt-1">
+                    Prueba nuestro nuevo motor de diseño ultra-rápido con control total.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => navigate('/appearance/avri')}
+                className="px-8 py-4 bg-white/5 hover:bg-[#00E5FF] hover:text-black border border-white/10 hover:border-[#00E5FF] rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
+              >
+                Probar Nuevo Constructor
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
         </div>
 
         {/* Sidebar info */}

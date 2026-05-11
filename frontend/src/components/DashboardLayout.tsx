@@ -8,7 +8,7 @@ import { useInstanceStore } from '../store/useInstanceStore';
 export const DashboardLayout: React.FC = () => {
   const { fetchInstances } = useInstanceStore();
   const location = useLocation();
-  const isBuilder = location.pathname === '/appearance/builder';
+  const isBuilder = location.pathname === '/appearance/builder' || location.pathname === '/appearance/avri';
 
   React.useEffect(() => {
     fetchInstances();

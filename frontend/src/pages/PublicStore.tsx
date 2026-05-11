@@ -5,6 +5,8 @@ import { ShoppingBag, Globe, ShoppingCart, ArrowRight, AlertCircle, Package, Hea
 import { CheckoutModal } from '../components/Store/CheckoutModal';
 import { ProductPreviewModal } from '../components/Store/ProductPreviewModal';
 import { cn } from '../utils/cn';
+import { Render } from "@puckeditor/core";
+import { config } from "../components/Appearance/VisualBuilder/PuckConfig";
 
 interface Product {
   id: string;
@@ -32,6 +34,7 @@ interface Theme {
   instagramUrl: string | null;
   tiktokUrl: string | null;
   textColor: string;
+  layout?: any;
 }
 
 interface StoreData {
@@ -233,7 +236,18 @@ export const PublicStore: React.FC = () => {
       } as React.CSSProperties}
     >
       <ForceWhiteStyles isLightBg={isLightBg} />
-      {/* Navbar Luxury Design */}
+      
+      {/* Visual Builder Content (Puck) */}
+      {theme.layout && (
+        <div className="pt-20">
+          <Render config={config} data={theme.layout} />
+        </div>
+      )}
+
+      {/* Fallback Legacy Content - Only show if no Puck layout exists */}
+      {!theme.layout && (
+        <>
+          {/* Navbar Luxury Design */}
       <nav 
         className={cn(
           "fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-16 py-4 transition-all duration-500",
@@ -557,6 +571,8 @@ export const PublicStore: React.FC = () => {
             </p>
           </div>
         </div>
+      )}
+        </>
       )}
       {/* Checkout Modal */}
       <CheckoutModal 

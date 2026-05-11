@@ -15,6 +15,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Appearance } from './pages/Appearance';
 import { AppearanceBuilder } from './pages/AppearanceBuilder';
+import { AvriBuilderPage } from './pages/AvriBuilderPage';
 import { Landing } from './pages/Landing';
 import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
@@ -51,6 +52,7 @@ function App() {
             <Route path="/channels" element={<Channels />} />
             <Route path="/appearance" element={<Appearance />} />
             <Route path="/appearance/builder" element={<AppearanceBuilder />} />
+            <Route path="/appearance/avri" element={<AvriBuilderPage />} />
             <Route path="/appearance/settings" element={<Appearance />} /> 
             <Route path="/ai" element={<AIAgents />} />
             <Route path="/flows" element={<Flows />} />
