@@ -5,6 +5,7 @@ import { SpecificPanel } from './SpecificPanel';
 import { TypographyPanel } from './TypographyPanel';
 import { SizePanel } from './SizePanel';
 import { SpacePanel } from './SpacePanel';
+import { StylePanel } from './StylePanel';
 
 export const Inspector: React.FC = () => {
   const { selectedBlockId, blocks, deleteBlock } = useAvriBuilderStore();
@@ -65,8 +66,9 @@ export const Inspector: React.FC = () => {
         <SpecificPanel block={block} />
 
         {/* Universal Style Panels */}
-        {(block.type === 'Heading' || block.type === 'Text') && <TypographyPanel block={block} />}
+        {(block.type === 'Heading' || block.type === 'Text' || block.type === 'Button' || block.type === 'Label') && <TypographyPanel block={block} />}
         
+        <StylePanel block={block} />
         <SizePanel block={block} />
         <SpacePanel block={block} />
 
@@ -74,7 +76,7 @@ export const Inspector: React.FC = () => {
         <div className="p-6 text-center border-t border-gray-50">
           <div className="flex items-center justify-center gap-2 text-gray-300 text-[10px] font-black uppercase tracking-widest">
             <Palette className="w-3.5 h-3.5" />
-            Más estilos próximamente
+            Control total de diseño
           </div>
         </div>
       </div>

@@ -12,43 +12,39 @@ interface TypographyPanelProps {
 
 export const TypographyPanel: React.FC<TypographyPanelProps> = ({ block }) => {
   const { updateBlockProps } = useAvriBuilderStore();
-  const style = block.props.style || {};
-
-  const updateStyle = (newStyle: any) => {
-    updateBlockProps(block.id, { style: { ...style, ...newStyle } });
-  };
+  const p = block.props;
 
   return (
     <PropertySection title="Typography" icon={Type} defaultOpen>
       <div className="space-y-4">
         <SelectInput 
           label="Font Family"
-          value={style.fontFamily || 'Arial'}
+          value={p.fontFamily || 'Arial'}
           options={[
             { label: 'Arial', value: 'Arial' },
             { label: 'Inter', value: 'Inter' },
             { label: 'Roboto', value: 'Roboto' },
             { label: 'Outfit', value: 'Outfit' }
           ]}
-          onChange={(val) => updateStyle({ fontFamily: val })}
+          onChange={(val) => updateBlockProps(block.id, { fontFamily: val })}
         />
 
         <div className="flex gap-4">
           <UnitInput 
             label="Size" 
-            value={style.fontSize || '16px'} 
-            onChange={(val) => updateStyle({ fontSize: val })}
+            value={p.fontSize || '16px'} 
+            onChange={(val) => updateBlockProps(block.id, { fontSize: val })}
           />
           <SelectInput 
             label="Weight"
-            value={style.fontWeight || '400'}
+            value={p.fontWeight || '400'}
             options={[
               { label: 'Light', value: '300' },
               { label: 'Normal', value: '400' },
               { label: 'Bold', value: '700' },
               { label: 'Black', value: '900' }
             ]}
-            onChange={(val) => updateStyle({ fontWeight: val })}
+            onChange={(val) => updateBlockProps(block.id, { fontWeight: val })}
           />
         </div>
 
@@ -58,11 +54,11 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({ block }) => {
             <input 
               type="color"
               className="w-6 h-6 rounded-md cursor-pointer border-0 bg-transparent"
-              value={style.color || '#001946'}
-              onChange={(e) => updateStyle({ color: e.target.value })}
+              value={p.color || '#001946'}
+              onChange={(e) => updateBlockProps(block.id, { color: e.target.value })}
             />
             <span className="text-[10px] font-mono font-bold text-gray-400 uppercase">
-              {style.color || '#001946'}
+              {p.color || '#001946'}
             </span>
           </div>
         </div>
@@ -78,10 +74,10 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({ block }) => {
             ].map(align => (
               <button
                 key={align.id}
-                onClick={() => updateStyle({ textAlign: align.id })}
+                onClick={() => updateBlockProps(block.id, { textAlign: align.id })}
                 className={cn(
                   "flex-1 flex justify-center py-1.5 rounded-md transition-all",
-                  style.textAlign === align.id ? "bg-white text-[#00E5FF] shadow-sm" : "text-gray-300 hover:text-[#001946]"
+                  p.textAlign === align.id ? "bg-white text-[#00E5FF] shadow-sm" : "text-gray-300 hover:text-[#001946]"
                 )}
               >
                 <align.icon className="w-3.5 h-3.5" />

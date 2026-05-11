@@ -21,17 +21,27 @@ import {
   Menu, 
   Type as LabelIcon, 
   Video, 
-  Monitor 
+  Monitor,
+  PanelTop,
+  Maximize2,
+  Box,
+  Layers
 } from 'lucide-react';
 
 interface BlockDefinition {
   type: BlockType;
   label: string;
   icon: React.ElementType;
-  category: 'Basic' | 'Forms' | 'Extra' | 'Layout';
+  category: 'Sections' | 'Basic' | 'Forms' | 'Extra' | 'Layout';
 }
 
 const blocks: BlockDefinition[] = [
+  // Sections
+  { type: 'Hero', label: 'Hero Section', icon: PanelTop, category: 'Sections' },
+  { type: 'ProductGrid', label: 'Product Grid', icon: Layers, category: 'Sections' },
+  { type: 'Footer', label: 'Footer', icon: Box, category: 'Sections' },
+  { type: 'Spacer', label: 'Spacer', icon: Maximize2, category: 'Sections' },
+
   // Basic
   { type: 'Container', label: '1 Column', icon: Square, category: 'Basic' },
   { type: 'Container', label: '2 Columns', icon: Columns, category: 'Basic' },
@@ -44,55 +54,21 @@ const blocks: BlockDefinition[] = [
   { type: 'Divider', label: 'Divider', icon: Minus, category: 'Basic' },
   
   // Forms
-  { type: 'Form', label: 'Form', icon: ClipboardList, category: 'Forms' },
-  { type: 'Input', label: 'Input', icon: MousePointer2, category: 'Forms' },
-  { type: 'Button', label: 'Button', icon: MousePointer2, category: 'Forms' },
+  { type: 'Form', label: 'Form Container', icon: ClipboardList, category: 'Forms' },
+  { type: 'Input', label: 'Input Field', icon: MousePointer2, category: 'Forms' },
+  { type: 'Button', label: 'Action Button', icon: MousePointer2, category: 'Forms' },
   { type: 'Checkbox', label: 'Checkbox', icon: CheckSquare, category: 'Forms' },
-  { type: 'Radio', label: 'Radio', icon: Circle, category: 'Forms' },
-  { type: 'Label', label: 'Label', icon: LabelIcon, category: 'Forms' },
+  { type: 'Radio', label: 'Radio Button', icon: Circle, category: 'Forms' },
+  { type: 'Label', label: 'Field Label', icon: LabelIcon, category: 'Forms' },
 
   // Extra
-  { type: 'Navbar', label: 'Navbar', icon: Menu, category: 'Extra' },
+  { type: 'Navbar', label: 'Navigation', icon: Menu, category: 'Extra' },
 
   // Layout (Specific structures)
   { 
     type: 'Container', 
-    label: '1 Column', 
+    label: 'Empty Grid', 
     icon: () => <div className="w-6 h-4 border-2 border-current rounded-[2px]" />, 
-    category: 'Layout' 
-  },
-  { 
-    type: 'Container', 
-    label: '2 Cols 50/50', 
-    icon: () => (
-      <div className="flex gap-1 w-6 h-4">
-        <div className="flex-1 border-2 border-current rounded-[2px]" />
-        <div className="flex-1 border-2 border-current rounded-[2px]" />
-      </div>
-    ), 
-    category: 'Layout' 
-  },
-  { 
-    type: 'Container', 
-    label: '2 Cols 25/75', 
-    icon: () => (
-      <div className="flex gap-1 w-6 h-4">
-        <div className="w-1/3 border-2 border-current rounded-[2px]" />
-        <div className="flex-1 border-2 border-current rounded-[2px]" />
-      </div>
-    ), 
-    category: 'Layout' 
-  },
-  { 
-    type: 'Container', 
-    label: '3 Columns', 
-    icon: () => (
-      <div className="flex gap-1 w-6 h-4">
-        <div className="flex-1 border-2 border-current rounded-[2px]" />
-        <div className="flex-1 border-2 border-current rounded-[2px]" />
-        <div className="flex-1 border-2 border-current rounded-[2px]" />
-      </div>
-    ), 
     category: 'Layout' 
   },
 ];
@@ -108,7 +84,7 @@ export const SidePanel: React.FC = () => {
     );
   };
 
-  const categories: BlockDefinition['category'][] = ['Basic', 'Forms', 'Extra', 'Layout'];
+  const categories: BlockDefinition['category'][] = ['Sections', 'Basic', 'Forms', 'Extra', 'Layout'];
 
   if (activePanel === 'layers') {
     return (
@@ -179,6 +155,11 @@ export const SidePanel: React.FC = () => {
                   {catBlocks.map((block, idx) => (
                     <button
                       key={`${block.label}-${idx}`}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('blockType', block.type);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
                       onClick={() => addBlock(block.type)}
                       className="flex flex-col items-center justify-center gap-3 p-4 bg-white border border-gray-100 rounded-xl hover:border-[#00E5FF]/40 hover:bg-[#00E5FF]/5 transition-all group shadow-sm hover:shadow-md active:scale-95"
                     >

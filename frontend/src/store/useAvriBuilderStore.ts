@@ -17,7 +17,11 @@ export type BlockType =
   | 'Checkbox' 
   | 'Radio' 
   | 'Label' 
-  | 'Navbar';
+  | 'Navbar'
+  | 'Hero'
+  | 'Spacer'
+  | 'ProductGrid'
+  | 'Footer';
 
 export interface Block {
   id: string;
@@ -26,10 +30,13 @@ export interface Block {
   children?: Block[];
 }
 
+export type ViewportDevice = 'desktop' | 'tablet' | 'mobile';
+
 interface AvriBuilderState {
   blocks: Block[];
   selectedBlockId: string | null;
   activePanel: 'blocks' | 'layers' | 'settings';
+  device: ViewportDevice;
   history: Block[][];
   historyIndex: number;
   
@@ -40,16 +47,23 @@ interface AvriBuilderState {
   deleteBlock: (id: string) => void;
   selectBlock: (id: string | null) => void;
   setActivePanel: (panel: 'blocks' | 'layers' | 'settings') => void;
+  setDevice: (device: ViewportDevice) => void;
+  upgradeBlock: (id: string, target?: 'title' | 'subtitle' | 'button') => void;
+  initFromTheme: () => void;
   
   // History
   undo: () => void;
   redo: () => void;
+  
+  // Persistence
+  save: () => Promise<boolean>;
 }
 
 export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   blocks: [],
   selectedBlockId: null,
   activePanel: 'blocks',
+  device: 'desktop',
   history: [[]],
   historyIndex: 0,
 
@@ -63,12 +77,64 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   },
 
   addBlock: (type, parentId) => {
-    const newBlock: Block = {
-      id: generateId(),
-      type,
-      props: {},
-      children: type === 'Container' ? [] : undefined
-    };
+    let newBlock: Block;
+
+    if (type === 'Hero') {
+      newBlock = {
+        id: generateId(),
+        type: 'Container',
+        props: {
+          backgroundColor: '#001946',
+          padding: '120px 40px',
+          borderRadius: '24px',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '24px',
+          color: '#ffffff'
+        },
+        children: [
+          {
+            id: generateId(),
+            type: 'Heading',
+            props: { text: 'AVRI LUXURY STORE', fontSize: '64px', fontWeight: '900', textAlign: 'center' }
+          },
+          {
+            id: generateId(),
+            type: 'Text',
+            props: { text: 'La experiencia premium para tu negocio de WhatsApp', fontSize: '18px', textAlign: 'center', opacity: '0.8' }
+          },
+          {
+            id: generateId(),
+            type: 'Button',
+            props: { 
+              text: 'VER CATÁLOGO', 
+              backgroundColor: '#00E5FF', 
+              color: '#001946',
+              padding: '16px 40px',
+              borderRadius: '99px',
+              fontWeight: '900'
+            }
+          }
+        ]
+      };
+    } else if (type === 'Footer') {
+      newBlock = {
+        id: generateId(),
+        type: 'Container',
+        props: { backgroundColor: '#f8fafc', padding: '60px 40px', alignItems: 'center' },
+        children: [
+          { id: generateId(), type: 'Text', props: { text: '© 2024 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
+        ]
+      };
+    } else {
+      newBlock = {
+        id: generateId(),
+        type,
+        props: {},
+        children: type === 'Container' || type === 'Form' ? [] : undefined
+      };
+    }
 
     if (!parentId) {
       get().setBlocks([...get().blocks, newBlock]);
@@ -116,6 +182,112 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
 
   selectBlock: (id) => set({ selectedBlockId: id }),
   setActivePanel: (panel) => set({ activePanel: panel }),
+  setDevice: (device) => set({ device }),
+  
+  initFromTheme: async () => {
+    try {
+      const { useThemeConfigStore } = await import('./useThemeConfigStore');
+      const themeLayout = useThemeConfigStore.getState().theme.layout;
+      
+      if (themeLayout && Array.isArray(themeLayout.content)) {
+        // Deep copy to avoid reference issues
+        const blocks = JSON.parse(JSON.stringify(themeLayout.content));
+        set({ 
+          blocks,
+          history: [blocks],
+          historyIndex: 0,
+          selectedBlockId: null
+        });
+      }
+    } catch (error) {
+      console.error('Error initializing builder from theme:', error);
+    }
+  },
+
+  upgradeBlock: (id, target) => {
+    let selectedId: string | null = null;
+    
+    const upgrade = (blocks: Block[]): Block[] => {
+      return blocks.map(b => {
+        if (b.id === id) {
+          if (b.type === 'Hero') {
+            const titleId = generateId();
+            const subtitleId = generateId();
+            const buttonId = generateId();
+            
+            if (target === 'title') selectedId = titleId;
+            else if (target === 'subtitle') selectedId = subtitleId;
+            else if (target === 'button') selectedId = buttonId;
+            else selectedId = b.id;
+
+            // Detect if background is light (simple heuristic)
+            const isLightBg = b.props.backgroundColor && (
+              b.props.backgroundColor.toLowerCase() === '#ffffff' || 
+              b.props.backgroundColor.toLowerCase() === 'white'
+            );
+            const textColor = isLightBg ? '#001946' : (b.props.color || '#ffffff');
+
+            return {
+              ...b,
+              type: 'Container',
+              props: {
+                ...b.props,
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '24px',
+                padding: '120px 40px',
+              },
+              children: [
+                {
+                  id: titleId,
+                  type: 'Heading',
+                  props: { text: b.props.title || 'AVRI LUXURY STORE', fontSize: '64px', fontWeight: '900', textAlign: 'center', color: textColor }
+                },
+                {
+                  id: subtitleId,
+                  type: 'Text',
+                  props: { text: b.props.subtitle || 'La experiencia premium para tu negocio', fontSize: '18px', textAlign: 'center', opacity: '0.8', color: textColor }
+                },
+                {
+                  id: buttonId,
+                  type: 'Button',
+                  props: { 
+                    text: b.props.ctaText || 'VER CATÁLOGO', 
+                    backgroundColor: b.props.btnBg || '#00E5FF', 
+                    color: b.props.btnColor || '#001946',
+                    borderRadius: `${b.props.btnRadius ?? 99}px`,
+                    padding: '16px 40px',
+                    fontWeight: '900'
+                  }
+                }
+              ]
+            };
+          }
+          if (b.type === 'Footer') {
+            const textId = generateId();
+            selectedId = textId;
+            return {
+              ...b,
+              type: 'Container',
+              props: { ...b.props, padding: '60px 40px', alignItems: 'center' },
+              children: [
+                { id: textId, type: 'Text', props: { text: b.props.text || '© 2024 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
+              ]
+            };
+          }
+        }
+        if (b.children) {
+          return { ...b, children: upgrade(b.children) };
+        }
+        return b;
+      });
+    };
+    
+    const newBlocks = upgrade(get().blocks);
+    get().setBlocks(newBlocks);
+    if (selectedId) set({ selectedBlockId: selectedId });
+  },
 
   undo: () => {
     const { historyIndex, history } = get();
@@ -134,6 +306,27 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
         historyIndex: historyIndex + 1,
         blocks: history[historyIndex + 1]
       });
+    }
+  },
+
+  save: async () => {
+    try {
+      const { blocks } = get();
+      const themeStore = (await import('./useThemeConfigStore')).useThemeConfigStore;
+      
+      // Update the theme's layout content with our builder blocks
+      themeStore.getState().updateTheme({
+        layout: {
+          content: blocks
+        }
+      });
+
+      // Persist to server
+      await themeStore.getState().saveTheme();
+      return true;
+    } catch (error) {
+      console.error('Error saving builder state:', error);
+      return false;
     }
   }
 }));

@@ -1,7 +1,6 @@
-import type { Data } from "@puckeditor/core";
-import type { PuckConfigProps, RootProps } from "./types";
+ 
 
-export const AVRI_LUXURY_LAYOUT: Data<PuckConfigProps, RootProps> = {
+export const AVRI_LUXURY_LAYOUT: any = {
   root: {
     props: {
       storeName: "Mi Tienda Luxury",
@@ -12,59 +11,76 @@ export const AVRI_LUXURY_LAYOUT: Data<PuckConfigProps, RootProps> = {
   },
   content: [
     {
-      type: "Hero",
-      props: {
-        title: "Avri Luxury Store",
-        subtitle: "La experiencia premium para tu negocio de WhatsApp",
-        ctaText: "Ver Catálogo",
-        bgType: "luxury",
-        styles: {
-          textAlign: "center",
-          padding: { top: 120, bottom: 120, left: 20, right: 20 }
-        },
-        id: "hero-1"
-      }
-    },
-    {
-      type: "Spacer",
-      props: {
-        height: 40,
-        id: "spacer-1"
-      }
-    },
-    {
+      id: "hero-section",
       type: "Container",
       props: {
-        columns: 3,
-        gap: 30,
-        content: [],
-        styles: {
-          padding: { top: 40, bottom: 40, left: 20, right: 20 }
+        backgroundColor: "#ffffff",
+        paddingTop: "120px",
+        paddingBottom: "120px",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "24px"
+      },
+      children: [
+        {
+          id: "hero-title",
+          type: "Heading",
+          props: { text: "Avri Luxury Store", fontSize: "64px", fontWeight: "900", textAlign: "center", color: "#001946" }
         },
-        id: "container-1"
-      }
+        {
+          id: "hero-subtitle",
+          type: "Text",
+          props: { text: "La experiencia premium para tu negocio de WhatsApp", fontSize: "18px", textAlign: "center", color: "#001946", opacity: 0.7 }
+        },
+        {
+          id: "hero-cta",
+          type: "Button",
+          props: { 
+            text: "Ver Catálogo", 
+            backgroundColor: "#00E5FF", 
+            color: "#001946",
+            borderRadius: "99px",
+            paddingTop: "16px",
+            paddingBottom: "16px",
+            paddingLeft: "40px",
+            paddingRight: "40px",
+            fontWeight: "900"
+          }
+        }
+      ]
     },
     {
+      id: "spacer-1",
+      type: "Spacer",
+      props: { height: 40 }
+    },
+    {
+      id: "product-grid-section",
       type: "ProductGrid",
       props: {
         title: "Nuestros Destacados",
         columns: 3,
-        styles: {
-          padding: { top: 80, bottom: 80, left: 20, right: 20 }
-        },
-        id: "product-grid-1"
+        paddingTop: "80px",
+        paddingBottom: "80px"
       }
     },
     {
-      type: "Footer",
+      id: "footer-section",
+      type: "Container",
       props: {
-        text: "© 2024 Avri Platform. Todos los derechos reservados.",
-        styles: {
-          padding: { top: 60, bottom: 60, left: 20, right: 20 },
-          textAlign: "center"
-        },
-        id: "footer-1"
-      }
+        backgroundColor: "#f8fafc",
+        paddingTop: "60px",
+        paddingBottom: "60px",
+        alignItems: "center"
+      },
+      children: [
+        {
+          id: "footer-text",
+          type: "Text",
+          props: { text: "© 2024 Avri Platform. Todos los derechos reservados.", fontSize: "12px", color: "#64748b" }
+        }
+      ]
     }
   ]
 };

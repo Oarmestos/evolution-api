@@ -11,11 +11,7 @@ interface SizePanelProps {
 
 export const SizePanel: React.FC<SizePanelProps> = ({ block }) => {
   const { updateBlockProps } = useAvriBuilderStore();
-  const style = block.props.style || {};
-
-  const updateStyle = (newStyle: any) => {
-    updateBlockProps(block.id, { style: { ...style, ...newStyle } });
-  };
+  const p = block.props;
 
   return (
     <PropertySection title="Size" icon={Maximize2}>
@@ -23,37 +19,37 @@ export const SizePanel: React.FC<SizePanelProps> = ({ block }) => {
         <div className="flex gap-4">
           <UnitInput 
             label="Width" 
-            value={style.width || 'auto'} 
-            onChange={(val) => updateStyle({ width: val })}
+            value={p.width || 'auto'} 
+            onChange={(val) => updateBlockProps(block.id, { width: val })}
           />
           <UnitInput 
             label="Height" 
-            value={style.height || 'auto'} 
-            onChange={(val) => updateStyle({ height: val })}
+            value={p.height || 'auto'} 
+            onChange={(val) => updateBlockProps(block.id, { height: val })}
           />
         </div>
         <div className="flex gap-4">
           <UnitInput 
             label="Min W" 
-            value={style.minWidth || '0px'} 
-            onChange={(val) => updateStyle({ minWidth: val })}
+            value={p.minWidth || '0px'} 
+            onChange={(val) => updateBlockProps(block.id, { minWidth: val })}
           />
           <UnitInput 
             label="Min H" 
-            value={style.minHeight || '0px'} 
-            onChange={(val) => updateStyle({ minHeight: val })}
+            value={p.minHeight || '0px'} 
+            onChange={(val) => updateBlockProps(block.id, { minHeight: val })}
           />
         </div>
         <div className="flex gap-4">
           <UnitInput 
             label="Max W" 
-            value={style.maxWidth || 'none'} 
-            onChange={(val) => updateStyle({ maxWidth: val })}
+            value={p.maxWidth || 'none'} 
+            onChange={(val) => updateBlockProps(block.id, { maxWidth: val })}
           />
           <UnitInput 
             label="Max H" 
-            value={style.maxHeight || 'none'} 
-            onChange={(val) => updateStyle({ maxHeight: val })}
+            value={p.maxHeight || 'none'} 
+            onChange={(val) => updateBlockProps(block.id, { maxHeight: val })}
           />
         </div>
       </div>
