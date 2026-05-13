@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
 import { BlockRenderer } from './BlockRenderer.tsx';
 import { Plus } from 'lucide-react';
 
 export const Canvas: React.FC = () => {
-  const { blocks, addBlock } = useAvriBuilderStore();
+  const { blocks, addBlock, moveBlock } = useAvriBuilderStore();
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleNewBlockDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setDragOverIndex(null);
     const type = e.dataTransfer.getData('blockType') as any;
     if (type) {
       addBlock(type);
@@ -19,49 +21,102 @@ export const Canvas: React.FC = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
+  const handleDropZoneDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(null);
+
+    const movingBlockId = e.dataTransfer.getData('movingBlockId');
+    if (movingBlockId) {
+      moveBlock(movingBlockId, index);
+      return;
+    }
+
+    const type = e.dataTransfer.getData('blockType') as any;
+    if (type) {
+      addBlock(type);
+    }
+  };
+
+  const handleDropZoneDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDropZoneDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
   return (
-    <div 
-      className="w-full min-h-full flex flex-col p-4 bg-white"
-      onDrop={handleDrop}
+    <div
+      className="w-full min-h-full flex flex-col"
+      onDrop={handleNewBlockDrop}
       onDragOver={handleDragOver}
     >
       {blocks.length === 0 ? (
-        <div 
-          className="flex-1 border-2 border-dashed border-gray-100 rounded-3xl flex flex-col items-center justify-center gap-6 p-20 hover:border-[#00E5FF]/30 transition-all group cursor-pointer bg-gray-50/50"
+        <div
+          className="flex-1 flex flex-col items-center justify-center gap-4 p-16 cursor-pointer group min-h-[600px]"
           onClick={(e) => {
             e.stopPropagation();
-            addBlock('Container');
+            addBlock('Hero');
           }}
         >
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 group-hover:border-[#00E5FF]/20 transition-all">
-            <Plus className="w-8 h-8 text-gray-300 group-hover:text-[#00E5FF] transition-all" />
+          <div className="w-14 h-14 bg-[#f1f5f9] rounded-xl flex items-center justify-center border-2 border-dashed border-[#e2e8f0] group-hover:border-[#00E5FF]/40 transition-all">
+            <Plus className="w-7 h-7 text-[#94a3b8] group-hover:text-[#00E5FF] transition-all" />
           </div>
-          <div className="text-center space-y-2">
-            <h3 className="text-xl font-black uppercase tracking-tighter text-gray-300 group-hover:text-[#001946] transition-all">El Canvas está vacío</h3>
-            <p className="text-sm text-gray-400 font-medium">Arrastra un componente aquí o haz clic para empezar.</p>
+          <div className="text-center space-y-1">
+            <h3 className="text-sm font-semibold text-[#94a3b8] group-hover:text-[#64748b] transition-all">
+              Canvas vacío
+            </h3>
+            <p className="text-[13px] text-[#94a3b8]">
+              Arrastra una sección o haz clic para comenzar
+            </p>
           </div>
         </div>
       ) : (
         <>
-          {blocks.map((block) => (
-            <BlockRenderer key={block.id} block={block} />
+          {blocks.map((block, index) => (
+            <React.Fragment key={block.id}>
+              {/* Drop zone before block */}
+              <div
+                onDrop={(e) => handleDropZoneDrop(e, index)}
+                onDragOver={(e) => handleDropZoneDragOver(e, index)}
+                onDragLeave={handleDropZoneDragLeave}
+                className={`transition-all duration-200 ${
+                  dragOverIndex === index
+                    ? 'h-12 bg-[#00E5FF]/10 border-2 border-dashed border-[#00E5FF]/40 mx-6 rounded-lg flex items-center justify-center'
+                    : 'h-0'
+                }`}
+              >
+                {dragOverIndex === index && (
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#00E5FF]/60">
+                    Soltar aquí
+                  </span>
+                )}
+              </div>
+              <BlockRenderer block={block} index={index} />
+            </React.Fragment>
           ))}
-          
-          {/* Add block button at the bottom */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              addBlock('Container');
-            }}
-            onDrop={(e) => {
-              e.stopPropagation();
-              handleDrop(e);
-            }}
-            className="w-full py-8 border-2 border-dashed border-gray-100 rounded-2xl flex items-center justify-center gap-3 text-gray-300 hover:text-[#00E5FF] hover:border-[#00E5FF]/20 transition-all mt-4"
+
+          {/* Drop zone after last block */}
+          <div
+            onDrop={(e) => handleDropZoneDrop(e, blocks.length)}
+            onDragOver={(e) => handleDropZoneDragOver(e, blocks.length)}
+            onDragLeave={handleDropZoneDragLeave}
+            className={`transition-all duration-200 ${
+              dragOverIndex === blocks.length
+                ? 'h-12 bg-[#00E5FF]/10 border-2 border-dashed border-[#00E5FF]/40 mx-6 rounded-lg flex items-center justify-center'
+                : 'h-0'
+            }`}
           >
-            <Plus className="w-5 h-5" />
-            <span className="text-xs font-black uppercase tracking-widest">Añadir Sección / Suelta Aquí</span>
-          </button>
+            {dragOverIndex === blocks.length && (
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#00E5FF]/60">
+                Soltar aquí
+              </span>
+            )}
+          </div>
         </>
       )}
     </div>

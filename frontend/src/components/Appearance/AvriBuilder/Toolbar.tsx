@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Undo2, Redo2, Eye, Save, ArrowLeft, Monitor, Tablet, Smartphone, Loader2 } from 'lucide-react';
+import { Undo2, Redo2, Eye, Save, ArrowLeft, Monitor, Tablet, Smartphone, Loader2, Layers, Settings } from 'lucide-react';
 import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
 import { useInstanceStore } from '../../../store/useInstanceStore';
 import toast from 'react-hot-toast';
@@ -33,43 +33,55 @@ export const Toolbar: React.FC = () => {
   };
 
   const devices = [
-    { id: 'desktop' as const, icon: Monitor },
-    { id: 'tablet' as const, icon: Tablet },
-    { id: 'mobile' as const, icon: Smartphone }
+    { id: 'desktop' as const, icon: Monitor, label: 'Desktop' },
+    { id: 'tablet' as const, icon: Tablet, label: 'Tablet' },
+    { id: 'mobile' as const, icon: Smartphone, label: 'Mobile' }
   ];
 
   return (
-    <div className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 z-50">
-      {/* Left Actions: Tools */}
+    <header className="h-12 bg-white border-b border-[#e2e8f0] flex items-center justify-between px-4 z-50 fixed top-0 left-0 right-0 shadow-sm">
+      {/* Left: Back + Branding + Actions */}
       <div className="flex items-center gap-4">
         <button 
           onClick={() => window.history.back()}
-          className="p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-[#001946]"
+          className="w-8 h-8 flex items-center justify-center text-[#64748b] hover:text-[#0f172a] transition-colors active:scale-95"
           title="Volver"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-[18px] h-[18px]" />
         </button>
-        
-        <div className="h-6 w-[1px] bg-gray-100 mx-2" />
 
-        <button 
-          onClick={undo}
-          disabled={!canUndo}
-          className={`p-2 rounded-md transition-all ${canUndo ? 'text-gray-400 hover:bg-gray-100' : 'text-gray-200 cursor-not-allowed'}`}
-        >
-          <Undo2 className="w-4 h-4" />
-        </button>
-        <button 
-          onClick={redo}
-          disabled={!canRedo}
-          className={`p-2 rounded-md transition-all ${canRedo ? 'text-gray-400 hover:bg-gray-100' : 'text-gray-200 cursor-not-allowed'}`}
-        >
-          <Redo2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5 text-[#00E5FF]">
+          <Layers className="w-5 h-5" style={{ fill: '#00E5FF' }} />
+        </div>
+
+        <div className="flex items-center gap-0.5 ml-2">
+          <button 
+            onClick={undo}
+            disabled={!canUndo}
+            className={`w-8 h-8 flex items-center justify-center rounded-sm transition-colors ${canUndo ? 'text-[#64748b] hover:bg-[#f1f5f9]' : 'text-[#cbd5e1] cursor-not-allowed'}`}
+            title="Deshacer"
+          >
+            <Undo2 className="w-[18px] h-[18px]" />
+          </button>
+          <button 
+            onClick={redo}
+            disabled={!canRedo}
+            className={`w-8 h-8 flex items-center justify-center rounded-sm transition-colors ${canRedo ? 'text-[#64748b] hover:bg-[#f1f5f9]' : 'text-[#cbd5e1] cursor-not-allowed'}`}
+            title="Rehacer"
+          >
+            <Redo2 className="w-[18px] h-[18px]" />
+          </button>
+          <button 
+            className="w-8 h-8 flex items-center justify-center rounded-sm text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+            title="Ajustes"
+          >
+            <Settings className="w-[18px] h-[18px]" />
+          </button>
+        </div>
       </div>
 
       {/* Center: Device Selector */}
-      <div className="flex items-center bg-gray-100/50 p-1 rounded-xl border border-gray-200/50 shadow-inner">
+      <div className="flex items-center bg-[#f1f5f9] rounded-xl p-1">
         {devices.map(d => {
           const Icon = d.icon;
           const isActive = device === d.id;
@@ -77,40 +89,40 @@ export const Toolbar: React.FC = () => {
             <button
               key={d.id}
               onClick={() => setDevice(d.id)}
-              className={`p-2 rounded-lg transition-all active:scale-95 ${
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-95 ${
                 isActive 
-                  ? 'bg-white text-[#00E5FF] shadow-sm' 
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'bg-white text-[#00E5FF] shadow-sm border border-[#e2e8f0]' 
+                  : 'text-[#64748b] hover:bg-white/50'
               }`}
-              title={d.id.charAt(0).toUpperCase() + d.id.slice(1)}
+              title={d.label}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-[18px] h-[18px]" />
             </button>
           );
         })}
       </div>
 
-      {/* Right Actions: Final Controls */}
+      {/* Right: Preview + Save */}
       <div className="flex items-center gap-3">
         <button 
           onClick={handlePreview}
-          className="flex items-center gap-2 px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg transition-all text-[11px] font-bold uppercase tracking-wider"
+          className="flex items-center gap-1.5 px-2 py-1 text-[#64748b] hover:text-[#0f172a] transition-colors active:scale-95"
         >
-          <Eye className="w-4 h-4 text-[#00E5FF]" />
-          Vista Previa
+          <Eye className="w-[18px] h-[18px]" />
+          <span className="text-[12px] font-medium tracking-wide">Preview</span>
         </button>
         
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className={`flex items-center gap-2 px-5 py-2 bg-[#00E5FF] text-[#001946] rounded-lg font-black uppercase tracking-widest text-[11px] transition-all active:scale-95 border border-[#00E5FF] ${
-            isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-[0_0_20px_rgba(0,229,255,0.4)]'
+          className={`flex items-center gap-1.5 h-8 px-4 bg-[#00E5FF] text-[#00363d] rounded-sm text-[12px] font-semibold tracking-wide transition-all active:scale-95 shadow-sm ${
+            isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#00cce6]'
           }`}
         >
-          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {isSaving ? 'Guardando...' : 'Guardar'}
+          {isSaving ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Save className="w-[18px] h-[18px]" />}
+          {isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
-    </div>
+    </header>
   );
 };

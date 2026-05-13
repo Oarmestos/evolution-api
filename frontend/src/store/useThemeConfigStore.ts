@@ -37,7 +37,7 @@ interface ThemeState {
   applyTemplate: (templateName: string) => void;
 }
 
-import { AVRI_LUXURY_LAYOUT } from '../components/Appearance/VisualBuilder/defaultLayout';
+import { AVRI_LUXURY_LAYOUT } from './defaultLayout';
 
 const DEFAULT_THEME: ThemeConfig = {
   template: 'luxury',

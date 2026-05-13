@@ -5,16 +5,20 @@ interface WebPreviewProps {
 }
 
 export const WebPreview: React.FC<WebPreviewProps> = ({ layout }) => {
-  const content = layout?.content || [];
-  const rootProps = layout?.root?.props || {};
+  // Detect if it's the new tree structure (root) or the old flat structure (content[])
+  const isTree = layout?.id === 'root' && layout?.type === 'Container';
+  
+  const content = isTree ? (layout?.children || []) : (layout?.content || []);
+  const rootProps = isTree ? (layout?.props || {}) : (layout?.root?.props || {});
   const primaryColor = rootProps.primaryColor || "#00E5FF";
+  const storeName = rootProps.storeName || "MI TIENDA";
 
   return (
     <div className="w-[200%] h-[200%] bg-white overflow-hidden rounded-[40px] flex flex-col scale-50 origin-top-left border-[6px] border-white/10 shadow-2xl font-['Inter']">
       
       {/* Real-like Header */}
       <div className="h-20 bg-gradient-to-r from-[#00E5FF] to-[#4F46E5] flex items-center px-12 justify-between shrink-0 shadow-lg">
-        <div className="text-2xl font-black text-white uppercase tracking-widest">{rootProps.storeName || "MI TIENDA"}</div>
+        <div className="text-2xl font-black text-white uppercase tracking-widest">{storeName}</div>
         <div className="flex items-center gap-6">
            <div className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-bold text-white flex items-center gap-2 border border-white/10">
               CARRITO (0)
@@ -73,6 +77,33 @@ export const WebPreview: React.FC<WebPreviewProps> = ({ layout }) => {
           }
 
           if (item.type === 'Container') {
+            const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+            
+            if (hasChildren) {
+              return (
+                <div key={index} style={{ 
+                  backgroundColor: props.backgroundColor || 'transparent',
+                  padding: props.padding || '20px',
+                  display: 'flex',
+                  flexDirection: props.flexDirection || 'column',
+                  gap: props.gap || '20px',
+                  alignItems: props.alignItems || 'stretch',
+                  justifyContent: props.justifyContent || 'flex-start',
+                  borderRadius: props.borderRadius || '0px',
+                }}>
+                  {item.children.map((child: any, cIdx: number) => {
+                    // Simple recursive-like render for preview (only basic types for now)
+                    const cProps = child.props || {};
+                    if (child.type === 'Heading') return <h2 key={cIdx} style={{ fontSize: cProps.fontSize || '24px', fontWeight: '900', color: cProps.color || '#001946', textAlign: cProps.textAlign || 'left' }}>{cProps.text}</h2>;
+                    if (child.type === 'Text') return <p key={cIdx} style={{ fontSize: cProps.fontSize || '14px', color: cProps.color || '#64748b', textAlign: cProps.textAlign || 'left', opacity: cProps.opacity || 1 }}>{cProps.text}</p>;
+                    if (child.type === 'Button') return <div key={cIdx} style={{ backgroundColor: cProps.backgroundColor || '#00E5FF', color: cProps.color || '#001946', padding: '12px 24px', borderRadius: cProps.borderRadius || '8px', fontWeight: 'bold', width: 'fit-content' }}>{cProps.text}</div>;
+                    if (child.type === 'ProductGrid') return <div key={cIdx} className="w-full h-40 bg-slate-100 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400">GRILLA DE PRODUCTOS</div>;
+                    return null;
+                  })}
+                </div>
+              );
+            }
+
             return (
               <div key={index} className="px-24 py-20 grid grid-cols-2 gap-12 bg-white">
                  {[1,2].map(i => (
@@ -93,7 +124,7 @@ export const WebPreview: React.FC<WebPreviewProps> = ({ layout }) => {
           if (item.type === 'Footer') {
             return (
               <div key={index} className="p-32 bg-slate-50 border-t border-slate-100 flex flex-col items-center gap-12">
-                 <div className="text-4xl font-black text-slate-200 uppercase tracking-[0.2em]">{rootProps.storeName || "MI TIENDA"}</div>
+                 <div className="text-4xl font-black text-slate-200 uppercase tracking-[0.2em]">{storeName}</div>
                  <div className="flex gap-12 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     <span>Privacidad</span>
                     <span>Términos</span>

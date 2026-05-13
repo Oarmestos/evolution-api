@@ -4,7 +4,6 @@ import { useInstanceStore } from '../store/useInstanceStore';
 import { useNavigate } from 'react-router-dom';
 import { 
   Palette, 
-  Layout, 
   Settings, 
   ChevronRight, 
   Sparkles,
@@ -12,7 +11,7 @@ import {
   CheckCircle2,
   ExternalLink
 } from 'lucide-react';
-import { WebPreview } from '../components/Appearance/VisualBuilder/WebPreview';
+import { WebPreview } from '../components/Appearance/WebPreview';
 
 export const Appearance: React.FC = () => {
   const { activeInstance } = useInstanceStore();
@@ -51,25 +50,25 @@ export const Appearance: React.FC = () => {
         {/* Main Theme Management */}
         <div className="lg:col-span-8 space-y-8">
           
-          {/* Active Theme Card */}
-          <div className="theme-surface rounded-[40px] border border-white/5 overflow-hidden group">
-            <div className="p-8 bg-gradient-to-br from-[#00E5FF]/10 to-transparent">
+          {/* Main Theme Management */}
+          <div className="theme-surface rounded-[40px] border border-white/5 overflow-hidden group bg-gradient-to-br from-[#00E5FF]/5 to-transparent">
+            <div className="p-8">
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-[#00E5FF] rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.3)]">
-                    <Layout className="text-[#001946] w-7 h-7" />
+                    <Palette className="text-[#001946] w-7 h-7" />
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#00E5FF] mb-1 flex items-center gap-2">
                       <Sparkles className="w-3 h-3" />
-                      Tema Activo
+                      Motor de Diseño Oficial
                     </div>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Avri Luxury</h3>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Avri Builder</h3>
                   </div>
                 </div>
                 <div className="bg-[#00E5FF]/20 text-[#00E5FF] px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-[#00E5FF]/30">
                   <CheckCircle2 className="w-3 h-3" />
-                  Publicado
+                  Listo para Producción
                 </div>
               </div>
 
@@ -82,7 +81,7 @@ export const Appearance: React.FC = () => {
                     onClick={() => navigate('/appearance/builder')}
                     className="px-10 py-5 bg-[#00E5FF] text-[#001946] font-black uppercase tracking-widest text-sm rounded-full shadow-[0_0_40px_rgba(0,229,255,0.4)] flex items-center gap-4 hover:scale-105 transition-all"
                   >
-                    Editar Diseño Visual
+                    Abrir Constructor
                     <Palette className="w-5 h-5" />
                   </button>
                 </div>
@@ -91,42 +90,14 @@ export const Appearance: React.FC = () => {
 
             <div className="p-8 border-t border-white/5 flex flex-wrap gap-4 items-center justify-between">
               <p className="text-sm text-gray-500 font-medium max-w-md">
-                Usa el constructor visual para arrastrar y soltar bloques, cambiar colores y personalizar cada detalle de tu tienda sin tocar código.
+                Usa nuestro motor de diseño de próxima generación para crear experiencias de compra únicas con control total sobre cada detalle.
               </p>
               <button 
                 onClick={() => navigate('/appearance/builder')}
                 className="flex items-center gap-2 text-[#00E5FF] font-black uppercase tracking-widest text-xs group/btn"
               >
-                Abrir Constructor
+                Comenzar Edición
                 <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-
-          {/* New Avri Builder (Beta) Access */}
-          <div className="mt-8 theme-surface rounded-[40px] border border-[#00E5FF]/20 bg-gradient-to-r from-[#00E5FF]/5 to-transparent overflow-hidden group">
-            <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-white/5 rounded-[24px] flex items-center justify-center border border-white/10 group-hover:border-[#00E5FF]/40 transition-all">
-                  <Palette className="text-[#00E5FF] w-8 h-8" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-[#00E5FF] text-black px-2 py-0.5 rounded">BETA</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Próxima Generación</span>
-                  </div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">Avri Builder</h3>
-                  <p className="text-sm text-gray-500 font-medium max-w-sm mt-1">
-                    Prueba nuestro nuevo motor de diseño ultra-rápido con control total.
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => navigate('/appearance/avri')}
-                className="px-8 py-4 bg-white/5 hover:bg-[#00E5FF] hover:text-black border border-white/10 hover:border-[#00E5FF] rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
-              >
-                Probar Nuevo Constructor
-                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>

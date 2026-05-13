@@ -45,6 +45,7 @@ interface AvriBuilderState {
   addBlock: (type: BlockType, parentId?: string) => void;
   updateBlockProps: (id: string, props: any) => void;
   deleteBlock: (id: string) => void;
+  moveBlock: (blockId: string, targetIndex: number, newParentId?: string) => void;
   selectBlock: (id: string | null) => void;
   setActivePanel: (panel: 'blocks' | 'layers' | 'settings') => void;
   setDevice: (device: ViewportDevice) => void;
@@ -178,6 +179,16 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     };
     get().setBlocks(remove(get().blocks));
     if (get().selectedBlockId === id) set({ selectedBlockId: null });
+  },
+
+  moveBlock: (blockId, targetIndex, _newParentId) => {
+    // Move block within root-level blocks
+    const blocks = [...get().blocks];
+    const fromIndex = blocks.findIndex(b => b.id === blockId);
+    if (fromIndex === -1 || fromIndex === targetIndex) return;
+    const [moved] = blocks.splice(fromIndex, 1);
+    blocks.splice(targetIndex, 0, moved);
+    get().setBlocks(blocks);
   },
 
   selectBlock: (id) => set({ selectedBlockId: id }),

@@ -25,14 +25,19 @@ import {
   PanelTop,
   Maximize2,
   Box,
-  Layers
+  Layers,
+  Plus,
+  LayoutGrid,
+  Settings
 } from 'lucide-react';
+import { cn } from '../../../utils/cn';
 
 interface BlockDefinition {
   type: BlockType;
   label: string;
   icon: React.ElementType;
-  category: 'Sections' | 'Basic' | 'Forms' | 'Extra' | 'Layout';
+  category: 'Sections' | 'Basic' | 'Forms' | 'Extra';
+  colSpan?: number;
 }
 
 const blocks: BlockDefinition[] = [
@@ -51,7 +56,7 @@ const blocks: BlockDefinition[] = [
   { type: 'Video', label: 'Video', icon: Video, category: 'Basic' },
   { type: 'Map', label: 'Map', icon: MapPin, category: 'Basic' },
   { type: 'Icon', label: 'Icon', icon: Smile, category: 'Basic' },
-  { type: 'Divider', label: 'Divider', icon: Minus, category: 'Basic' },
+  { type: 'Divider', label: 'Divider', icon: Minus, category: 'Basic', colSpan: 2 },
   
   // Forms
   { type: 'Form', label: 'Form Container', icon: ClipboardList, category: 'Forms' },
@@ -63,20 +68,12 @@ const blocks: BlockDefinition[] = [
 
   // Extra
   { type: 'Navbar', label: 'Navigation', icon: Menu, category: 'Extra' },
-
-  // Layout (Specific structures)
-  { 
-    type: 'Container', 
-    label: 'Empty Grid', 
-    icon: () => <div className="w-6 h-4 border-2 border-current rounded-[2px]" />, 
-    category: 'Layout' 
-  },
 ];
 
 export const SidePanel: React.FC = () => {
-  const { activePanel, addBlock } = useAvriBuilderStore();
+  const { activePanel, setActivePanel, addBlock } = useAvriBuilderStore();
   const [search, setSearch] = useState('');
-  const [openCategories, setOpenCategories] = useState<string[]>(['Basic', 'Layout']);
+  const [openCategories, setOpenCategories] = useState<string[]>(['Basic']);
 
   const toggleCategory = (cat: string) => {
     setOpenCategories(prev => 
@@ -84,99 +81,140 @@ export const SidePanel: React.FC = () => {
     );
   };
 
-  const categories: BlockDefinition['category'][] = ['Sections', 'Basic', 'Forms', 'Extra', 'Layout'];
+  const categories: BlockDefinition['category'][] = ['Sections', 'Basic', 'Forms', 'Extra'];
 
-  if (activePanel === 'layers') {
-    return (
-      <div className="w-[280px] bg-white border-r border-gray-100 flex flex-col p-6 items-center justify-center text-gray-400">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="p-4 bg-gray-50 rounded-full">
-            <Monitor className="w-8 h-8 text-gray-200" />
+  // Top action bar icons
+  const panelTools = [
+    { id: 'blocks' as const, icon: LayoutGrid },
+    { id: 'layers' as const, icon: Layers },
+    { id: 'settings' as const, icon: Settings },
+  ];
+
+  const renderContent = () => {
+    if (activePanel === 'layers') {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-[#64748b]">
+          <div className="p-4 bg-[#f1f5f9] rounded-full mb-3">
+            <Monitor className="w-7 h-7 text-[#cbd5e1]" />
           </div>
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-widest text-[#001946]">Árbol de Capas</p>
-            <p className="text-[9px] font-medium mt-1">Organiza la jerarquía de tus elementos aquí.</p>
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-[#0f172a]">Árbol de Capas</p>
+          <p className="text-[11px] mt-1 text-center">Organiza la jerarquía de tus elementos.</p>
+        </div>
+      );
+    }
+
+    if (activePanel !== 'blocks') {
+      return (
+        <div className="flex-1 flex items-center justify-center p-8 text-[#64748b]">
+          <p className="text-[11px] font-semibold uppercase tracking-wider">Panel en Construcción</p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {/* Search */}
+        <div className="p-4">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#64748b]" />
+            <input 
+              type="text"
+              placeholder="Search..."
+              className="w-full bg-[#f1f5f9] border border-[#e2e8f0] rounded-sm h-8 pl-8 pr-3 text-[13px] text-[#0f172a] focus:border-[#00E5FF] focus:bg-white focus:ring-0 placeholder:text-[#64748b] transition-colors outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
-      </div>
-    );
-  }
 
-  if (activePanel !== 'blocks') {
-    return (
-      <div className="w-[280px] bg-white border-r border-gray-100 flex flex-col p-6 items-center justify-center text-gray-400">
-        <p className="text-[10px] font-black uppercase tracking-widest">Panel en Construcción</p>
-      </div>
+        {/* Accordion Categories */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-10">
+          {categories.map((cat) => {
+            const isOpen = openCategories.includes(cat);
+            const catBlocks = blocks.filter(b => b.category === cat && b.label.toLowerCase().includes(search.toLowerCase()));
+            if (catBlocks.length === 0 && search) return null;
+
+            return (
+              <div key={cat} className="mb-1">
+                <button 
+                  onClick={() => toggleCategory(cat)}
+                  className={cn(
+                    "w-full flex items-center justify-between py-2 transition-colors cursor-pointer",
+                    isOpen 
+                      ? "text-[#0f172a] border-b border-[#e2e8f0] mb-2" 
+                      : "text-[#64748b] hover:text-[#0f172a]"
+                  )}
+                >
+                  <span className="text-[12px] font-bold uppercase tracking-wider">
+                    {cat}
+                  </span>
+                  {isOpen 
+                    ? <ChevronDown className="w-4 h-4" /> 
+                    : <ChevronRight className="w-4 h-4" />
+                  }
+                </button>
+
+                {isOpen && (
+                  <div className="grid grid-cols-2 gap-2 pb-3">
+                    {catBlocks.map((block, idx) => (
+                      <button
+                        key={`${block.label}-${idx}`}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('blockType', block.type);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onClick={() => addBlock(block.type)}
+                        className={cn(
+                          "bg-white border border-[#e2e8f0] rounded-lg p-2 flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:border-[#00E5FF] hover:shadow-sm transition-all h-[72px]",
+                          block.colSpan === 2 && "col-span-2"
+                        )}
+                      >
+                        <block.icon className="w-6 h-6 text-[#64748b]" />
+                        <span className="text-[11px] font-semibold text-[#64748b] text-center leading-tight">
+                          {block.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </>
     );
-  }
+  };
 
   return (
-    <div className="w-[280px] bg-white border-r border-gray-100 flex flex-col animate-in slide-in-from-left duration-300">
-      {/* Search Header */}
-      <div className="p-5 border-b border-gray-50">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input 
-            type="text"
-            placeholder="Search..."
-            className="w-full bg-gray-50 border border-gray-100 rounded-lg py-2.5 pl-10 pr-4 text-[11px] font-bold focus:border-[#00E5FF]/40 outline-none transition-all placeholder:text-gray-400 text-[#001946]"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+    <aside className="w-[280px] bg-white border-r border-[#e2e8f0] h-full flex flex-col flex-shrink-0 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.1)]">
+      {/* Top Action Bar */}
+      <div className="p-3 flex items-center gap-2 bg-[#f8fafc] border-b border-[#e2e8f0]">
+        <button
+          onClick={() => setActivePanel('blocks')}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-[#00E5FF] border border-[#e2e8f0] shadow-sm hover:border-[#00E5FF] transition-colors flex-shrink-0"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-1 flex-1 justify-end">
+          {panelTools.map(tool => (
+            <button
+              key={tool.id}
+              onClick={() => setActivePanel(tool.id)}
+              className={cn(
+                "w-9 h-9 flex items-center justify-center rounded-xl transition-all",
+                activePanel === tool.id
+                  ? "text-[#00E5FF] bg-white shadow-sm"
+                  : "text-[#64748b] hover:bg-white hover:text-[#00E5FF]"
+              )}
+            >
+              <tool.icon className="w-5 h-5" />
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Accordion List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
-        {categories.map((cat) => {
-          const isOpen = openCategories.includes(cat);
-          const catBlocks = blocks.filter(b => b.category === cat && b.label.toLowerCase().includes(search.toLowerCase()));
-
-          if (catBlocks.length === 0 && search) return null;
-
-          return (
-            <div key={cat} className="border-b border-gray-50 last:border-0">
-              <button 
-                onClick={() => toggleCategory(cat)}
-                className="w-full flex items-center justify-between p-4 px-5 hover:bg-gray-50 transition-colors group"
-              >
-                <span className="text-[11px] font-black text-[#001946]/80 group-hover:text-[#00E5FF] transition-colors uppercase tracking-[0.15em]">
-                  {cat}
-                </span>
-                {isOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#00E5FF]" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#00E5FF]" />
-                )}
-              </button>
-
-              {isOpen && (
-                <div className="px-4 pb-5 grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {catBlocks.map((block, idx) => (
-                    <button
-                      key={`${block.label}-${idx}`}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('blockType', block.type);
-                        e.dataTransfer.effectAllowed = 'move';
-                      }}
-                      onClick={() => addBlock(block.type)}
-                      className="flex flex-col items-center justify-center gap-3 p-4 bg-white border border-gray-100 rounded-xl hover:border-[#00E5FF]/40 hover:bg-[#00E5FF]/5 transition-all group shadow-sm hover:shadow-md active:scale-95"
-                    >
-                      <div className="text-gray-400 group-hover:text-[#00E5FF] transition-all transform group-hover:scale-110 duration-200">
-                        <block.icon className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-bold text-gray-400 group-hover:text-[#001946] transition-all text-center leading-tight">
-                        {block.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+      {renderContent()}
+    </aside>
   );
 };

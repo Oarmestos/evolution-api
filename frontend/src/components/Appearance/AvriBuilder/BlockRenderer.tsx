@@ -3,7 +3,7 @@ import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
 import type { Block } from '../../../store/useAvriBuilderStore';
 import { cn } from '../../../utils/cn';
 import { toCSSValue } from '../../../utils/toCSSValue';
-import { Trash2, Copy, MoveVertical } from 'lucide-react';
+import { Trash2, Copy, GripVertical } from 'lucide-react';
 import * as Library from './BlockLibrary';
 
 const components: Record<string, React.FC<Library.LibraryProps>> = {
@@ -28,7 +28,7 @@ const components: Record<string, React.FC<Library.LibraryProps>> = {
   Label: Library.Label
 };
 
-export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean }> = ({ block, readOnly = false }) => {
+export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?: number }> = ({ block, readOnly = false }) => {
   const { selectedBlockId, selectBlock, deleteBlock, addBlock } = useAvriBuilderStore();
   const isSelected = !readOnly && selectedBlockId === block.id;
 
@@ -55,6 +55,12 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean }> = ({ 
     e.dataTransfer.dropEffect = 'move';
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    if (readOnly) return;
+    e.dataTransfer.setData('movingBlockId', block.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   const Component = components[block.type] || (() => <div>{block.type}</div>);
   const isSection = ['Container', 'Hero', 'Footer', 'Navbar', 'Form'].includes(block.type);
   const blockWidth = block.props.width;
@@ -73,34 +79,43 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean }> = ({ 
         marginLeft: toCSSValue(block.props.marginLeft || block.props.margin),
       }}
       className={cn(
-        "group relative transition-all",
+        "group/block relative transition-all",
         !readOnly && "cursor-pointer",
-        isSelected ? "ring-2 ring-[#00E5FF] ring-offset-4 ring-offset-white rounded-lg z-50" : (!readOnly && "hover:ring-1 hover:ring-[#00E5FF]/30 z-10")
+        isSelected 
+          ? "ring-2 ring-[#00E5FF] ring-offset-0 z-50 shadow-[inset_0_0_0_2px_#00E5FF]" 
+          : (!readOnly && "hover:shadow-[inset_0_0_0_1px_rgba(0,229,255,0.3)] z-10")
       )}
       onClick={(e) => {
         if (readOnly) return;
         e.preventDefault();
-        e.stopPropagation(); // CRITICAL: Stop propagation to prevent selecting parent
+        e.stopPropagation();
         selectBlock(block.id);
       }}
     >
+      {/* Floating toolbar — matches reference design */}
       {isSelected && (
-        <div className="absolute -top-10 left-0 flex items-center bg-[#00E5FF] text-[#001946] rounded-md overflow-hidden shadow-2xl z-[100] h-8">
-          <div className="px-3 border-r border-black/5 flex items-center gap-2 h-full">
-            <MoveVertical className="w-3 h-3 opacity-40 cursor-grab" />
-            <span className="text-[9px] font-black uppercase tracking-widest">{block.type}</span>
-          </div>
-          <button className="p-2 hover:bg-black/5 transition-colors h-full flex items-center">
-            <Copy className="w-3 h-3" />
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-[#0f172a] flex items-center rounded-lg shadow-md border border-[#00E5FF] h-8 px-1 z-[100]">
+          <button
+            draggable
+            onDragStart={handleDragStart}
+            className="w-8 h-8 flex items-center justify-center text-[#64748b] hover:text-[#0f172a] transition-colors cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#00E5FF] px-1">
+            {block.type}
+          </span>
+          <button className="w-8 h-8 flex items-center justify-center text-[#64748b] hover:text-[#0f172a] transition-colors">
+            <Copy className="w-4 h-4" />
           </button>
           <button 
             onClick={(e) => {
               e.stopPropagation();
               deleteBlock(block.id);
             }}
-            className="p-2 hover:bg-red-500 hover:text-white transition-colors h-full flex items-center"
+            className="w-8 h-8 flex items-center justify-center text-[#ef4444] hover:bg-red-50 transition-colors rounded-sm"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAvriBuilderStore } from '../../../../store/useAvriBuilderStore';
-import { Settings2, Trash2, Layout, Palette } from 'lucide-react';
+import { Trash2, Layout, Palette } from 'lucide-react';
 import { SpecificSettingsPanel, LayoutPanel, GeneralPanel } from './SpecificPanel';
 import { TypographyPanel } from './TypographyPanel';
 import { SizePanel } from './SizePanel';
@@ -25,72 +25,60 @@ export const Inspector: React.FC = () => {
 
   if (!block) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-300">
-        <div className="p-5 bg-gray-50 rounded-full mb-4">
-          <Settings2 className="w-10 h-10 text-gray-200" />
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center text-[#94a3b8]">
+        <div className="p-4 bg-[#f1f5f9] rounded-full mb-3">
+          <Layout className="w-8 h-8 text-[#cbd5e1]" />
         </div>
-        <p className="text-xs font-black uppercase tracking-widest text-[#001946]">Selecciona un elemento</p>
-        <p className="text-[10px] font-medium mt-2 leading-relaxed">Haz clic en cualquier bloque para editar.</p>
+        <p className="text-[12px] font-semibold uppercase tracking-wider text-[#0f172a]">Selecciona un elemento</p>
+        <p className="text-[11px] mt-1">Haz clic en cualquier bloque para editar.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-300">
-      {/* Header Inspector */}
-      <div className="p-4 px-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100">
-            <Layout className="w-4 h-4 text-[#00E5FF]" />
+    <div className="flex flex-col h-full bg-white">
+      {/* Header */}
+      <div className="p-4 border-b border-[#e2e8f0] flex items-center justify-between bg-[#f8fafc]">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-[#00E5FF] border border-[#e2e8f0] shadow-sm">
+            <Layout className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-[#001946] leading-none">
+            <h3 className="text-[12px] font-bold uppercase tracking-wider text-[#0f172a]">
               {block.type}
             </h3>
-            <span className="text-[9px] font-mono font-bold text-gray-400">#{block.id.slice(0, 8)}</span>
+            <span className="text-[11px] font-mono text-[#64748b]">#{block.id.slice(0, 8)}</span>
           </div>
         </div>
         
         <button 
           onClick={() => deleteBlock(block.id)}
-          className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+          className="w-8 h-8 flex items-center justify-center rounded-sm text-[#64748b] hover:text-[#ef4444] hover:bg-red-50 transition-colors"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-[18px] h-[18px]" />
         </button>
       </div>
 
-      {/* Panels List - STRICT ALPHABETICAL ORDER */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar pb-20">
-        
-        {/* 1. Background & Borders (StylePanel) */}
+      {/* Panels */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-16">
         <StylePanel block={block} />
-
-        {/* 2. General Information */}
         <GeneralPanel block={block} />
-
-        {/* 3. Layout & Position */}
         <LayoutPanel block={block} />
-
-        {/* 4. Size Control */}
         <SizePanel block={block} />
-
-        {/* 5. Space (Padding/Margin) */}
         <SpacePanel block={block} />
-
-        {/* 6. Specific Configuration (Hero settings, Button text, etc.) */}
         <SpecificSettingsPanel block={block} />
 
-        {/* 7. Typography (Only for text-based blocks) */}
         {(block.type === 'Heading' || block.type === 'Text' || block.type === 'Button' || block.type === 'Label') && (
           <TypographyPanel block={block} />
         )}
+      </div>
 
-        <div className="p-6 text-center border-t border-gray-50 opacity-40">
-          <div className="flex items-center justify-center gap-2 text-gray-300 text-[10px] font-black uppercase tracking-widest">
-            <Palette className="w-3.5 h-3.5" />
-            Diseño Profesional
-          </div>
-        </div>
+      {/* Footer Badge */}
+      <div className="p-3 text-center border-t border-[#e2e8f0] bg-[#f8fafc]">
+        <span className="text-[11px] text-[#64748b] uppercase tracking-widest flex items-center justify-center gap-1 font-semibold">
+          <Palette className="w-3.5 h-3.5" />
+          Diseño Profesional
+        </span>
       </div>
     </div>
   );

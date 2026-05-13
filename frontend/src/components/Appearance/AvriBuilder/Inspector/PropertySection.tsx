@@ -21,23 +21,19 @@ export const PropertySection: React.FC<PropertySectionProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-gray-100 last:border-0">
+    <div className="border-b border-[#e2e8f0] last:border-0">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full flex items-center justify-between p-4 hover:bg-gray-50/50 transition-all group",
-          isOpen && "bg-gray-50/30"
+          "w-full flex items-center justify-between px-4 py-2.5 transition-all cursor-pointer group",
+          isOpen 
+            ? "text-[#00E5FF] bg-[#b3f8ff]/20 border-l-[3px] border-[#00E5FF] pl-3 font-bold" 
+            : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
         )}
       >
-        <div className="flex items-center gap-2.5">
-          <Icon className={cn(
-            "w-3.5 h-3.5 transition-colors",
-            isOpen ? "text-[#00E5FF]" : "text-gray-400 group-hover:text-[#00E5FF]"
-          )} />
-          <span className={cn(
-            "text-[10px] font-black uppercase tracking-[0.15em] transition-colors",
-            isOpen ? "text-[#001946]" : "text-gray-400 group-hover:text-[#001946]"
-          )}>
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4" />
+          <span className="text-[12px] font-bold uppercase tracking-wider">
             {title}
           </span>
           {badge && (
@@ -45,14 +41,14 @@ export const PropertySection: React.FC<PropertySectionProps> = ({
           )}
         </div>
         {isOpen ? (
-          <ChevronDown className="w-3 h-3 text-gray-300" />
+          <ChevronDown className="w-4 h-4" />
         ) : (
-          <ChevronRight className="w-3 h-3 text-gray-300" />
+          <ChevronRight className="w-4 h-4" />
         )}
       </button>
 
       {isOpen && (
-        <div className="px-5 pb-6 pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="px-4 pb-4 pt-2 bg-white">
           {children}
         </div>
       )}

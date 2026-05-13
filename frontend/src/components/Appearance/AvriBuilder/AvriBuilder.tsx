@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { ActivityBar } from './ActivityBar';
 import { SidePanel } from './SidePanel';
 import { Toolbar } from './Toolbar';
 import { Canvas } from './Canvas';
@@ -8,7 +7,7 @@ import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
 import { useThemeConfigStore } from '../../../store/useThemeConfigStore';
 
 export const AvriBuilder: React.FC = () => {
-  const { selectedBlockId, selectBlock, device, initFromTheme, blocks } = useAvriBuilderStore();
+  const { selectBlock, device, initFromTheme, blocks } = useAvriBuilderStore();
   const { fetchTheme, loading } = useThemeConfigStore();
 
   // Initialize theme data from server
@@ -27,7 +26,7 @@ export const AvriBuilder: React.FC = () => {
     switch (device) {
       case 'mobile': return '375px';
       case 'tablet': return '768px';
-      default: return '1000px';
+      default: return '1024px';
     }
   };
 
@@ -36,40 +35,44 @@ export const AvriBuilder: React.FC = () => {
       <div className="fixed inset-0 flex items-center justify-center bg-white z-[9999]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#00E5FF]/20 border-t-[#00E5FF] rounded-full animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cargando Constructor...</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Cargando Constructor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white text-[#001946] overflow-hidden z-[9999]">
+    <div className="fixed inset-0 flex flex-col bg-[#f8fafc] text-[#0f172a] overflow-hidden z-[9999]">
       <Toolbar />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Professional Panels */}
-        <ActivityBar />
+      <div className="flex flex-1 pt-12 overflow-hidden">
+        {/* Left Panel */}
         <SidePanel />
 
-        {/* Main Viewport (Paper Style) */}
-        <div 
-          className="flex-1 overflow-y-auto bg-[#f5f5f7] relative custom-scrollbar flex justify-center py-12 px-8"
+        {/* Central Canvas */}
+        <main
+          className="flex-1 overflow-y-auto relative custom-scrollbar shadow-inner"
+          style={{ backgroundColor: '#e2e8f0' }}
           onClick={() => selectBlock(null)}
         >
-          <div 
-            style={{ width: getViewportWidth(), transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
-            className="bg-white min-h-[1200px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] relative"
-          >
-            <Canvas />
+          <div className="flex justify-center p-6 min-h-full">
+            <div
+              style={{
+                width: getViewportWidth(),
+                transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              className="bg-white min-h-[1200px] relative flex flex-col shadow-md border border-[#e2e8f0] rounded-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Canvas />
+            </div>
           </div>
-        </div>
+        </main>
 
-        {/* Right Inspector */}
-        {selectedBlockId && (
-          <div className="w-[300px] bg-[#0f1016] border-l border-white/5 overflow-y-auto animate-in slide-in-from-right duration-300">
-            <StyleInspector />
-          </div>
-        )}
+        {/* Right Inspector — always visible */}
+        <aside className="w-[280px] bg-white border-l border-[#e2e8f0] overflow-y-auto custom-scrollbar shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.1)] flex-shrink-0">
+          <StyleInspector />
+        </aside>
       </div>
 
       <style>{`
@@ -80,11 +83,11 @@ export const AvriBuilder: React.FC = () => {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(148,163,184,0.3);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(148,163,184,0.5);
         }
       `}</style>
     </div>

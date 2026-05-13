@@ -200,7 +200,7 @@ export const SpecificSettingsPanel: React.FC<PanelProps> = ({ block }) => {
         </PropertySection>
       );
 
-    case 'Footer':
+    case 'footer':
       return (
         <PropertySection title="Footer Config" icon={Type}>
           <TextInput label="Copyright Text" value={block.props.text || ''} onChange={(val) => updateProp('text', val)} />
