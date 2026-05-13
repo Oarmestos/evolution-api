@@ -60,6 +60,22 @@ enum DifyBotType {
   workflow
 }
 
+enum ChatControlMode {
+  AI
+  HUMAN
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELED
+}
+
 model Instance {
   id                      String                   @id @default(cuid())
   name                    String                   @unique @db.VarChar(255)
@@ -112,6 +128,135 @@ model Instance {
   EvoaiSetting            EvoaiSetting?
   Pusher                  Pusher?
   storeTheme              StoreTheme?
+  User                    User?                    @relation(fields: [userId], references: [id])
+  userId                  String?
+  Lead                    Lead[]
+  LeadFunnel              LeadFunnel[]
+  InternalNote            InternalNote[]
+  Product                 Product[]
+  Order                   Order[]
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique @db.VarChar(255)
+  password      String         @db.VarChar(255)
+  name          String?        @db.VarChar(255)
+  role          UserRole       @default(USER)
+  createdAt     DateTime       @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt     DateTime       @updatedAt @db.Timestamp
+  instances     Instance[]
+  internalNotes InternalNote[]
+  subscription  Subscription?
+}
+
+model StoreTheme {
+  id           String   @id @default(cuid())
+  instanceId   String   @unique
+  template     String   @default("moderno") @db.VarChar(50)
+  storeName    String?  @db.VarChar(100)
+  logoUrl      String?  @db.VarChar(500)
+  heroTitle    String?  @db.VarChar(100)
+  heroSubtitle String?  @db.VarChar(255)
+  heroImageUrl String?  @db.VarChar(500)
+  footerText   String?  @db.VarChar(255)
+  primaryColor String   @default("#6366f1") @db.VarChar(20)
+  buttonColor  String   @default("#000000") @db.VarChar(20)
+  bgColor      String   @default("#f8fafc") @db.VarChar(20)
+  fontFamily   String   @default("Inter") @db.VarChar(50)
+  textColor    String   @default("#1c1b1b") @db.VarChar(20)
+  ctaText      String   @default("Ver Detalles") @db.VarChar(100)
+  borderRadius Int      @default(12)
+  instagramUrl String?  @db.VarChar(500)
+  tiktokUrl    String?  @db.VarChar(500)
+  syncWhatsapp Boolean  @default(false)
+  layout       Json?    @db.Json
+  createdAt    DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt    DateTime @updatedAt @db.Timestamp
+  Instance     Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id            String         @id @default(cuid())
+  name          String         @unique @db.VarChar(100)
+  maxInstances  Int            @default(1)
+  price         Float          @default(0.0)
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt     DateTime       @updatedAt @db.Timestamp
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String             @unique
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  createdAt DateTime           @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt DateTime           @updatedAt @db.Timestamp
+  User      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Plan      Plan               @relation(fields: [planId], references: [id])
+}
+
+model LeadFunnel {
+  id          String      @id @default(cuid())
+  name        String      @db.VarChar(100)
+  description String?     @db.VarChar(255)
+  instanceId  String
+  createdAt   DateTime    @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt   DateTime    @updatedAt @db.Timestamp
+  Instance    Instance    @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  stages      LeadStage[]
+
+  @@index([instanceId])
+}
+
+model LeadStage {
+  id        String     @id @default(cuid())
+  name      String     @db.VarChar(100)
+  color     String?    @default("#00ff88") @db.VarChar(50)
+  order     Int        @default(0)
+  funnelId  String
+  createdAt DateTime   @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt DateTime   @updatedAt @db.Timestamp
+  leads     Lead[]
+  Funnel    LeadFunnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@index([funnelId])
+}
+
+model Lead {
+  id         String    @id @default(cuid())
+  value      Float     @default(0.0)
+  notes      String?   @db.Text
+  stageId    String
+  contactId  String
+  instanceId String
+  createdAt  DateTime  @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt  DateTime  @updatedAt @db.Timestamp
+  Contact    Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  Instance   Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  Stage      LeadStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@index([stageId])
+  @@index([contactId])
+  @@index([instanceId])
+}
+
+model InternalNote {
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  createdAt  DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @db.Timestamp
+  updatedAt  DateTime @updatedAt @db.Timestamp
+  chatId     String
+  userId     String
+  instanceId String
+  remoteJid  String?  @db.VarChar(100)
+  Chat       Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([userId])
 }
 
 model Session {

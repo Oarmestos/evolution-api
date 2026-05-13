@@ -43,6 +43,8 @@ lerna-debug.log*
 !/test/router-broker.test.ts
 !/test/order.service.test.ts
 !/test/user.service.test.ts
+!/test/theme.service.test.ts
+!/test/theme.validate.test.ts
 /src/env.yml
 /store
 *.env

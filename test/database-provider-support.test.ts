@@ -39,12 +39,15 @@ describe('database provider support', () => {
     }
   });
 
-  it('documents the currently partial MySQL schema for app-level modules', () => {
+  it('verifies that the MySQL schema is compatible with the full application surface', () => {
     const schema = readSchema('mysql');
-    const missingModels = requiredModels.filter((model) => !hasBlock(schema, 'model', model));
-    const missingEnums = requiredEnums.filter((enumName) => !hasBlock(schema, 'enum', enumName));
 
-    expect(missingModels).toEqual(requiredModels);
-    expect(missingEnums).toEqual(requiredEnums);
+    for (const model of requiredModels) {
+      expect(hasBlock(schema, 'model', model), `Missing MySQL model ${model}`).toBe(true);
+    }
+
+    for (const enumName of requiredEnums) {
+      expect(hasBlock(schema, 'enum', enumName), `Missing MySQL enum ${enumName}`).toBe(true);
+    }
   });
 });

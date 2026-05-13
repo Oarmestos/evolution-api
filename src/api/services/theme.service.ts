@@ -143,9 +143,9 @@ export class ThemeService {
           totalPages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(error);
-      if (error instanceof NotFoundException) throw error;
+      if (error instanceof NotFoundException || error.status === 404) throw error;
       throw new BadRequestException('Error al obtener la tienda');
     }
   }
