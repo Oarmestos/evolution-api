@@ -1,8 +1,6 @@
 import React from 'react';
-import { 
-  useAvriBuilderStore, 
-  Block 
-} from '../../../store/useAvriBuilderStore';
+import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
+import type { Block } from '../../../store/useAvriBuilderStore';
 import { 
   Type, 
   Image as ImageIcon, 
