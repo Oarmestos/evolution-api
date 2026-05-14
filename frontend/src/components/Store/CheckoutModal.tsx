@@ -18,7 +18,7 @@ interface CheckoutModalProps {
     primaryColor: string;
     buttonColor: string;
     borderRadius: number;
-    storeName?: string;
+    storeName?: string | null;
   };
 }
 

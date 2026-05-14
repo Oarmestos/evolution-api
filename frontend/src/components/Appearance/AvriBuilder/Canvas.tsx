@@ -11,8 +11,9 @@ export const Canvas: React.FC = () => {
     e.preventDefault();
     setDragOverIndex(null);
     const type = e.dataTransfer.getData('blockType') as any;
+    const preset = e.dataTransfer.getData('blockPreset');
     if (type) {
-      addBlock(type);
+      addBlock(type, undefined, preset);
     }
   };
 
@@ -33,8 +34,9 @@ export const Canvas: React.FC = () => {
     }
 
     const type = e.dataTransfer.getData('blockType') as any;
+    const preset = e.dataTransfer.getData('blockPreset');
     if (type) {
-      addBlock(type);
+      addBlock(type, undefined, preset);
     }
   };
 

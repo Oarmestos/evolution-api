@@ -38,6 +38,7 @@ interface BlockDefinition {
   icon: React.ElementType;
   category: 'Sections' | 'Basic' | 'Forms' | 'Extra';
   colSpan?: number;
+  preset?: string;
 }
 
 const blocks: BlockDefinition[] = [
@@ -49,7 +50,7 @@ const blocks: BlockDefinition[] = [
 
   // Basic
   { type: 'Container', label: '1 Column', icon: Square, category: 'Basic' },
-  { type: 'Container', label: '2 Columns', icon: Columns, category: 'Basic' },
+  { type: 'Container', label: '2 Columns', icon: Columns, category: 'Basic', preset: '2-columns' },
   { type: 'Heading', label: 'Heading', icon: Type, category: 'Basic' },
   { type: 'Text', label: 'Text', icon: Type, category: 'Basic' },
   { type: 'Image', label: 'Image', icon: ImageIcon, category: 'Basic' },
@@ -162,9 +163,12 @@ export const SidePanel: React.FC = () => {
                         draggable
                         onDragStart={(e) => {
                           e.dataTransfer.setData('blockType', block.type);
+                          if (block.preset) {
+                            e.dataTransfer.setData('blockPreset', block.preset);
+                          }
                           e.dataTransfer.effectAllowed = 'move';
                         }}
-                        onClick={() => addBlock(block.type)}
+                        onClick={() => addBlock(block.type, undefined, block.preset)}
                         className={cn(
                           "bg-white border border-[#e2e8f0] rounded-lg p-2 flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:border-[#00E5FF] hover:shadow-sm transition-all h-[72px]",
                           block.colSpan === 2 && "col-span-2"

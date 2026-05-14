@@ -90,7 +90,7 @@ export const ColorInput: React.FC<ColorInputProps> = ({ label, value, onChange }
 interface SegmentedControlProps {
   label?: string;
   value: string;
-  options: { value: string; icon: LucideIcon; label?: string }[];
+  options: { value: string; icon?: LucideIcon; label?: string }[];
   onChange: (value: string) => void;
 }
 
@@ -113,7 +113,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({ label, value
               }`}
               title={opt.label}
             >
-              <Icon className="w-3.5 h-3.5" />
+              {Icon ? <Icon className="w-3.5 h-3.5" /> : <span className="text-[10px] font-bold px-2">{opt.label}</span>}
             </button>
           );
         })}
@@ -193,3 +193,15 @@ export const SelectInput: React.FC<SelectInputProps> = ({ label, value, options,
     </div>
   );
 };
+
+export const ToggleInput: React.FC<{ label: string, value: boolean, onChange: (val: boolean) => void }> = ({ label, value, onChange }) => (
+  <div className="flex items-center justify-between p-2 bg-[#f8fafc] rounded-lg border border-[#f1f5f9]">
+    <label className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">{label}</label>
+    <button 
+      onClick={() => onChange(!value)}
+      className={`w-8 h-4 rounded-full transition-all relative ${value ? 'bg-[#00E5FF]' : 'bg-[#e2e8f0]'}`}
+    >
+      <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-all ${value ? 'translate-x-4' : 'translate-x-0'}`} />
+    </button>
+  </div>
+);

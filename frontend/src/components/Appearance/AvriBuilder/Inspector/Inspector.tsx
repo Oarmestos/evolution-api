@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAvriBuilderStore } from '../../../../store/useAvriBuilderStore';
-import { Trash2, Layout, Palette } from 'lucide-react';
+import { Trash2, Layout, Palette, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { SpecificSettingsPanel, LayoutPanel, GeneralPanel } from './SpecificPanel';
 import { TypographyPanel } from './TypographyPanel';
 import { SizePanel } from './SizePanel';
@@ -8,7 +8,7 @@ import { SpacePanel } from './SpacePanel';
 import { StylePanel } from './StylePanel';
 
 export const Inspector: React.FC = () => {
-  const { selectedBlockId, blocks, deleteBlock } = useAvriBuilderStore();
+  const { selectedBlockId, blocks, deleteBlock, device } = useAvriBuilderStore();
 
   const findBlock = (id: string, blocks: any[]): any => {
     for (const b of blocks) {
@@ -40,8 +40,13 @@ export const Inspector: React.FC = () => {
       {/* Header */}
       <div className="p-4 border-b border-[#e2e8f0] flex items-center justify-between bg-[#f8fafc]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-[#00E5FF] border border-[#e2e8f0] shadow-sm">
+          <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-[#00E5FF] border border-[#e2e8f0] shadow-sm relative group">
             <Layout className="w-4 h-4" />
+            <div className="absolute -top-1.5 -right-1.5 bg-white border border-[#e2e8f0] rounded-full p-0.5 text-[#0f172a] shadow-sm flex items-center justify-center" title={`Editando vista: ${device}`}>
+              {device === 'desktop' && <Monitor className="w-2.5 h-2.5" />}
+              {device === 'tablet' && <Tablet className="w-2.5 h-2.5" />}
+              {device === 'mobile' && <Smartphone className="w-2.5 h-2.5" />}
+            </div>
           </div>
           <div>
             <h3 className="text-[12px] font-bold uppercase tracking-wider text-[#0f172a]">
@@ -60,17 +65,28 @@ export const Inspector: React.FC = () => {
       </div>
 
       {/* Panels */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar pb-16">
-        <StylePanel block={block} />
-        <GeneralPanel block={block} />
-        <LayoutPanel block={block} />
-        <SizePanel block={block} />
-        <SpacePanel block={block} />
+      <div key={block.id} className="flex-1 overflow-y-auto custom-scrollbar pb-16">
         <SpecificSettingsPanel block={block} />
-
-        {(block.type === 'Heading' || block.type === 'Text' || block.type === 'Button' || block.type === 'Label') && (
+        
+        {['Container', 'Hero', 'Navbar', 'Footer', 'Form', 'ProductGrid'].includes(block.type) && (
+          <LayoutPanel block={block} />
+        )}
+        
+        {['Heading', 'Text', 'Button', 'Label', 'Input'].includes(block.type) && (
           <TypographyPanel block={block} />
         )}
+
+        {block.type !== 'Spacer' && (
+          <StylePanel block={block} />
+        )}
+        
+        <GeneralPanel block={block} />
+        
+        {!['Heading', 'Text'].includes(block.type) && (
+          <SizePanel block={block} />
+        )}
+        
+        <SpacePanel block={block} />
       </div>
 
       {/* Footer Badge */}

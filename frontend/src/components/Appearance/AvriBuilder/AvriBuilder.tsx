@@ -8,7 +8,7 @@ import { useThemeConfigStore } from '../../../store/useThemeConfigStore';
 import { useInstanceStore } from '../../../store/useInstanceStore';
 
 export const AvriBuilder: React.FC = () => {
-  const { selectBlock, device, initFromTheme, blocks } = useAvriBuilderStore();
+  const { selectBlock, device, initFromTheme, loadedInstanceId } = useAvriBuilderStore();
   const { theme, fetchTheme, loading } = useThemeConfigStore();
   const { activeInstance } = useInstanceStore();
 
@@ -19,13 +19,14 @@ export const AvriBuilder: React.FC = () => {
     }
   }, [fetchTheme, activeInstance]);
 
-  // Sync builder blocks with theme layout if builder is empty
+  // Sync builder blocks with theme layout if builder is empty or instance changed
   useEffect(() => {
-    // Only initialize if we have an active instance AND loading is finished
-    if (activeInstance && !loading && blocks.length === 0 && theme.layout) {
-      initFromTheme(theme.layout);
+    // Re-initialize if the loaded instance is different from the active instance,
+    // or if the builder is completely empty and hasn't loaded any instance yet.
+    if (activeInstance && !loading && theme.layout && loadedInstanceId !== activeInstance.instanceId) {
+      initFromTheme(theme.layout, activeInstance.instanceId);
     }
-  }, [activeInstance, loading, blocks.length, initFromTheme, theme.layout]);
+  }, [activeInstance, loading, loadedInstanceId, initFromTheme, theme.layout]);
 
   const getViewportWidth = () => {
     switch (device) {

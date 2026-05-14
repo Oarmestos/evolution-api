@@ -2,16 +2,15 @@ import React from 'react';
 import { Maximize2 } from 'lucide-react';
 import { PropertySection } from './PropertySection';
 import { UnitInput } from './Inputs';
-import { useAvriBuilderStore } from '../../../../store/useAvriBuilderStore';
 import type { Block } from '../../../../store/useAvriBuilderStore';
+import { useResponsiveProps } from '../utils/responsive';
 
 interface SizePanelProps {
   block: Block;
 }
 
 export const SizePanel: React.FC<SizePanelProps> = ({ block }) => {
-  const { updateBlockProps } = useAvriBuilderStore();
-  const p = block.props;
+  const { getProp, setProp } = useResponsiveProps(block);
 
   return (
     <PropertySection title="Size" icon={Maximize2}>
@@ -19,37 +18,37 @@ export const SizePanel: React.FC<SizePanelProps> = ({ block }) => {
         <div className="flex gap-4">
           <UnitInput 
             label="Width" 
-            value={p.width ?? 'auto'} 
-            onChange={(val) => updateBlockProps(block.id, { width: val })}
+            value={getProp('width') ?? 'auto'} 
+            onChange={(val) => setProp('width', val)}
           />
           <UnitInput 
             label="Height" 
-            value={p.height ?? 'auto'} 
-            onChange={(val) => updateBlockProps(block.id, { height: val })}
+            value={getProp('height') ?? 'auto'} 
+            onChange={(val) => setProp('height', val)}
           />
         </div>
         <div className="flex gap-4">
           <UnitInput 
             label="Min W" 
-            value={p.minWidth ?? '0px'} 
-            onChange={(val) => updateBlockProps(block.id, { minWidth: val })}
+            value={getProp('minWidth') ?? '0px'} 
+            onChange={(val) => setProp('minWidth', val)}
           />
           <UnitInput 
             label="Min H" 
-            value={p.minHeight ?? '0px'} 
-            onChange={(val) => updateBlockProps(block.id, { minHeight: val })}
+            value={getProp('minHeight') ?? '0px'} 
+            onChange={(val) => setProp('minHeight', val)}
           />
         </div>
         <div className="flex gap-4">
           <UnitInput 
             label="Max W" 
-            value={p.maxWidth ?? 'none'} 
-            onChange={(val) => updateBlockProps(block.id, { maxWidth: val })}
+            value={getProp('maxWidth') ?? 'none'} 
+            onChange={(val) => setProp('maxWidth', val)}
           />
           <UnitInput 
             label="Max H" 
-            value={p.maxHeight ?? 'none'} 
-            onChange={(val) => updateBlockProps(block.id, { maxHeight: val })}
+            value={getProp('maxHeight') ?? 'none'} 
+            onChange={(val) => setProp('maxHeight', val)}
           />
         </div>
       </div>

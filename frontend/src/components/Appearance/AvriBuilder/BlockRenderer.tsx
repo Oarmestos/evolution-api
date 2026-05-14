@@ -5,6 +5,7 @@ import { cn } from '../../../utils/cn';
 import { toCSSValue } from '../../../utils/toCSSValue';
 import { Trash2, Copy, GripVertical } from 'lucide-react';
 import * as Library from './BlockLibrary';
+import { resolveResponsive } from './utils/responsive';
 
 const components: Record<string, React.FC<Library.LibraryProps>> = {
   Container: Library.Container,
@@ -29,8 +30,10 @@ const components: Record<string, React.FC<Library.LibraryProps>> = {
 };
 
 export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?: number }> = ({ block, readOnly = false }) => {
-  const { selectedBlockId, selectBlock, deleteBlock, addBlock } = useAvriBuilderStore();
+  const { selectedBlockId, selectBlock, deleteBlock, addBlock, device } = useAvriBuilderStore();
   const isSelected = !readOnly && selectedBlockId === block.id;
+  const p = block.props;
+  const resolve = (val: any) => resolveResponsive(val, device);
 
   const handleDrop = (e: React.DragEvent) => {
     if (readOnly) return;
@@ -40,8 +43,9 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?:
     e.preventDefault();
     e.stopPropagation();
     const type = e.dataTransfer.getData('blockType') as any;
+    const preset = e.dataTransfer.getData('blockPreset');
     if (type) {
-      addBlock(type, block.id);
+      addBlock(type, block.id, preset);
     }
   };
 
@@ -62,34 +66,43 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?:
   };
 
   const Component = components[block.type] || (() => <div>{block.type}</div>);
-  const isSection = ['Container', 'Hero', 'Footer', 'Navbar', 'Form'].includes(block.type);
-  const blockWidth = block.props.width;
 
   return (
     <div 
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       style={{
-        alignSelf: block.props.alignSelf || 'auto',
-        width: blockWidth === '100%' ? '100%' : (blockWidth === 'auto' ? 'fit-content' : (blockWidth || (isSection ? '100%' : 'fit-content'))),
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 
+          resolve(p.alignSelf) === 'center' ? 'center' : 
+          resolve(p.alignSelf) === 'flex-end' ? 'flex-end' : 
+          resolve(p.alignSelf) === 'flex-start' ? 'flex-start' : 'stretch',
+        alignSelf: resolve(p.alignSelf) || 'auto',
+        width: resolve(p.width) || '100%',
         maxWidth: '100%',
-        marginTop: toCSSValue(block.props.marginTop || block.props.margin),
-        marginRight: toCSSValue(block.props.marginRight || block.props.margin),
-        marginBottom: toCSSValue(block.props.marginBottom || block.props.margin),
-        marginLeft: toCSSValue(block.props.marginLeft || block.props.margin),
+        marginTop: toCSSValue(resolve(p.marginTop) || resolve(p.margin)),
+        marginRight: toCSSValue(resolve(p.marginRight) || resolve(p.margin)),
+        marginBottom: toCSSValue(resolve(p.marginBottom) || resolve(p.margin)),
+        marginLeft: toCSSValue(resolve(p.marginLeft) || resolve(p.margin)),
       }}
       className={cn(
         "group/block relative transition-all",
-        !readOnly && "cursor-pointer",
+        !readOnly && (['Heading', 'Text', 'Button'].includes(block.type) ? "cursor-text" : "cursor-pointer"),
         isSelected 
           ? "ring-2 ring-[#00E5FF] ring-offset-0 z-50 shadow-[inset_0_0_0_2px_#00E5FF]" 
           : (!readOnly && "hover:shadow-[inset_0_0_0_1px_rgba(0,229,255,0.3)] z-10")
       )}
+      onMouseDown={(e) => {
+        if (readOnly) return;
+        e.stopPropagation();
+        if (selectedBlockId !== block.id) {
+          selectBlock(block.id);
+        }
+      }}
       onClick={(e) => {
         if (readOnly) return;
-        e.preventDefault();
         e.stopPropagation();
-        selectBlock(block.id);
       }}
     >
       {/* Floating toolbar — matches reference design */}

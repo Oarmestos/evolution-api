@@ -224,6 +224,8 @@ const SalesFunnel: React.FC = () => {
         return s;
       }));
 
+      if (!activeInstance) return;
+
       try {
         await axios.post(`/lead/move/${activeInstance.instanceName}`, { leadId, stageId: targetStage.id }, {
           headers: { apikey: token }

@@ -40,10 +40,12 @@ interface AvriBuilderState {
   device: ViewportDevice;
   history: Block[][];
   historyIndex: number;
+  loadedInstanceId: string | null;
   
   // Actions
-  setBlocks: (blocks: Block[]) => void;
-  addBlock: (type: BlockType, parentId?: string) => void;
+  setBlocks: (blocks: Block[], immediate?: boolean) => void;
+  commitHistory: () => void;
+  addBlock: (type: BlockType, parentId?: string, preset?: string) => void;
   updateBlockProps: (id: string, props: any) => void;
   deleteBlock: (id: string) => void;
   moveBlock: (blockId: string, targetIndex: number, newParentId?: string) => void;
@@ -51,7 +53,9 @@ interface AvriBuilderState {
   setActivePanel: (panel: 'blocks' | 'layers' | 'settings') => void;
   setDevice: (device: ViewportDevice) => void;
   upgradeBlock: (id: string, target?: 'title' | 'subtitle' | 'button' | 'link') => void;
-  initFromTheme: (layout?: any) => void;
+  initFromTheme: (layout: any | undefined, instanceId: string) => void;
+  
+  setContainerColumns: (id: string, columns: number) => void;
   
   // History
   undo: () => void;
@@ -61,6 +65,8 @@ interface AvriBuilderState {
   save: () => Promise<boolean>;
 }
 
+let historyTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   blocks: [],
   selectedBlockId: null,
@@ -68,17 +74,32 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   device: 'desktop',
   history: [[]],
   historyIndex: 0,
+  loadedInstanceId: null,
 
-  setBlocks: (blocks) => {
-    const newHistory = get().history.slice(0, get().historyIndex + 1);
+  setBlocks: (blocks, immediate = true) => {
+    set({ blocks });
+    
+    if (immediate) {
+      get().commitHistory();
+    } else {
+      if (historyTimeout) clearTimeout(historyTimeout);
+      historyTimeout = setTimeout(() => {
+        get().commitHistory();
+      }, 500);
+    }
+  },
+
+  commitHistory: () => {
+    const { history, historyIndex, blocks } = get();
+    // Verify it's actually different from the last state to avoid redundant commits
+    const newHistory = history.slice(0, historyIndex + 1);
     set({ 
-      blocks, 
       history: [...newHistory, blocks],
       historyIndex: newHistory.length
     });
   },
 
-  addBlock: (type, parentId) => {
+  addBlock: (type, parentId, preset) => {
     let newBlock: Block;
 
     if (type === 'Hero') {
@@ -129,6 +150,30 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
           { id: generateId(), type: 'Text', props: { text: '© 2026 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
         ]
       };
+    } else if (type === 'Container' && preset === '2-columns') {
+      newBlock = {
+        id: generateId(),
+        type: 'Container',
+        props: {
+          flexDirection: 'row',
+          gap: '16px',
+          alignItems: 'stretch',
+        },
+        children: [
+          {
+            id: generateId(),
+            type: 'Container',
+            props: { width: '50%', flexDirection: 'column' },
+            children: []
+          },
+          {
+            id: generateId(),
+            type: 'Container',
+            props: { width: '50%', flexDirection: 'column' },
+            children: []
+          }
+        ]
+      };
     } else {
       newBlock = {
         id: generateId(),
@@ -139,7 +184,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     }
 
     if (!parentId) {
-      get().setBlocks([...get().blocks, newBlock]);
+      get().setBlocks([...get().blocks, newBlock], true);
     } else {
       const updateChildren = (blocks: Block[]): Block[] => {
         return blocks.map(b => {
@@ -152,7 +197,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
           return b;
         });
       };
-      get().setBlocks(updateChildren(get().blocks));
+      get().setBlocks(updateChildren(get().blocks), true);
     }
     set({ selectedBlockId: newBlock.id });
   },
@@ -169,7 +214,56 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
         return b;
       });
     };
-    get().setBlocks(update(get().blocks));
+    get().setBlocks(update(get().blocks), false);
+  },
+
+  setContainerColumns: (id, columns) => {
+    const update = (blocks: Block[]): Block[] => {
+      return blocks.map(b => {
+        if (b.id === id && b.type === 'Container') {
+          const currentChildren = b.children || [];
+          let newChildren = [...currentChildren];
+
+          if (columns > 0) {
+            // Add missing columns if needed
+            while (newChildren.length < columns) {
+              newChildren.push({
+                id: generateId(),
+                type: 'Container',
+                props: { width: `${100 / columns}%`, flexDirection: 'column' },
+                children: []
+              });
+            }
+            // Remove extra columns if needed
+            if (newChildren.length > columns) {
+              newChildren = newChildren.slice(0, columns);
+            }
+            // Update widths for all columns
+            newChildren = newChildren.map(child => ({
+              ...child,
+              props: { ...child.props, width: `${100 / columns}%` }
+            }));
+
+            return { 
+              ...b, 
+              props: { ...b.props, flexDirection: 'row', gap: b.props.gap || '16px', alignItems: 'stretch' },
+              children: newChildren 
+            };
+          } else {
+            // If 0 columns or reset, maybe just return normal container
+            return {
+              ...b,
+              props: { ...b.props, flexDirection: 'column' }
+            };
+          }
+        }
+        if (b.children) {
+          return { ...b, children: update(b.children) };
+        }
+        return b;
+      });
+    };
+    get().setBlocks(update(get().blocks), true);
   },
 
   deleteBlock: (id) => {
@@ -178,7 +272,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
         .filter(b => b.id !== id)
         .map(b => (b.children ? { ...b, children: remove(b.children) } : b));
     };
-    get().setBlocks(remove(get().blocks));
+    get().setBlocks(remove(get().blocks), true);
     if (get().selectedBlockId === id) set({ selectedBlockId: null });
   },
 
@@ -189,14 +283,14 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     if (fromIndex === -1 || fromIndex === targetIndex) return;
     const [moved] = blocks.splice(fromIndex, 1);
     blocks.splice(targetIndex, 0, moved);
-    get().setBlocks(blocks);
+    get().setBlocks(blocks, true);
   },
 
   selectBlock: (id) => set({ selectedBlockId: id }),
   setActivePanel: (panel) => set({ activePanel: panel }),
   setDevice: (device) => set({ device }),
   
-  initFromTheme: async (layout?: any) => {
+  initFromTheme: async (layout, instanceId) => {
     try {
       const { useThemeConfigStore } = await import('./useThemeConfigStore');
       const themeLayout = layout || useThemeConfigStore.getState().theme.layout;
@@ -226,7 +320,8 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
             blocks,
             history: [blocks],
             historyIndex: 0,
-            selectedBlockId: null
+            selectedBlockId: null,
+            loadedInstanceId: instanceId
           });
           return;
         }
@@ -238,7 +333,8 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
         blocks: defaultBlocks,
         history: [defaultBlocks],
         historyIndex: 0,
-        selectedBlockId: null
+        selectedBlockId: null,
+        loadedInstanceId: instanceId
       });
     } catch (error) {
       console.error('Error initializing builder from theme:', error);
@@ -388,7 +484,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     };
     
     const newBlocks = upgrade(get().blocks);
-    get().setBlocks(newBlocks);
+    get().setBlocks(newBlocks, true);
     if (selectedId) set({ selectedBlockId: selectedId });
   },
 

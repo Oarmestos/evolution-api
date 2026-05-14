@@ -1,20 +1,16 @@
 import React from 'react';
 import { Palette, Square } from 'lucide-react';
 import { PropertySection } from './PropertySection';
-import { useAvriBuilderStore } from '../../../../store/useAvriBuilderStore';
 import type { Block } from '../../../../store/useAvriBuilderStore';
-import { ColorInput, SliderInput } from './Inputs';
+import { ColorInput, SliderInput, SegmentedControl } from './Inputs';
+import { useResponsiveProps } from '../utils/responsive';
 
 interface StylePanelProps {
   block: Block;
 }
 
 export const StylePanel: React.FC<StylePanelProps> = ({ block }) => {
-  const { updateBlockProps } = useAvriBuilderStore();
-
-  const updateProp = (key: string, value: any) => {
-    updateBlockProps(block.id, { [key]: value });
-  };
+  const { getProp, setProp } = useResponsiveProps(block);
 
   return (
     <>
@@ -22,13 +18,13 @@ export const StylePanel: React.FC<StylePanelProps> = ({ block }) => {
         <div className="space-y-4">
           <ColorInput 
             label="Fill Color"
-            value={block.props.backgroundColor || ''}
-            onChange={(val) => updateProp('backgroundColor', val)}
+            value={getProp('backgroundColor') || ''}
+            onChange={(val) => setProp('backgroundColor', val)}
           />
           <SliderInput 
             label="Opacity"
-            value={block.props.opacity !== undefined ? block.props.opacity * 100 : 100}
-            onChange={(val) => updateProp('opacity', val / 100)}
+            value={getProp('opacity') !== undefined ? getProp('opacity') * 100 : 100}
+            onChange={(val) => setProp('opacity', val / 100)}
             max={100}
             unit="%"
           />
@@ -39,8 +35,8 @@ export const StylePanel: React.FC<StylePanelProps> = ({ block }) => {
         <div className="space-y-6">
           <SliderInput 
             label="Corner Radius"
-            value={block.props.borderRadius || 0}
-            onChange={(val) => updateProp('borderRadius', val)}
+            value={getProp('borderRadius') || 0}
+            onChange={(val) => setProp('borderRadius', val)}
             max={100}
           />
           
@@ -48,19 +44,35 @@ export const StylePanel: React.FC<StylePanelProps> = ({ block }) => {
             <div className="flex gap-4">
               <ColorInput 
                 label="Border Color"
-                value={block.props.borderColor || '#000000'}
-                onChange={(val) => updateProp('borderColor', val)}
+                value={getProp('borderColor') || '#000000'}
+                onChange={(val) => setProp('borderColor', val)}
               />
               <div className="w-24">
                 <SliderInput 
                   label="Width"
-                  value={block.props.borderWidth || 0}
-                  onChange={(val) => updateProp('borderWidth', val)}
+                  value={getProp('borderWidth') || 0}
+                  onChange={(val) => setProp('borderWidth', val)}
                   max={20}
                 />
               </div>
             </div>
           </div>
+        </div>
+      </PropertySection>
+
+      <PropertySection title="Effects" icon={Palette}>
+        <div className="space-y-4">
+          <SegmentedControl 
+            label="Shadow"
+            value={getProp('boxShadow') || 'none'}
+            options={[
+              { label: 'None', value: 'none' },
+              { label: 'S', value: '0 4px 6px -1px rgb(0 0 0 / 0.1)' },
+              { label: 'M', value: '0 10px 15px -3px rgb(0 0 0 / 0.1)' },
+              { label: 'L', value: '0 20px 25px -5px rgb(0 0 0 / 0.1)' },
+            ]}
+            onChange={(val) => setProp('boxShadow', val)}
+          />
         </div>
       </PropertySection>
     </>
