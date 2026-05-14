@@ -4,7 +4,6 @@ import type { Block } from '../../../store/useAvriBuilderStore';
 import { 
   Type, 
   Image as ImageIcon, 
-  Square, 
   Columns, 
   Minus, 
   MapPin, 
@@ -20,7 +19,6 @@ import {
   Box,
   Layers,
   Layout,
-  ChevronRight,
   ChevronDown
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';

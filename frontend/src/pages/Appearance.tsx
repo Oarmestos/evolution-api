@@ -131,21 +131,6 @@ export const Appearance: React.FC = () => {
               </div>
             </div>
 
-            {/* Technical Settings (Moved here) */}
-            <div 
-              onClick={() => navigate('/appearance/settings')}
-              className="mt-8 p-6 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all cursor-pointer flex items-center gap-4"
-            >
-              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
-                <Settings className="text-gray-400 w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-xs font-bold text-white">Configuración Técnica</h4>
-                <p className="text-[10px] text-gray-500">Logo, CSS y ajustes.</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-600" />
-            </div>
-
             <div className="mt-8 p-6 bg-gradient-to-br from-[#54118a]/20 to-[#0047ab]/20 rounded-3xl border border-white/5">
               <h5 className="text-xs font-black text-white uppercase mb-2">Consejo de Diseño</h5>
               <p className="text-xs text-gray-400 leading-relaxed font-medium">

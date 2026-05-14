@@ -37,6 +37,11 @@ export interface GlobalSettings {
   siteName: string;
   maxWidth: number;
   primaryFont: string;
+  logoUrl: string;
+  heroImageUrl: string;
+  primaryColor: string;
+  syncWhatsapp: boolean;
+  customCss: string;
 }
 
 interface AvriBuilderState {
@@ -84,9 +89,14 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   historyIndex: 0,
   loadedInstanceId: null,
   globalSettings: {
-    siteName: 'Mi Landing Page',
+    siteName: 'Mi Tienda Online',
     maxWidth: 1200,
-    primaryFont: 'Inter'
+    primaryFont: 'Inter',
+    logoUrl: '',
+    heroImageUrl: '',
+    primaryColor: '#00E5FF',
+    syncWhatsapp: false,
+    customCss: '',
   },
 
   setBlocks: (blocks, immediate = true) => {
@@ -328,6 +338,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
       const themeLayout = layout || useThemeConfigStore.getState().theme.layout;
       
       if (themeLayout) {
+        const theme = useThemeConfigStore.getState().theme;
         let blocks: Block[] = [];
 
         // Case 1: New root structure (Container with id 'root')
@@ -353,20 +364,41 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
             history: [blocks],
             historyIndex: 0,
             selectedBlockId: null,
-            loadedInstanceId: instanceId
+            loadedInstanceId: instanceId,
+            globalSettings: {
+              siteName: theme.storeName || 'Mi Tienda Online',
+              maxWidth: theme.layout?.props?.maxWidth || 1200,
+              primaryFont: theme.fontFamily || 'Inter',
+              logoUrl: theme.logoUrl || '',
+              heroImageUrl: theme.heroImageUrl || '',
+              primaryColor: theme.primaryColor || '#00E5FF',
+              syncWhatsapp: theme.syncWhatsapp || false,
+              customCss: theme.layout?.props?.customCss || '',
+            }
           });
           return;
         }
       }
 
       // If no valid layout found, fallback to luxury default
+      const theme = useThemeConfigStore.getState().theme;
       const defaultBlocks = JSON.parse(JSON.stringify(AVRI_LUXURY_LAYOUT.children));
       set({ 
         blocks: defaultBlocks,
         history: [defaultBlocks],
         historyIndex: 0,
         selectedBlockId: null,
-        loadedInstanceId: instanceId
+        loadedInstanceId: instanceId,
+        globalSettings: {
+          siteName: theme.storeName || 'Mi Tienda Online',
+          maxWidth: 1200,
+          primaryFont: theme.fontFamily || 'Inter',
+          logoUrl: theme.logoUrl || '',
+          heroImageUrl: theme.heroImageUrl || '',
+          primaryColor: theme.primaryColor || '#00E5FF',
+          syncWhatsapp: theme.syncWhatsapp || false,
+          customCss: '',
+        }
       });
     } catch (error) {
       console.error('Error initializing builder from theme:', error);
@@ -544,21 +576,28 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
 
   save: async () => {
     try {
-      const { blocks } = get();
+      const { blocks, globalSettings } = get();
       const themeStore = (await import('./useThemeConfigStore')).useThemeConfigStore;
-      const currentLayout = themeStore.getState().theme.layout;
       
-      // Update the theme's layout with a proper root block
+      // Update the theme's layout and metadata
       themeStore.getState().updateTheme({
+        storeName: globalSettings.siteName,
+        logoUrl: globalSettings.logoUrl,
+        heroImageUrl: globalSettings.heroImageUrl,
+        fontFamily: globalSettings.primaryFont,
+        primaryColor: globalSettings.primaryColor,
+        syncWhatsapp: globalSettings.syncWhatsapp,
         layout: {
           id: 'root',
           type: 'Container',
-          props: currentLayout?.props || currentLayout?.root?.props || {
+          props: {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'flex-start',
             minHeight: '100vh',
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            maxWidth: globalSettings.maxWidth,
+            customCss: globalSettings.customCss
           },
           children: blocks
         }
@@ -571,5 +610,5 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
       console.error('Error saving builder state:', error);
       return false;
     }
-  }
+  },
 }));
