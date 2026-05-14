@@ -118,7 +118,7 @@ export const PublicStore: React.FC = () => {
         }))
       };
 
-      const response = await axios.post(`/order/${instanceName}`, orderPayload);
+      const response = await axios.post(`/order-api/${instanceName}`, orderPayload);
       const order = response.data;
 
       const message = `¡Hola! 👋 He realizado un pedido (#${order.id.slice(-6).toUpperCase()}) en su tienda:\n\n` +

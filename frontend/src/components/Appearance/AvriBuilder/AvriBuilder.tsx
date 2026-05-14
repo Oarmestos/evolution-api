@@ -5,22 +5,27 @@ import { Canvas } from './Canvas';
 import { Inspector as StyleInspector } from './Inspector/Inspector';
 import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
 import { useThemeConfigStore } from '../../../store/useThemeConfigStore';
+import { useInstanceStore } from '../../../store/useInstanceStore';
 
 export const AvriBuilder: React.FC = () => {
   const { selectBlock, device, initFromTheme, blocks } = useAvriBuilderStore();
-  const { fetchTheme, loading } = useThemeConfigStore();
+  const { theme, fetchTheme, loading } = useThemeConfigStore();
+  const { activeInstance } = useInstanceStore();
 
   // Initialize theme data from server
   useEffect(() => {
-    fetchTheme();
-  }, [fetchTheme]);
+    if (activeInstance) {
+      fetchTheme();
+    }
+  }, [fetchTheme, activeInstance]);
 
   // Sync builder blocks with theme layout if builder is empty
   useEffect(() => {
-    if (blocks.length === 0 && !loading) {
-      initFromTheme();
+    // Only initialize if we have an active instance AND loading is finished
+    if (activeInstance && !loading && blocks.length === 0 && theme.layout) {
+      initFromTheme(theme.layout);
     }
-  }, [blocks.length, loading, initFromTheme]);
+  }, [activeInstance, loading, blocks.length, initFromTheme, theme.layout]);
 
   const getViewportWidth = () => {
     switch (device) {

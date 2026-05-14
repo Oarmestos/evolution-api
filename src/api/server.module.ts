@@ -18,6 +18,7 @@ import { SettingsController } from './controllers/settings.controller';
 import { TemplateController } from './controllers/template.controller';
 import { ThemeController } from './controllers/theme.controller';
 import { UserController } from './controllers/user.controller';
+import { StatisticsController } from './controllers/statistics.controller';
 import { ChannelController } from './integrations/channel/channel.controller';
 import { EvolutionController } from './integrations/channel/evolution/evolution.controller';
 import { MetaController } from './integrations/channel/meta/meta.controller';
@@ -55,6 +56,7 @@ import { SettingsService } from './services/settings.service';
 import { TemplateService } from './services/template.service';
 import { ThemeService } from './services/theme.service';
 import { UserService } from './services/user.service';
+import { StatisticsService } from './services/statistics.service';
 
 const logger = new Logger('WA MODULE');
 
@@ -143,6 +145,9 @@ AppRegistry.register(ProductService, () => productService);
 const orderService = new OrderService(prismaRepository);
 AppRegistry.register(OrderService, () => orderService);
 
+const statisticsService = new StatisticsService(prismaRepository);
+AppRegistry.register(StatisticsService, () => statisticsService);
+
 // Controladores
 AppRegistry.register(S3Controller, () => new S3Controller(s3Service));
 AppRegistry.register(TemplateController, () => new TemplateController(templateService));
@@ -197,6 +202,7 @@ AppRegistry.register(UserController, () => new UserController(userService));
 AppRegistry.register(ThemeController, () => new ThemeController(themeService));
 AppRegistry.register(ProductController, () => new ProductController(productService));
 AppRegistry.register(OrderController, () => new OrderController(orderService));
+AppRegistry.register(StatisticsController, () => new StatisticsController(statisticsService));
 
 // Exportaciones para compatibilidad (mantener existentes)
 export const eventManager = AppRegistry.resolve(EventManager);
@@ -229,6 +235,7 @@ export const userController = AppRegistry.resolve(UserController);
 export const themeController = AppRegistry.resolve(ThemeController);
 export const productController = AppRegistry.resolve(ProductController);
 export const orderController = AppRegistry.resolve(OrderController);
+export const statisticsController = AppRegistry.resolve(StatisticsController);
 export { cache, prismaRepository, waMonitor };
 
 logger.info('Module - ON');

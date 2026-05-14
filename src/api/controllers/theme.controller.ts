@@ -20,9 +20,22 @@ export class ThemeController {
     if (!instanceId) {
       return res.status(400).json({ error: 'ID de instancia requerido' });
     }
-    const data: StoreThemeDto = req.body;
-    const themeData = { ...data };
-    delete (themeData as any).instanceId;
+
+    // Extract only valid StoreThemeDto fields to prevent Prisma errors
+    const themeData: StoreThemeDto = {};
+    const validFields = [
+      'template', 'storeName', 'logoUrl', 'heroTitle', 'heroSubtitle',
+      'heroImageUrl', 'footerText', 'primaryColor', 'buttonColor', 'bgColor',
+      'fontFamily', 'textColor', 'ctaText', 'borderRadius', 'instagramUrl',
+      'tiktokUrl', 'syncWhatsapp', 'layout'
+    ];
+    
+    for (const field of validFields) {
+      if (req.body[field] !== undefined) {
+        (themeData as any)[field] = req.body[field];
+      }
+    }
+
     const response = await this.themeService.updateTheme(instanceId, themeData);
     return res.status(200).json(response);
   }

@@ -83,7 +83,7 @@ export const AVRI_LUXURY_LAYOUT = {
         {
           id: 'footer-text',
           type: 'Text',
-          props: { text: '© 2024 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' }
+          props: { text: '© 2026 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' }
         }
       ]
     }

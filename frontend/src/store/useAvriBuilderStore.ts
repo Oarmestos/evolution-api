@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { AVRI_LUXURY_LAYOUT } from './defaultLayout';
 
 const generateId = () => crypto.randomUUID();
 
@@ -50,7 +51,7 @@ interface AvriBuilderState {
   setActivePanel: (panel: 'blocks' | 'layers' | 'settings') => void;
   setDevice: (device: ViewportDevice) => void;
   upgradeBlock: (id: string, target?: 'title' | 'subtitle' | 'button' | 'link') => void;
-  initFromTheme: () => void;
+  initFromTheme: (layout?: any) => void;
   
   // History
   undo: () => void;
@@ -125,7 +126,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
         type: 'Container',
         props: { backgroundColor: '#f8fafc', padding: '60px 40px', alignItems: 'center' },
         children: [
-          { id: generateId(), type: 'Text', props: { text: '© 2024 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
+          { id: generateId(), type: 'Text', props: { text: '© 2026 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
         ]
       };
     } else {
@@ -195,15 +196,32 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   setActivePanel: (panel) => set({ activePanel: panel }),
   setDevice: (device) => set({ device }),
   
-  initFromTheme: async () => {
+  initFromTheme: async (layout?: any) => {
     try {
       const { useThemeConfigStore } = await import('./useThemeConfigStore');
-      const themeLayout = useThemeConfigStore.getState().theme.layout;
+      const themeLayout = layout || useThemeConfigStore.getState().theme.layout;
       
       if (themeLayout) {
-        // If it's the new root structure
-        if (themeLayout.id === 'root' && themeLayout.type === 'Container') {
-          const blocks = JSON.parse(JSON.stringify(themeLayout.children || []));
+        let blocks: Block[] = [];
+
+        // Case 1: New root structure (Container with id 'root')
+        if (themeLayout.id === 'root' && themeLayout.type === 'Container' && Array.isArray(themeLayout.children)) {
+          blocks = JSON.parse(JSON.stringify(themeLayout.children));
+        } 
+        // Case 2: Old structure with 'content' array
+        else if (Array.isArray(themeLayout.content)) {
+          blocks = JSON.parse(JSON.stringify(themeLayout.content));
+        }
+        // Case 3: Structure with 'children' array (but not root container)
+        else if (Array.isArray(themeLayout.children)) {
+          blocks = JSON.parse(JSON.stringify(themeLayout.children));
+        }
+        // Case 4: Direct array
+        else if (Array.isArray(themeLayout)) {
+          blocks = JSON.parse(JSON.stringify(themeLayout));
+        }
+
+        if (blocks.length > 0) {
           set({ 
             blocks,
             history: [blocks],
@@ -212,18 +230,16 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
           });
           return;
         }
-
-        // If it's the old content array structure
-        if (Array.isArray(themeLayout.content)) {
-          const blocks = JSON.parse(JSON.stringify(themeLayout.content));
-          set({ 
-            blocks,
-            history: [blocks],
-            historyIndex: 0,
-            selectedBlockId: null
-          });
-        }
       }
+
+      // If no valid layout found, fallback to luxury default
+      const defaultBlocks = JSON.parse(JSON.stringify(AVRI_LUXURY_LAYOUT.children));
+      set({ 
+        blocks: defaultBlocks,
+        history: [defaultBlocks],
+        historyIndex: 0,
+        selectedBlockId: null
+      });
     } catch (error) {
       console.error('Error initializing builder from theme:', error);
     }
@@ -359,7 +375,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
               type: 'Container',
               props: { ...b.props, padding: '60px 40px', alignItems: 'center' },
               children: [
-                { id: textId, type: 'Text', props: { text: b.props.text || '© 2024 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
+                { id: textId, type: 'Text', props: { text: b.props.text || '© 2026 Avri Store. Todos los derechos reservados.', fontSize: '12px', color: '#64748b' } }
               ]
             };
           }

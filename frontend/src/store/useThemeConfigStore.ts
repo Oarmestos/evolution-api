@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 import { useInstanceStore } from './useInstanceStore';
+import { AVRI_LUXURY_LAYOUT } from './defaultLayout';
 
 export interface ThemeConfig {
   template: string;
@@ -37,7 +38,6 @@ interface ThemeState {
   applyTemplate: (templateName: string) => void;
 }
 
-import { AVRI_LUXURY_LAYOUT } from './defaultLayout';
 
 const DEFAULT_THEME: ThemeConfig = {
   template: 'luxury',
@@ -46,7 +46,7 @@ const DEFAULT_THEME: ThemeConfig = {
   heroTitle: 'Tu Tienda Online',
   heroSubtitle: 'Los mejores productos al alcance de un clic',
   heroImageUrl: '',
-  footerText: '© 2024 Avri. Todos los derechos reservados.',
+  footerText: '© 2026 Avri. Todos los derechos reservados.',
   primaryColor: '#00E5FF',
   buttonColor: '#00E5FF',
   bgColor: '#0f1016',
@@ -57,7 +57,7 @@ const DEFAULT_THEME: ThemeConfig = {
   instagramUrl: '',
   tiktokUrl: '',
   syncWhatsapp: false,
-  layout: AVRI_LUXURY_LAYOUT,
+  layout: null, // Set to null initially to detect "not loaded" state
 };
 
 const TEMPLATES: Record<string, Partial<ThemeConfig>> = {
@@ -94,14 +94,24 @@ const TEMPLATES: Record<string, Partial<ThemeConfig>> = {
 
 export const useThemeConfigStore = create<ThemeState>((set, get) => ({
   theme: DEFAULT_THEME,
-  loading: false,
+  loading: !!localStorage.getItem('avri_token'),
   saving: false,
   error: null,
 
   fetchTheme: async () => {
     const token = localStorage.getItem('avri_token');
     const activeInstance = useInstanceStore.getState().activeInstance;
-    if (!token || !activeInstance) return;
+    
+    // If we have a token but no instance yet, stay in loading state
+    if (!token) {
+      set({ loading: false });
+      return;
+    }
+    
+    if (!activeInstance) {
+      // Still waiting for instance
+      return;
+    }
 
     set({ loading: true, error: null });
     try {
@@ -109,9 +119,14 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
         headers: { apikey: token },
         params: { instanceId: activeInstance.instanceId }
       });
+      
       if (response.data) {
         const serverLayout = response.data.layout;
-        const hasContent = serverLayout && Array.isArray(serverLayout.content) && serverLayout.content.length > 0;
+        const hasContent = serverLayout && (
+          (Array.isArray(serverLayout.content) && serverLayout.content.length > 0) ||
+          (Array.isArray(serverLayout.children) && serverLayout.children.length > 0) ||
+          (serverLayout.id === 'root' && serverLayout.type === 'Container')
+        );
         
         set({ 
           theme: { 
@@ -122,10 +137,18 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
           loading: false 
         });
       } else {
-        set({ loading: false });
+        // No theme found, use defaults with default luxury layout
+        set({ 
+          theme: { ...DEFAULT_THEME, layout: AVRI_LUXURY_LAYOUT },
+          loading: false 
+        });
       }
     } catch (err: unknown) {
-      set({ error: (err as any).response?.data?.error || (err as Error).message, loading: false });
+      set({ 
+        error: (err as any).response?.data?.error || (err as Error).message, 
+        loading: false,
+        theme: { ...DEFAULT_THEME, layout: AVRI_LUXURY_LAYOUT } // Fallback on error
+      });
     }
   },
 
@@ -143,10 +166,32 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
     set({ saving: true, error: null });
     try {
       const { theme } = get();
-      await axios.put('/theme/update', {
-        ...theme,
-        instanceId: activeInstance.instanceId
-      }, {
+      
+      // Only send fields that match StoreThemeDto — exclude DB-only fields
+      // like id, createdAt, updatedAt, Instance that come from server responses
+      const payload = {
+        instanceId: activeInstance.instanceId,
+        template: theme.template,
+        storeName: theme.storeName,
+        logoUrl: theme.logoUrl,
+        heroTitle: theme.heroTitle,
+        heroSubtitle: theme.heroSubtitle,
+        heroImageUrl: theme.heroImageUrl,
+        footerText: theme.footerText,
+        primaryColor: theme.primaryColor,
+        buttonColor: theme.buttonColor,
+        bgColor: theme.bgColor,
+        fontFamily: theme.fontFamily,
+        textColor: theme.textColor,
+        ctaText: theme.ctaText,
+        borderRadius: theme.borderRadius,
+        instagramUrl: theme.instagramUrl,
+        tiktokUrl: theme.tiktokUrl,
+        syncWhatsapp: theme.syncWhatsapp,
+        layout: theme.layout,
+      };
+      
+      await axios.put('/theme/update', payload, {
         headers: { apikey: token }
       });
       set({ saving: false });
@@ -222,3 +267,10 @@ export const useThemeConfigStore = create<ThemeState>((set, get) => ({
     }
   },
 }));
+
+// Subscribe to instance changes to trigger theme fetch
+useInstanceStore.subscribe((state, prevState) => {
+  if (state.activeInstance && state.activeInstance !== prevState.activeInstance) {
+    useThemeConfigStore.getState().fetchTheme();
+  }
+});

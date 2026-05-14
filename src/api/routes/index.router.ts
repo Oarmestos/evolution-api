@@ -28,6 +28,7 @@ import { SettingsRouter } from './settings.router';
 import { TemplateRouter } from './template.router';
 import { ThemeRouter } from './theme.router';
 import { UserRouter } from './user.router';
+import { StatisticsRouter } from './statistics.router';
 
 const router: Router = Router();
 const serverConfig = configService.get('SERVER');
@@ -197,11 +198,23 @@ router
   .use('', new ChatbotRouter(...guards).router)
   .use('', new StorageRouter(...guards).router)
   .use('/user', new UserRouter().router)
+  .use('/statistics', new StatisticsRouter(...guards).router)
   .use('/theme', new ThemeRouter(authGuard['apikey']).router)
   .get('/store-api/:instanceName', async (req, res, next) => {
     try {
       const { themeController } = await import('@api/server.module');
       return themeController.getStoreByInstance(req, res);
+    } catch (error) {
+      next(error);
+    }
+  })
+  .post('/order-api/:instanceName', instanceExistsGuard, async (req, res, next) => {
+    try {
+      const { orderController } = await import('@api/server.module');
+      // We manually call the controller but we should ideally validate. 
+      // For the MVP, we trust the controller's internal handling or add a quick validation if needed.
+      const response = await orderController.createOrder({ instanceName: req.params.instanceName } as any, req.body);
+      return res.status(HttpStatus.CREATED).json(response);
     } catch (error) {
       next(error);
     }

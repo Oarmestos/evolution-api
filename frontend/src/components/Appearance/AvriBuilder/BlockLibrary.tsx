@@ -276,7 +276,7 @@ export const Footer: React.FC<LibraryProps> = ({ block, Renderer, readOnly }) =>
             !readOnly && "cursor-pointer hover:text-[#00E5FF]"
           )}
         >
-          {block.props.text || '© 2024 Avri Store. Todos los derechos reservados.'}
+          {block.props.text || '© 2026 Avri Store. Todos los derechos reservados.'}
         </p>
       </div>
     </footer>
