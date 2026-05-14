@@ -91,11 +91,25 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
 
   commitHistory: () => {
     const { history, historyIndex, blocks } = get();
+    
+    // Deep clone to ensure history entries are independent snapshots
+    const blocksClone = JSON.parse(JSON.stringify(blocks));
+    const lastHistoryEntry = history[historyIndex];
+
     // Verify it's actually different from the last state to avoid redundant commits
+    if (lastHistoryEntry && JSON.stringify(lastHistoryEntry) === JSON.stringify(blocksClone)) {
+      return;
+    }
+
     const newHistory = history.slice(0, historyIndex + 1);
+    
+    // Maintain a maximum history size (e.g., 50 steps)
+    const updatedHistory = [...newHistory, blocksClone];
+    const finalHistory = updatedHistory.length > 50 ? updatedHistory.slice(updatedHistory.length - 50) : updatedHistory;
+    
     set({ 
-      history: [...newHistory, blocks],
-      historyIndex: newHistory.length
+      history: finalHistory,
+      historyIndex: finalHistory.length - 1
     });
   },
 
@@ -493,7 +507,8 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     if (historyIndex > 0) {
       set({ 
         historyIndex: historyIndex - 1,
-        blocks: history[historyIndex - 1]
+        blocks: history[historyIndex - 1],
+        selectedBlockId: null // Clear selection to avoid pointing to non-existent blocks
       });
     }
   },
@@ -503,7 +518,8 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     if (historyIndex < history.length - 1) {
       set({ 
         historyIndex: historyIndex + 1,
-        blocks: history[historyIndex + 1]
+        blocks: history[historyIndex + 1],
+        selectedBlockId: null // Clear selection to avoid pointing to non-existent blocks
       });
     }
   },

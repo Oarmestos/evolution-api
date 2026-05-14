@@ -8,7 +8,7 @@ import { useThemeConfigStore } from '../../../store/useThemeConfigStore';
 import { useInstanceStore } from '../../../store/useInstanceStore';
 
 export const AvriBuilder: React.FC = () => {
-  const { selectBlock, device, initFromTheme, loadedInstanceId } = useAvriBuilderStore();
+  const { undo, redo, selectBlock, device, initFromTheme, loadedInstanceId } = useAvriBuilderStore();
   const { theme, fetchTheme, loading } = useThemeConfigStore();
   const { activeInstance } = useInstanceStore();
 
@@ -18,6 +18,30 @@ export const AvriBuilder: React.FC = () => {
       fetchTheme();
     }
   }, [fetchTheme, activeInstance]);
+
+  // Keyboard shortcuts for Undo/Redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const cmdKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (cmdKey && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault();
+          redo();
+        } else {
+          e.preventDefault();
+          undo();
+        }
+      } else if (cmdKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   // Sync builder blocks with theme layout if builder is empty or instance changed
   useEffect(() => {
