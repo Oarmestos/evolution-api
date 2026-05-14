@@ -33,6 +33,12 @@ export interface Block {
 
 export type ViewportDevice = 'desktop' | 'tablet' | 'mobile';
 
+export interface GlobalSettings {
+  siteName: string;
+  maxWidth: number;
+  primaryFont: string;
+}
+
 interface AvriBuilderState {
   blocks: Block[];
   selectedBlockId: string | null;
@@ -41,6 +47,7 @@ interface AvriBuilderState {
   history: Block[][];
   historyIndex: number;
   loadedInstanceId: string | null;
+  globalSettings: GlobalSettings;
   
   // Actions
   setBlocks: (blocks: Block[], immediate?: boolean) => void;
@@ -56,6 +63,7 @@ interface AvriBuilderState {
   initFromTheme: (layout: any | undefined, instanceId: string) => void;
   
   setContainerColumns: (id: string, columns: number) => void;
+  updateGlobalSettings: (settings: Partial<GlobalSettings>) => void;
   
   // History
   undo: () => void;
@@ -75,6 +83,11 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   history: [[]],
   historyIndex: 0,
   loadedInstanceId: null,
+  globalSettings: {
+    siteName: 'Mi Landing Page',
+    maxWidth: 1200,
+    primaryFont: 'Inter'
+  },
 
   setBlocks: (blocks, immediate = true) => {
     set({ blocks });
@@ -278,6 +291,11 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
       });
     };
     get().setBlocks(update(get().blocks), true);
+  },
+
+  updateGlobalSettings: (settings) => {
+    set({ globalSettings: { ...get().globalSettings, ...settings } });
+    get().commitHistory();
   },
 
   deleteBlock: (id) => {

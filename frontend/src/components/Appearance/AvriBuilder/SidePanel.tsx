@@ -31,6 +31,8 @@ import {
   Settings
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { LayersPanel } from './LayersPanel';
+import { GlobalSettingsPanel } from './GlobalSettingsPanel';
 
 interface BlockDefinition {
   type: BlockType;
@@ -93,23 +95,11 @@ export const SidePanel: React.FC = () => {
 
   const renderContent = () => {
     if (activePanel === 'layers') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-[#64748b]">
-          <div className="p-4 bg-[#f1f5f9] rounded-full mb-3">
-            <Monitor className="w-7 h-7 text-[#cbd5e1]" />
-          </div>
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-[#0f172a]">Árbol de Capas</p>
-          <p className="text-[11px] mt-1 text-center">Organiza la jerarquía de tus elementos.</p>
-        </div>
-      );
+      return <LayersPanel />;
     }
 
-    if (activePanel !== 'blocks') {
-      return (
-        <div className="flex-1 flex items-center justify-center p-8 text-[#64748b]">
-          <p className="text-[11px] font-semibold uppercase tracking-wider">Panel en Construcción</p>
-        </div>
-      );
+    if (activePanel === 'settings') {
+      return <GlobalSettingsPanel />;
     }
 
     return (
