@@ -1,4 +1,4 @@
-import { Block, BlockType } from '../types/builder.types';
+import type { Block, BlockType } from '../types/builder.types';
 
 export const generateId = () => crypto.randomUUID();
 

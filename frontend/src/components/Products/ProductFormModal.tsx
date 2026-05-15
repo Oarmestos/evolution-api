@@ -1,6 +1,6 @@
 import React from 'react';
-import { X, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
-import { Product } from '../../types/product.types';
+import { X, Loader2, Upload, Image as ImageIcon, Package } from 'lucide-react';
+import type { Product } from '../../types/product.types';
 
 interface ProductFormModalProps {
   isOpen: boolean;

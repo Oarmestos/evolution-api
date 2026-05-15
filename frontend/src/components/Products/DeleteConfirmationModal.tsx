@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import { Product } from '../../types/product.types';
+import type { Product } from '../../types/product.types';
 
 interface DeleteConfirmationModalProps {
   product: Product | null;
