@@ -77,7 +77,7 @@ async function bootstrap() {
   app.get('*', (req, res, next) => {
     // Skip API requests and static assets
     const apiPrefixes = ['/api', '/instance', '/product', '/order', '/webhook', '/chatwoot', '/assets'];
-    const isApiRoute = apiPrefixes.some(prefix => req.url === prefix || req.url.startsWith(prefix + '/'));
+    const isApiRoute = apiPrefixes.some((prefix) => req.url === prefix || req.url.startsWith(prefix + '/'));
 
     if (isApiRoute || req.url.includes('.')) {
       return next();

@@ -1,18 +1,12 @@
-import { getCollectionsDto } from '@api/dto/business.dto';
-import { OfferCallDto } from '@api/dto/call.dto';
 import {
   ArchiveChatDto,
   BlockUserDto,
   DeleteMessage,
   getBase64FromMediaMessageDto,
-  LastMessage,
   MarkChatUnreadDto,
   MuteChatDto,
-  NumberBusiness,
-  OnWhatsAppDto,
   PrivacySettingDto,
   ReadMessageDto,
-  SendPresenceDto,
   UpdateMessageDto,
   WhatsAppNumberDto,
 } from '@api/dto/chat.dto';
@@ -30,127 +24,31 @@ import {
   GroupUpdateParticipantDto,
   GroupUpdateSettingDto,
 } from '@api/dto/group.dto';
-import { InstanceDto, SetPresenceDto } from '@api/dto/instance.dto';
-import { HandleLabelDto, LabelDto } from '@api/dto/label.dto';
 import {
-  Button,
-  ContactMessage,
-  KeyType,
-  MediaMessage,
-  Options,
   SendAudioDto,
-  SendButtonsDto,
   SendContactDto,
   SendListDto,
   SendLocationDto,
   SendMediaDto,
   SendPollDto,
-  SendPtvDto,
   SendReactionDto,
-  SendStatusDto,
-  SendStickerDto,
   SendTextDto,
-  StatusMessage,
-  TypeButton,
 } from '@api/dto/sendMessage.dto';
-import { chatwootImport } from '@api/integrations/chatbot/chatwoot/utils/chatwoot-import-helper';
-import * as s3Service from '@api/integrations/storage/s3/libs/minio.server';
 import { ProviderFiles } from '@api/provider/sessions';
 import { PrismaRepository, Query } from '@api/repository/repository.service';
-import { chatbotController, waMonitor } from '@api/server.module';
 import { CacheService } from '@api/services/cache.service';
 import { ChannelStartupService } from '@api/services/channel.service';
-import { Events, MessageSubtype, TypeMediaMessage, wa } from '@api/types/wa.types';
-import { CacheEngine } from '@cache/cacheengine';
-import {
-  AudioConverter,
-  CacheConf,
-  Chatwoot,
-  ConfigService,
-  configService,
-  ConfigSessionPhone,
-  Database,
-  Log,
-  Openai,
-  ProviderSession,
-  QrCode,
-  S3,
-} from '@config/env.config';
-import { BadRequestException, InternalServerErrorException, NotFoundException } from '@exceptions';
-import ffmpegPath from '@ffmpeg-installer/ffmpeg';
-import { Boom } from '@hapi/boom';
-import { createId as cuid } from '@paralleldrive/cuid2';
-import { Chat as PrismaChat, Contact as PrismaContact, Instance, Message, MessageUpdate } from '@prisma/client';
+import { wa } from '@api/types/wa.types';
+import { CacheConf, ConfigService, Database, Log, ProviderSession } from '@config/env.config';
+import { InternalServerErrorException } from '@exceptions';
+import { Contact as PrismaContact, Message, MessageUpdate } from '@prisma/client';
 import { createJid } from '@utils/createJid';
-import { fetchLatestWaWebVersion } from '@utils/fetchLatestWaWebVersion';
-import { makeProxyAgent, makeProxyAgentUndici } from '@utils/makeProxyAgent';
-import { getOnWhatsappCache, saveOnWhatsappCache } from '@utils/onWhatsappCache';
-import { status } from '@utils/renderStatus';
-import { sendTelemetry } from '@utils/sendTelemetry';
 import useMultiFileAuthStatePrisma from '@utils/use-multi-file-auth-state-prisma';
 import { AuthStateProvider } from '@utils/use-multi-file-auth-state-provider-files';
 import { useMultiFileAuthStateRedisDb } from '@utils/use-multi-file-auth-state-redis-db';
-import axios from 'axios';
-import makeWASocket, {
-  AnyMessageContent,
-  BufferedEventData,
-  BufferJSON,
-  CacheStore,
-  CatalogCollection,
-  Chat,
-  ConnectionState,
-  Contact,
-  decryptPollVote,
-  delay,
-  DisconnectReason,
-  downloadContentFromMessage,
-  downloadMediaMessage,
-  generateWAMessageFromContent,
-  getAggregateVotesInPollMessage,
-  GetCatalogOptions,
-  getContentType,
-  getDevice,
-  GroupMetadata,
-  isJidBroadcast,
-  isJidGroup,
-  isJidNewsletter,
-  isPnUser,
-  jidNormalizedUser,
-  makeCacheableSignalKeyStore,
-  MessageUpsertType,
-  MessageUserReceiptUpdate,
-  MiscMessageGenerationOptions,
-  ParticipantAction,
-  prepareWAMessageMedia,
-  Product,
-  proto,
-  UserFacingSocketConfig,
-  WABrowserDescription,
-  WAMediaUpload,
-  WAMessage,
-  WAMessageKey,
-  WAPresence,
-  WASocket,
-} from 'baileys';
-import { Label } from 'baileys/lib/Types/Label';
-import { LabelAssociation } from 'baileys/lib/Types/LabelAssociation';
-import { spawn } from 'child_process';
-import { isArray, isBase64, isURL } from 'class-validator';
-import { createHash } from 'crypto';
+import { BufferJSON, CacheStore, ConnectionState, GroupMetadata, proto, WASocket } from 'baileys';
 import EventEmitter2 from 'eventemitter2';
-import ffmpeg from 'fluent-ffmpeg';
-import FormData from 'form-data';
-import Long from 'long';
-import mimeTypes from 'mime-types';
 import NodeCache from 'node-cache';
-import cron from 'node-cron';
-import { release } from 'os';
-import { join } from 'path';
-import P from 'pino';
-import qrcode, { QRCodeToDataURLOptions } from 'qrcode';
-import sharp from 'sharp';
-import { PassThrough, Readable } from 'stream';
-import { v4 } from 'uuid';
 
 import { BaileysMessageProcessor } from './baileysMessage.processor';
 import { BaileysBusinessService } from './services/baileys.business.service';
@@ -160,8 +58,7 @@ import { BaileysContactService } from './services/baileys.contact.service';
 import { BaileysEventHandler } from './services/baileys.event.handler';
 import { BaileysGroupService } from './services/baileys.group.service';
 import { BaileysMessageService } from './services/baileys.message.service';
-import { ExtendedIMessageKey, groupMetadataCache } from './utils/baileys.utils';
-import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
+import { groupMetadataCache } from './utils/baileys.utils';
 
 export class BaileysStartupService extends ChannelStartupService {
   private messageProcessor = new BaileysMessageProcessor();

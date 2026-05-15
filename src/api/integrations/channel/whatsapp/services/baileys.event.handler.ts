@@ -1,14 +1,6 @@
 import { Events } from '@api/types/wa.types';
 import { status } from '@utils/renderStatus';
-import {
-  BufferedEventData,
-  Chat,
-  DisconnectReason,
-  getContentType,
-  MessageUpsertType,
-  proto,
-  WAMessage,
-} from 'baileys';
+import { BufferedEventData, Chat, getContentType, MessageUpsertType, proto, WAMessage } from 'baileys';
 
 export class BaileysEventHandler {
   constructor(private readonly service: any) {}
@@ -160,7 +152,7 @@ export class BaileysEventHandler {
       }
 
       if (events['messaging-history.set']) {
-        const { chats, contacts, messages, isLatest } = events['messaging-history.set'];
+        const { chats, contacts, messages } = events['messaging-history.set'];
         this.service.logger.warn(
           `History sync: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages`,
         );

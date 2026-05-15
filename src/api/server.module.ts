@@ -15,10 +15,10 @@ import { ProductController } from './controllers/product.controller';
 import { ProxyController } from './controllers/proxy.controller';
 import { SendMessageController } from './controllers/sendMessage.controller';
 import { SettingsController } from './controllers/settings.controller';
+import { StatisticsController } from './controllers/statistics.controller';
 import { TemplateController } from './controllers/template.controller';
 import { ThemeController } from './controllers/theme.controller';
 import { UserController } from './controllers/user.controller';
-import { StatisticsController } from './controllers/statistics.controller';
 import { ChannelController } from './integrations/channel/channel.controller';
 import { EvolutionController } from './integrations/channel/evolution/evolution.controller';
 import { MetaController } from './integrations/channel/meta/meta.controller';
@@ -53,10 +53,10 @@ import { OrderService } from './services/order.service';
 import { ProductService } from './services/product.service';
 import { ProxyService } from './services/proxy.service';
 import { SettingsService } from './services/settings.service';
+import { StatisticsService } from './services/statistics.service';
 import { TemplateService } from './services/template.service';
 import { ThemeService } from './services/theme.service';
 import { UserService } from './services/user.service';
-import { StatisticsService } from './services/statistics.service';
 
 const logger = new Logger('WA MODULE');
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Package, Plus, Search, Trash2, Edit3, X, Loader2, Save, Upload, Image as ImageIcon, Filter } from 'lucide-react';
 import axios from 'axios';
 import { useInstanceStore } from '../store/useInstanceStore';
@@ -14,6 +14,12 @@ interface Product {
   category?: string;
   enabled: boolean;
   createdAt?: string;
+}
+
+type StockFilter = 'all' | 'instock' | 'outofstock' | 'lowstock';
+
+function isStockFilter(value: string): value is StockFilter {
+  return ['all', 'instock', 'outofstock', 'lowstock'].includes(value);
 }
 
 export const Products = () => {
@@ -49,14 +55,10 @@ export const Products = () => {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: number; updated: number; errors: number; details: string[] } | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'outofstock' | 'lowstock'>('all');
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [bulkAction, setBulkAction] = useState('');
 
-  useEffect(() => {
-    fetchProducts();
-  }, [activeInstance]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     if (!token || !activeInstance) return;
     try {
       setLoading(true);
@@ -70,7 +72,11 @@ export const Products = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeInstance, token]);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,13 +191,16 @@ export const Products = () => {
     });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    let valA: any = a[sortBy];
-    let valB: any = b[sortBy];
+    let valA: string | number | undefined = a[sortBy];
+    let valB: string | number | undefined = b[sortBy];
     
     if (sortBy === 'createdAt') {
       valA = new Date(a.createdAt || 0).getTime();
       valB = new Date(b.createdAt || 0).getTime();
     }
+
+    valA = valA ?? '';
+    valB = valB ?? '';
 
     if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
@@ -285,7 +294,9 @@ export const Products = () => {
           <select 
             value={stockFilter}
             onChange={e => {
-              setStockFilter(e.target.value as any);
+              if (isStockFilter(e.target.value)) {
+                setStockFilter(e.target.value);
+              }
               setCurrentPage(1);
             }}
             className="theme-input px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest focus:outline-none min-w-[180px]"
@@ -425,7 +436,13 @@ export const Products = () => {
                         <div className="flex flex-col">
                           <span className="theme-text font-bold text-[10px] uppercase tracking-widest">Publicado</span>
                           <span className="theme-muted text-[9px] mt-0.5 uppercase tracking-widest">
-                            {new Date(product.createdAt || Date.now()).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                            {product.createdAt
+                              ? new Date(product.createdAt).toLocaleDateString('es-CO', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                })
+                              : 'Sin fecha'}
                           </span>
                         </div>
                       </td>

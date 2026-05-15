@@ -9,7 +9,7 @@ import {
 import { PrismaRepository, Query } from '@api/repository/repository.service';
 import { ConfigService } from '@config/env.config';
 import { InternalServerErrorException, NotFoundException } from '@exceptions';
-import { Contact as PrismaContact, Message, MessageUpdate } from '@prisma/client';
+import { Contact as PrismaContact, MessageUpdate } from '@prisma/client';
 import { createJid } from '@utils/createJid';
 
 import { BaileysStartupService } from '../whatsapp.baileys.service';

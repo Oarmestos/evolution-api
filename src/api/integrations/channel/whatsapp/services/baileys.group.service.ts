@@ -216,8 +216,6 @@ export class BaileysGroupService {
 
       const msg = `${description}\n\n${inviteUrl}`;
 
-      const message = { conversation: msg };
-
       for (const number of numbers) {
         await instance.textMessage({ number, text: msg }); // Delegate back to facade
       }

@@ -1,6 +1,5 @@
 import { NumberBusiness } from '@api/dto/chat.dto';
 import {
-  Options,
   SendAudioDto,
   SendButtonsDto,
   SendContactDto,
@@ -15,8 +14,7 @@ import { ProviderFiles } from '@api/provider/sessions';
 import { PrismaRepository } from '@api/repository/repository.service';
 import { CacheService } from '@api/services/cache.service';
 import { ChannelStartupService } from '@api/services/channel.service';
-import { Events, wa } from '@api/types/wa.types';
-import { ConfigService, Database } from '@config/env.config';
+import { ConfigService } from '@config/env.config';
 import { BadRequestException, InternalServerErrorException } from '@exceptions';
 import { createJid } from '@utils/createJid';
 import EventEmitter2 from 'eventemitter2';

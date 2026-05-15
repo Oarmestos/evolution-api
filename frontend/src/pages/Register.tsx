@@ -15,7 +15,7 @@ export const Register: React.FC = () => {
     try {
       await register(email, password, name);
       navigate('/dashboard');
-    } catch (err) {
+    } catch {
       // Error handled by store
     }
   };

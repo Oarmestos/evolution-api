@@ -7,10 +7,8 @@ import { Events, wa } from '@api/types/wa.types';
 import { Chatwoot, ConfigService, Database, Openai, S3, WaBusiness } from '@config/env.config';
 import { Logger } from '@config/logger.config';
 import { createJid } from '@utils/createJid';
-import { status } from '@utils/renderStatus';
 import { sendTelemetry } from '@utils/sendTelemetry';
 import axios from 'axios';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { join } from 'path';
 
 import { MetaMediaService } from './whatsapp.meta.media.service';

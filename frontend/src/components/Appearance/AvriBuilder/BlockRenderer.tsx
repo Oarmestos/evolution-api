@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAvriBuilderStore } from '../../../store/useAvriBuilderStore';
-import type { Block } from '../../../store/useAvriBuilderStore';
+import type { Block, BlockType } from '../../../store/useAvriBuilderStore';
 import { cn } from '../../../utils/cn';
 import { toCSSValue } from '../../../utils/toCSSValue';
 import { Trash2, Copy, GripVertical } from 'lucide-react';
@@ -29,11 +29,13 @@ const components: Record<string, React.FC<Library.LibraryProps>> = {
   Label: Library.Label
 };
 
+const UnknownBlock: React.FC<Library.LibraryProps> = ({ block }) => <div>{block.type}</div>;
+
 export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?: number }> = ({ block, readOnly = false }) => {
   const { selectedBlockId, selectBlock, deleteBlock, addBlock, device } = useAvriBuilderStore();
   const isSelected = !readOnly && selectedBlockId === block.id;
   const p = block.props;
-  const resolve = (val: any) => resolveResponsive(val, device);
+  const resolve = (val: unknown) => resolveResponsive(val, device);
 
   const handleDrop = (e: React.DragEvent) => {
     if (readOnly) return;
@@ -42,7 +44,7 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?:
     
     e.preventDefault();
     e.stopPropagation();
-    const type = e.dataTransfer.getData('blockType') as any;
+    const type = e.dataTransfer.getData('blockType') as BlockType;
     const preset = e.dataTransfer.getData('blockPreset');
     if (type) {
       addBlock(type, block.id, preset);
@@ -65,7 +67,7 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?:
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const Component = components[block.type] || (() => <div>{block.type}</div>);
+  const Component = components[block.type] || UnknownBlock;
 
   return (
     <div 
@@ -137,7 +139,7 @@ export const BlockRenderer: React.FC<{ block: Block; readOnly?: boolean; index?:
         <Component 
           block={block} 
           readOnly={readOnly}
-          Renderer={(props: any) => <BlockRenderer {...props} readOnly={readOnly} />} 
+          Renderer={({ block: childBlock }) => <BlockRenderer block={childBlock} readOnly={readOnly} />} 
         />
       </div>
     </div>

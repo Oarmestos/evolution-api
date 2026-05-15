@@ -4,7 +4,6 @@ import { useInstanceStore } from '../store/useInstanceStore';
 import { useNavigate } from 'react-router-dom';
 import { 
   Palette, 
-  Settings, 
   ChevronRight, 
   Sparkles,
   Smartphone,

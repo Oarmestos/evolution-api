@@ -24,12 +24,26 @@ export class ThemeController {
     // Extract only valid StoreThemeDto fields to prevent Prisma errors
     const themeData: StoreThemeDto = {};
     const validFields = [
-      'template', 'storeName', 'logoUrl', 'heroTitle', 'heroSubtitle',
-      'heroImageUrl', 'footerText', 'primaryColor', 'buttonColor', 'bgColor',
-      'fontFamily', 'textColor', 'ctaText', 'borderRadius', 'instagramUrl',
-      'tiktokUrl', 'syncWhatsapp', 'layout'
+      'template',
+      'storeName',
+      'logoUrl',
+      'heroTitle',
+      'heroSubtitle',
+      'heroImageUrl',
+      'footerText',
+      'primaryColor',
+      'buttonColor',
+      'bgColor',
+      'fontFamily',
+      'textColor',
+      'ctaText',
+      'borderRadius',
+      'instagramUrl',
+      'tiktokUrl',
+      'syncWhatsapp',
+      'layout',
     ];
-    
+
     for (const field of validFields) {
       if (req.body[field] !== undefined) {
         (themeData as any)[field] = req.body[field];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ShoppingCart, Search, Loader2, Calendar, User, DollarSign, ChevronRight, CheckCircle2, Clock, Truck, XCircle, Package, MapPin, CreditCard, Phone } from 'lucide-react';
 import axios from 'axios';
 import { useInstanceStore } from '../store/useInstanceStore';
@@ -24,12 +24,19 @@ interface Order {
   paymentMethod?: string;
   transactionId?: string;
   total: number;
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELED';
+  status: OrderStatus;
   createdAt: string;
   items: OrderItem[];
 }
 
-const statusConfig = {
+type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELED';
+
+const statusConfig: Record<OrderStatus, {
+  label: string;
+  color: string;
+  bg: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}> = {
   PENDING: { label: 'Pendiente', color: 'text-amber-500', bg: 'bg-amber-500/10', icon: Clock },
   PAID: { label: 'Pagado', color: 'text-green-500', bg: 'bg-green-500/10', icon: CheckCircle2 },
   SHIPPED: { label: 'Enviado', color: 'text-blue-500', bg: 'bg-blue-500/10', icon: Truck },
@@ -44,7 +51,7 @@ export const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!token || !activeInstance) return;
     try {
       setLoading(true);
@@ -58,13 +65,13 @@ export const Orders = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeInstance, token]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [activeInstance?.instanceName]);
+    void fetchOrders();
+  }, [fetchOrders]);
 
-  const updateStatus = async (orderId: string, newStatus: string) => {
+  const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     if (!token || !activeInstance) return;
     try {
       await axios.patch(`/order/status/${orderId}/${activeInstance.instanceName}`, {
@@ -74,7 +81,7 @@ export const Orders = () => {
       });
       fetchOrders();
       if (selectedOrder?.id === orderId) {
-        setSelectedOrder(prev => prev ? { ...prev, status: newStatus as any } : null);
+        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -269,7 +276,7 @@ export const Orders = () => {
                   <div className="mt-8 space-y-2">
                     <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-3">Actualizar Estado</h3>
                     <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(statusConfig).map(([key, config]) => (
+                      {(Object.entries(statusConfig) as Array<[OrderStatus, (typeof statusConfig)[OrderStatus]]>).map(([key, config]) => (
                         <button
                           key={key}
                           onClick={() => updateStatus(selectedOrder.id, key)}

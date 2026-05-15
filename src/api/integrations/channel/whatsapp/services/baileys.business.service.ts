@@ -2,7 +2,6 @@ import { PrismaRepository } from '@api/repository/repository.service';
 import { ConfigService } from '@config/env.config';
 import { BadRequestException, InternalServerErrorException } from '@exceptions';
 import { createJid } from '@utils/createJid';
-import { proto } from 'baileys';
 
 import { BaileysStartupService } from '../whatsapp.baileys.service';
 

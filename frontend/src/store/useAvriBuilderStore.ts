@@ -318,7 +318,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
     if (get().selectedBlockId === id) set({ selectedBlockId: null });
   },
 
-  moveBlock: (blockId, targetIndex, _newParentId) => {
+  moveBlock: (blockId, targetIndex) => {
     // Move block within root-level blocks
     const blocks = [...get().blocks];
     const fromIndex = blocks.findIndex(b => b.id === blockId);

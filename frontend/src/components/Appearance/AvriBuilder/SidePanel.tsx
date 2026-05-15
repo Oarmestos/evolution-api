@@ -21,7 +21,6 @@ import {
   Menu, 
   Type as LabelIcon, 
   Video, 
-  Monitor,
   PanelTop,
   Maximize2,
   Box,

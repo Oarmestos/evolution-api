@@ -76,7 +76,7 @@ export class ProductService {
       // Intentar detectar codificación para CSV
       let workbook;
       const isCsv = file.originalname.toLowerCase().endsWith('.csv');
-      
+
       if (isCsv) {
         // Para CSVs, intentamos leer como UTF-8 primero
         const content = file.buffer.toString('utf8');
@@ -107,7 +107,7 @@ export class ProductService {
           const findKey = (keys: string[]) => {
             const rowKeys = Object.keys(row);
             for (const k of keys) {
-              const found = rowKeys.find(rk => rk.toLowerCase() === k.toLowerCase());
+              const found = rowKeys.find((rk) => rk.toLowerCase() === k.toLowerCase());
               if (found) return row[found];
             }
             return undefined;
@@ -120,14 +120,18 @@ export class ProductService {
           const imageVal = findKey(['url_imagen', 'imageurl', 'imagen', 'image', 'url', 'foto']);
           const descVal = findKey(['descripcion', 'description', 'detalle', 'detalles']);
           const catVal = findKey(['categoria', 'category', 'tipo', 'group', 'grupo']);
-          
+
           if (!name || !priceStr) {
             results.errors++;
             results.details.push(`Fila inválida: Nombre o Precio faltante`);
             continue;
           }
 
-          const price = parseFloat(String(priceStr).replace(/[^\d.,]/g, '').replace(',', '.'));
+          const price = parseFloat(
+            String(priceStr)
+              .replace(/[^\d.,]/g, '')
+              .replace(',', '.'),
+          );
           if (isNaN(price)) {
             results.errors++;
             results.details.push(`Fila inválida: Precio "${priceStr}" no es numérico`);
@@ -174,7 +178,9 @@ export class ProductService {
       return results;
     } catch (error) {
       this.logger.error(error);
-      throw new BadRequestException('Error al procesar el archivo de productos. Asegúrese de que sea un formato válido (.xlsx o .csv)');
+      throw new BadRequestException(
+        'Error al procesar el archivo de productos. Asegúrese de que sea un formato válido (.xlsx o .csv)',
+      );
     }
   }
 }

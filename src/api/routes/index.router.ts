@@ -25,10 +25,10 @@ import { ProductRouter } from './product.router';
 import { ProxyRouter } from './proxy.router';
 import { MessageRouter } from './sendMessage.router';
 import { SettingsRouter } from './settings.router';
+import { StatisticsRouter } from './statistics.router';
 import { TemplateRouter } from './template.router';
 import { ThemeRouter } from './theme.router';
 import { UserRouter } from './user.router';
-import { StatisticsRouter } from './statistics.router';
 
 const router: Router = Router();
 const serverConfig = configService.get('SERVER');
@@ -211,7 +211,7 @@ router
   .post('/order-api/:instanceName', instanceExistsGuard, async (req, res, next) => {
     try {
       const { orderController } = await import('@api/server.module');
-      // We manually call the controller but we should ideally validate. 
+      // We manually call the controller but we should ideally validate.
       // For the MVP, we trust the controller's internal handling or add a quick validation if needed.
       const response = await orderController.createOrder({ instanceName: req.params.instanceName } as any, req.body);
       return res.status(HttpStatus.CREATED).json(response);

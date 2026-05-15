@@ -19,8 +19,8 @@ export class StatisticsService {
           _sum: { total: true },
         }),
         this.prisma.lead.count({ where }),
-        this.prisma.instance.count({ 
-          where: instanceId ? { id: instanceId } : {} 
+        this.prisma.instance.count({
+          where: instanceId ? { id: instanceId } : {},
         }),
       ]);
 
@@ -38,7 +38,7 @@ export class StatisticsService {
         totalSales: 0,
         totalLeads: 0,
         activeInstances: 0,
-        error: true
+        error: true,
       };
     }
   }
