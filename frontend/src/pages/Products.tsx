@@ -1,26 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Package, Plus, Search, Trash2, Edit3, X, Loader2, Save, Upload, Image as ImageIcon, Filter } from 'lucide-react';
+import { Plus, Search, Loader2, Upload, Filter } from 'lucide-react';
 import axios from 'axios';
 import { useInstanceStore } from '../store/useInstanceStore';
-
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  stock: number;
-  imageUrl?: string;
-  sku?: string;
-  category?: string;
-  enabled: boolean;
-  createdAt?: string;
-}
-
-type StockFilter = 'all' | 'instock' | 'outofstock' | 'lowstock';
-
-function isStockFilter(value: string): value is StockFilter {
-  return ['all', 'instock', 'outofstock', 'lowstock'].includes(value);
-}
+import { Product, StockFilter, isStockFilter } from '../types/product.types';
+import { ProductTable } from '../components/Products/ProductTable';
+import { ProductFormModal } from '../components/Products/ProductFormModal';
+import { ImportModal } from '../components/Products/ImportModal';
+import { DeleteConfirmationModal } from '../components/Products/DeleteConfirmationModal';
 
 export const Products = () => {
   const { activeInstance } = useInstanceStore();
@@ -110,7 +96,7 @@ export const Products = () => {
   const handleDelete = async (id: string) => {
     if (!token || !activeInstance) return;
     try {
-        await axios.delete(`/product/${id}/${activeInstance.instanceName}`, {
+      await axios.delete(`/product/${id}/${activeInstance.instanceName}`, {
         headers: { apikey: token }
       });
       setProductToDelete(null);
@@ -142,6 +128,57 @@ export const Products = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeInstance || !token) return;
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await axios.post(`/product/upload/${activeInstance.instanceName}`, formData, {
+        headers: { apikey: token }
+      });
+      setForm(f => ({ ...f, imageUrl: data.imageUrl }));
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token || !activeInstance) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setImporting(true);
+      const { data } = await axios.post(`/product/import/${activeInstance.instanceName}`, formData, {
+        headers: { apikey: token }
+      });
+      setImportResult(data);
+      fetchProducts();
+    } catch (error) {
+      console.error('Error importing products:', error);
+      alert('Error al procesar el archivo. Verifique el formato.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const headers = ['nombre', 'sku', 'precio', 'stock', 'categoria', 'descripcion', 'url_imagen'];
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + "\nCamara 4K,CAM-001,599,25,Electronica,Grabación en 4K,https://link-imagen.com";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "plantilla_avri_productos.csv");
+    document.body.appendChild(link);
+    link.click();
+  };
+
   const toggleSelectAll = () => {
     if (selectedProducts.length === filteredProducts.length) {
       setSelectedProducts([]);
@@ -169,6 +206,15 @@ export const Products = () => {
       enabled: product.enabled
     });
     setIsModalOpen(true);
+  };
+
+  const toggleSort = (field: typeof sortBy) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
   };
 
   // Logic for Filtering, Sorting and Pagination
@@ -210,15 +256,6 @@ export const Products = () => {
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const paginatedProducts = sortedProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const toggleSort = (field: typeof sortBy) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -253,7 +290,6 @@ export const Products = () => {
       {/* WordPress Style Filter Toolbar */}
       <div className="theme-overlay-card p-4 rounded-[24px] border border-white/5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Bulk Actions */}
           <div className="flex items-center gap-2">
             <select 
               value={bulkAction}
@@ -275,7 +311,6 @@ export const Products = () => {
 
           <div className="h-8 w-px bg-white/5 mx-2" />
 
-          {/* Category Filter */}
           <select 
             value={selectedCategory}
             onChange={e => {
@@ -290,7 +325,6 @@ export const Products = () => {
             ))}
           </select>
 
-          {/* Stock Filter */}
           <select 
             value={stockFilter}
             onChange={e => {
@@ -338,136 +372,17 @@ export const Products = () => {
         </div>
       ) : paginatedProducts.length > 0 ? (
         <div className="space-y-6">
-          <div className="theme-overlay-card rounded-[32px] border border-white/5 overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/5 bg-white/[0.02]">
-                    <th className="px-6 py-6 w-10">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedProducts.length === paginatedProducts.length && paginatedProducts.length > 0}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
-                      />
-                    </th>
-                    <th className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em]">Foto</th>
-                    <th 
-                      className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em] cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => toggleSort('name')}
-                    >
-                      Nombre {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em]">SKU</th>
-                    <th className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em]">Categoría</th>
-                    <th 
-                      className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em] cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => toggleSort('price')}
-                    >
-                      Precio {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th 
-                      className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em] cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => toggleSort('stock')}
-                    >
-                      Stock {sortBy === 'stock' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em]">Fecha</th>
-                    <th className="px-6 py-6 text-[10px] font-black theme-muted uppercase tracking-[0.2em] text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {paginatedProducts.map(product => (
-                    <tr key={product.id} className={`group hover:bg-white/[0.03] transition-all duration-300 ${selectedProducts.includes(product.id) ? 'bg-primary/5' : ''}`}>
-                      <td className="px-6 py-5">
-                        <input 
-                          type="checkbox" 
-                          checked={selectedProducts.includes(product.id)}
-                          onChange={() => toggleSelectProduct(product.id)}
-                          className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
-                        />
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/5 overflow-hidden flex items-center justify-center group-hover:border-primary/30 transition-colors shadow-lg shadow-black/20">
-                          {product.imageUrl ? (
-                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                          ) : (
-                            <Package size={24} className="theme-muted opacity-20" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                          <span className="theme-text font-bold text-sm group-hover:text-primary transition-colors leading-tight">{product.name}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            {product.enabled ? (
-                              <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Visible</span>
-                            ) : (
-                              <span className="text-[8px] font-black text-red-500/50 uppercase tracking-widest">Oculto</span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="theme-muted text-[10px] font-black uppercase tracking-widest">{product.sku || '—'}</span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-[10px] font-black text-primary/80 uppercase tracking-widest bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
-                          {product.category || 'Sin categoría'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="theme-text font-black text-sm">
-                          ${product.price.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-1">
-                          {product.stock > 0 ? (
-                            <span className={`text-[10px] font-black tracking-widest uppercase ${product.stock <= 5 ? 'text-amber-500' : 'text-green-500'}`}>
-                              {product.stock <= 5 ? 'Bajo stock' : 'En stock'} ({product.stock})
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Agotado</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                          <span className="theme-text font-bold text-[10px] uppercase tracking-widest">Publicado</span>
-                          <span className="theme-muted text-[9px] mt-0.5 uppercase tracking-widest">
-                            {product.createdAt
-                              ? new Date(product.createdAt).toLocaleDateString('es-CO', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                })
-                              : 'Sin fecha'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <button 
-                            onClick={() => openEditModal(product)}
-                            className="p-3 bg-white/5 hover:bg-primary hover:text-dark theme-text rounded-xl transition-all border border-white/5"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                          <button 
-                            onClick={() => setProductToDelete(product)}
-                            className="p-3 bg-white/5 hover:bg-red-500 hover:text-white theme-text rounded-xl transition-all border border-white/5"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <ProductTable 
+            products={paginatedProducts}
+            selectedProducts={selectedProducts}
+            toggleSelectAll={toggleSelectAll}
+            toggleSelectProduct={toggleSelectProduct}
+            openEditModal={openEditModal}
+            setProductToDelete={setProductToDelete}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            toggleSort={toggleSort}
+          />
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -511,361 +426,38 @@ export const Products = () => {
         </div>
       ) : (
         <div className="theme-surface rounded-[40px] py-24 flex flex-col items-center text-center px-6 border border-white/5 shadow-2xl">
-          <div className="w-24 h-24 bg-primary/10 rounded-[32px] flex items-center justify-center text-primary mb-8 shadow-2xl shadow-primary/10 border border-primary/20">
-            <Package size={48} />
-          </div>
           <h3 className="text-3xl font-black theme-text tracking-tight uppercase mb-3">No se encontraron productos</h3>
           <p className="theme-muted text-sm max-w-sm mb-12">Prueba con otro término de búsqueda o categoría.</p>
-          <button 
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('all');
-            }}
-            className="px-10 py-4 bg-white/5 hover:bg-white/10 theme-text rounded-2xl transition-all border border-white/10 font-black uppercase text-[10px] tracking-widest shadow-xl"
-          >
-            Ver todos los productos
-          </button>
         </div>
       )}
 
-      {/* Custom Delete Confirmation Modal */}
-      {productToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="theme-overlay-card w-full max-w-sm rounded-[32px] overflow-hidden shadow-[0_0_100px_rgba(239,68,68,0.15)] border border-red-500/10 p-10 text-center" onClick={e => e.stopPropagation()}>
-            <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-8 shadow-inner">
-              <Trash2 size={40} />
-            </div>
-            <h2 className="text-2xl font-black theme-text uppercase tracking-tight mb-3">¿Eliminar Producto?</h2>
-            <p className="theme-muted text-sm mb-10 leading-relaxed">Esta acción es permanente. Se eliminará <span className="theme-text font-bold">"{productToDelete.name}"</span> de tu catálogo.</p>
-            <div className="flex gap-4">
-              <button 
-                onClick={() => setProductToDelete(null)}
-                className="flex-1 py-5 bg-white/5 hover:bg-white/10 theme-text font-black uppercase text-[10px] tracking-widest rounded-2xl transition-all border border-white/5"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={() => handleDelete(productToDelete.id)}
-                className="flex-1 py-5 bg-red-500 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
-              >
-                Sí, Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <ProductFormModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        editingProduct={editingProduct}
+        form={form}
+        setForm={setForm}
+        handleSubmit={handleSubmit}
+        isUploading={isUploading}
+        handleFileUpload={handleFileUpload}
+      />
 
-      {/* Import Modal */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => !importing && setIsImportModalOpen(false)}>
-          <div className="theme-overlay-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
-              <h2 className="text-xl font-black theme-text uppercase tracking-tight">Importar Catálogo</h2>
-              <button onClick={() => setIsImportModalOpen(false)} className="theme-muted hover:theme-text transition-colors" disabled={importing}>
-                <X size={24} />
-              </button>
-            </div>
+      <ImportModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        importing={importing}
+        importResult={importResult}
+        setImportResult={setImportResult}
+        handleImport={handleImport}
+        downloadTemplate={downloadTemplate}
+      />
 
-            <div className="p-8">
-              {!importResult ? (
-                <div className="space-y-6">
-                  <p className="theme-muted text-[11px] font-black uppercase tracking-widest text-center leading-relaxed">
-                    Sube un archivo <span className="theme-text">Excel</span> o <span className="theme-text">CSV</span>. El sistema actualizará automáticamente por <span className="text-primary font-bold">SKU</span>.
-                  </p>
-
-                  <div className="relative group">
-                    <input
-                      type="file"
-                      accept=".xlsx, .xls, .csv"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file || !token || !activeInstance) return;
-
-                        const formData = new FormData();
-                        formData.append('file', file);
-
-                        try {
-                          setImporting(true);
-                          const { data } = await axios.post(`/product/import/${activeInstance.instanceName}`, formData, {
-                            headers: { apikey: token }
-                          });
-                          setImportResult(data);
-                          fetchProducts();
-                        } catch (error) {
-                          console.error('Error importing products:', error);
-                          alert('Error al procesar el archivo. Verifique el formato.');
-                        } finally {
-                          setImporting(false);
-                        }
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
-                      disabled={importing}
-                    />
-                    <div className="theme-input rounded-[32px] border-2 border-dashed border-white/10 group-hover:border-primary/50 transition-all p-12 flex flex-col items-center justify-center gap-4 bg-white/[0.01]">
-                      {importing ? (
-                        <>
-                          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                          <p className="text-primary font-black uppercase text-[10px] tracking-[0.2em]">Sincronizando...</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
-                            <Upload size={32} />
-                          </div>
-                          <div className="text-center">
-                            <p className="theme-text font-black uppercase text-[10px] tracking-widest">Soltar archivo aquí</p>
-                            <p className="theme-muted text-[9px] font-medium mt-1 uppercase tracking-widest">XLSX, XLS o CSV</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => {
-                      const headers = ['nombre', 'sku', 'precio', 'stock', 'categoria', 'descripcion', 'url_imagen'];
-                      const csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + "\nCamara 4K,CAM-001,599,25,Electronica,Grabación en 4K,https://link-imagen.com";
-                      const encodedUri = encodeURI(csvContent);
-                      const link = document.createElement("a");
-                      link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", "plantilla_avri_productos.csv");
-                      document.body.appendChild(link);
-                      link.click();
-                    }}
-                    className="w-full text-primary text-[10px] font-black uppercase tracking-[0.2em] hover:brightness-125 transition-all text-center"
-                  >
-                    Descargar Plantilla Actualizada
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="theme-surface p-5 rounded-3xl text-center border border-white/5">
-                      <p className="text-green-400 text-3xl font-black">{importResult.success}</p>
-                      <p className="theme-muted text-[8px] uppercase font-black tracking-widest mt-1">Nuevos</p>
-                    </div>
-                    <div className="theme-surface p-5 rounded-3xl text-center border border-white/5">
-                      <p className="text-primary text-3xl font-black">{importResult.updated}</p>
-                      <p className="theme-muted text-[8px] uppercase font-black tracking-widest mt-1">Actualizados</p>
-                    </div>
-                    <div className="theme-surface p-5 rounded-3xl text-center border border-white/5">
-                      <p className="text-red-400 text-3xl font-black">{importResult.errors}</p>
-                      <p className="theme-muted text-[8px] uppercase font-black tracking-widest mt-1">Errores</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setImportResult(null);
-                      setIsImportModalOpen(false);
-                    }}
-                    className="w-full py-5 bg-white/5 hover:bg-white/10 theme-text rounded-3xl font-black uppercase text-[10px] tracking-[0.2em] transition-all border border-white/5 shadow-xl"
-                  >
-                    Finalizar y Revisar
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Form Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="theme-overlay-card w-full max-w-4xl rounded-[40px] overflow-hidden shadow-2xl max-h-[90vh] flex flex-col border border-white/5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-8 border-b border-white/5 shrink-0 bg-white/[0.01]">
-              <h2 className="text-2xl font-black theme-text uppercase tracking-tight">{editingProduct ? 'Editar Producto' : 'Crear Nuevo Producto'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="theme-muted hover:theme-text transition-colors">
-                <X size={28} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="overflow-y-auto p-8 scrollbar-hide">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Image Section */}
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-4">Multimedia</label>
-                    <div className="theme-input rounded-[32px] aspect-square flex items-center justify-center relative overflow-hidden bg-black/30 border border-white/5 group/img">
-                      {form.imageUrl ? (
-                        <>
-                          <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
-                          <button 
-                            type="button"
-                            onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
-                            className="absolute top-4 right-4 p-2 bg-red-500/80 hover:bg-red-500 rounded-xl text-white shadow-2xl transition-all z-20 backdrop-blur-md opacity-0 group-hover/img:opacity-100"
-                          >
-                            <X size={16} />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-center theme-muted/10">
-                          <ImageIcon size={64} />
-                          <span className="text-[10px] font-black uppercase mt-4 tracking-[0.3em]">Vista Previa</span>
-                        </div>
-                      )}
-                      
-                      {isUploading && (
-                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-30">
-                          <Loader2 className="animate-spin text-primary mb-3" size={32} />
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Subiendo a Nube...</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <label className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all group">
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file || !activeInstance || !token) return;
-                          try {
-                            setIsUploading(true);
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            const { data } = await axios.post(`/product/upload/${activeInstance.instanceName}`, formData, {
-                              headers: { apikey: token }
-                            });
-                            setForm(f => ({ ...f, imageUrl: data.imageUrl }));
-                          } catch (error) {
-                            console.error('Error uploading image:', error);
-                          } finally {
-                            setIsUploading(false);
-                          }
-                        }}
-                        className="hidden"
-                        disabled={isUploading}
-                      />
-                      <Upload size={16} className="text-primary group-hover:scale-110 transition-transform" />
-                      <span className="text-[10px] font-black uppercase tracking-widest theme-text">Subir Imagen</span>
-                    </label>
-                    
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-4 flex items-center theme-muted/20">
-                        <ImageIcon size={14} />
-                      </div>
-                      <input 
-                        type="text" 
-                        value={form.imageUrl}
-                        onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
-                        className="theme-input w-full rounded-2xl pl-12 pr-4 py-4 text-[11px] font-medium focus:outline-none placeholder:theme-muted/20"
-                        placeholder="O pega una URL externa aquí..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info Section */}
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-3">Nombre del Producto</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={form.name}
-                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                        className="theme-input w-full rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none placeholder:theme-muted/10"
-                        placeholder="Ej: Auriculares Pro Max"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-3">SKU / REF</label>
-                        <input 
-                          type="text" 
-                          value={form.sku}
-                          onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
-                          className="theme-input w-full rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none"
-                          placeholder="PROD-001"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-3">Categoría</label>
-                        <input 
-                          type="text" 
-                          value={form.category}
-                          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                          className="theme-input w-full rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none"
-                          placeholder="Electrónica"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-3">Precio ($)</label>
-                        <input 
-                          type="number" 
-                          required
-                          value={form.price}
-                          onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                          className="theme-input w-full rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none text-primary"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-3">Stock Disponible</label>
-                        <input 
-                          type="number" 
-                          required
-                          value={form.stock}
-                          onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
-                          className="theme-input w-full rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] theme-muted mb-3">Descripción Detallada</label>
-                      <textarea 
-                        value={form.description}
-                        onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                        className="theme-input w-full rounded-2xl px-5 py-4 text-sm font-medium focus:outline-none h-32 resize-none"
-                        placeholder="Describe las características principales..."
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-4 py-4 bg-white/[0.02] px-5 rounded-2xl border border-white/5">
-                      <input 
-                        type="checkbox" 
-                        id="form-enabled"
-                        checked={form.enabled}
-                        onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))}
-                        className="w-5 h-5 rounded-lg border-white/20 bg-white/5 text-primary focus:ring-primary/20 transition-all cursor-pointer"
-                      />
-                      <label htmlFor="form-enabled" className="text-[10px] font-black uppercase tracking-widest theme-muted cursor-pointer select-none">Habilitar visibilidad en la tienda</label>
-                    </div>
-                    
-                    <div className="flex gap-4 pt-4">
-                      <button 
-                        type="button"
-                        onClick={() => setIsModalOpen(false)}
-                        className="flex-1 py-5 rounded-3xl font-black theme-muted hover:theme-text hover:bg-white/5 transition-all uppercase text-[10px] tracking-[0.2em] border border-transparent"
-                      >
-                        Descartar
-                      </button>
-                      <button 
-                        type="submit"
-                        className="flex-[2] py-5 bg-primary text-dark rounded-3xl font-black shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-[10px] tracking-[0.3em]"
-                      >
-                        <Save size={18} />
-                        {editingProduct ? 'Actualizar' : 'Publicar'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationModal 
+        product={productToDelete}
+        onCancel={() => setProductToDelete(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };
