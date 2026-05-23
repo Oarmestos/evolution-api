@@ -48,14 +48,10 @@ export const ChatHub: React.FC = () => {
       fetchMessages(activeInstance, selectedChat.remoteJid);
       fetchNotes(activeInstance, selectedChat.remoteJid);
       
-      setEditInfo(prev => {
-        const isLid = (val: string) => val.includes('@lid') || /^\d{15}$/.test(val) || val === 'Contacto sin nombre';
-        
-        return {
-          pushName: (!prev.pushName || isLid(prev.pushName)) ? (selectedChat.pushName || '') : prev.pushName,
-          phoneNumber: (!prev.phoneNumber || isLid(prev.phoneNumber)) ? (selectedChat.phoneNumber || '') : prev.phoneNumber,
-          email: prev.email || selectedChat.email || ''
-        };
+      setEditInfo({
+        pushName: selectedChat.pushName || '',
+        phoneNumber: selectedChat.phoneNumber || selectedChat.remoteJid?.split('@')[0] || '',
+        email: selectedChat.email || ''
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

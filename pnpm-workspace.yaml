@@ -1,0 +1,16 @@
+packages:
+  - '.'
+  - 'frontend'
+
+shamefullyHoist: true
+blockExoticSubdeps: false
+
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  "@scarf/scarf": true
+  "baileys": true
+  "esbuild": true
+  "prisma": true
+  "protobufjs": true
+  "sharp": true

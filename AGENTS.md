@@ -41,24 +41,24 @@ Este documento proporciona pautas completas para los agentes de IA (Claude, GPT,
 ### Flujo de Desarrollo
 ```bash
 # Servidor de desarrollo con hot reload
-npm run dev:server
+pnpm run dev:server
 
 # Ejecución directa para pruebas
-npm start
+pnpm start
 
 # Construcción de producción y ejecución
-npm run build
-npm run start:prod
+pnpm run build
+pnpm run start:prod
 ```
 
 ### Calidad del Código
 ```bash
 # Linting y formateo
-npm run lint        # ESLint con auto-fix
-npm run lint:check  # Solo verificación de ESLint
+pnpm run lint        # ESLint con auto-fix
+pnpm run lint:check  # Solo verificación de ESLint
 
 # Commit con commits convencionales
-npm run commit      # Commit interactivo con Commitizen
+pnpm run commit      # Commit interactivo con Commitizen
 ```
 
 ### Gestión de Base de Datos
@@ -67,18 +67,18 @@ npm run commit      # Commit interactivo con Commitizen
 export DATABASE_PROVIDER=postgresql  # o mysql
 
 # Generar cliente Prisma
-npm run db:generate
+pnpm run db:generate
 
 # Migraciones de desarrollo (con sincronización de proveedor)
-npm run db:migrate:dev      # Unix/Mac
-npm run db:migrate:dev:win  # Windows
+pnpm run db:migrate:dev      # Unix/Mac
+pnpm run db:migrate:dev:win  # Windows
 
 # Despliegue en producción
-npm run db:deploy      # Unix/Mac
-npm run db:deploy:win  # Windows
+pnpm run db:deploy      # Unix/Mac
+pnpm run db:deploy:win  # Windows
 
 # Herramientas de base de datos
-npm run db:studio      # Abrir Prisma Studio
+pnpm run db:studio      # Abrir Prisma Studio
 ```
 
 ### Desarrollo con Docker
@@ -254,7 +254,7 @@ const result = await this.prismaRepository.instance.findUnique({
 ### Estrategia de Pruebas
 ```typescript
 // Colocar pruebas en el directorio test/ como *.test.ts
-// Ejecutar: npm test (monitorea test/all.test.ts)
+// Ejecutar: pnpm test (monitorea test/all.test.ts)
 
 describe('ExampleService', () => {
   it('debería crear un ejemplo', async () => {
@@ -276,7 +276,7 @@ describe('ExampleService', () => {
 ### Commits Convencionales (Aplicados por commitlint)
 ```bash
 # Usar herramienta interactiva de commit
-npm run commit
+pnpm run commit
 
 # Formato del commit: tipo(alcance): asunto (máx 100 caracteres)
 # Tipos: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert, security

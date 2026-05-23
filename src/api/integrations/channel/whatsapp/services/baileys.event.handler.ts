@@ -2,6 +2,8 @@ import { Events } from '@api/types/wa.types';
 import { status } from '@utils/renderStatus';
 import { BufferedEventData, Chat, getContentType, MessageUpsertType, proto, WAMessage } from 'baileys';
 
+import { BaileysHistoryService } from './baileys.history.service';
+
 export class BaileysEventHandler {
   constructor(private readonly service: any) {}
 
@@ -152,51 +154,65 @@ export class BaileysEventHandler {
       }
 
       if (events['messaging-history.set']) {
-        const { chats, contacts, messages } = events['messaging-history.set'];
-        this.service.logger.warn(
-          `History sync: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages`,
-        );
-
-        for (const contact of contacts) {
-          const name = contact.name || contact.verifiedName || contact.notify;
-          if (!name) continue;
-          await this.service.prismaRepository.contact.upsert({
-            where: {
-              instanceId_remoteJid: {
-                instanceId: this.service.instanceId,
-                remoteJid: contact.id,
-              },
-            },
-            update: { pushName: name, profilePicUrl: contact.imgUrl || undefined },
-            create: {
-              instanceId: this.service.instanceId,
-              remoteJid: contact.id,
-              pushName: name,
-              profilePicUrl: contact.imgUrl || undefined,
-            },
-          });
-        }
+        const historyService = new BaileysHistoryService(this.service);
+        await historyService.handleHistorySync(events['messaging-history.set']);
       }
 
       if (events['contacts.upsert']) {
         const contacts = events['contacts.upsert'];
         for (const contact of contacts) {
           const name = contact.name || contact.verifiedName || contact.notify;
-          await this.service.prismaRepository.contact.upsert({
-            where: {
-              instanceId_remoteJid: {
+          try {
+            await this.service.prismaRepository.contact.upsert({
+              where: {
+                instanceId_remoteJid: {
+                  instanceId: this.service.instanceId,
+                  remoteJid: contact.id,
+                },
+              },
+              update: { pushName: name, profilePicUrl: contact.imgUrl || undefined },
+              create: {
                 instanceId: this.service.instanceId,
                 remoteJid: contact.id,
+                pushName: name,
+                profilePicUrl: contact.imgUrl || undefined,
               },
-            },
-            update: { pushName: name, profilePicUrl: contact.imgUrl || undefined },
-            create: {
-              instanceId: this.service.instanceId,
-              remoteJid: contact.id,
-              pushName: name,
-              profilePicUrl: contact.imgUrl || undefined,
-            },
-          });
+            });
+          } catch (err) {
+            this.service.logger.error(`Error saving contact: ${err}`);
+          }
+
+          // Guardar mapeo de LID si está presente
+          if (contact.id && contact.id.includes('@s.whatsapp.net') && (contact as any).lid) {
+            try {
+              const cleanLid = (contact as any).lid.split('@')[0];
+              await (this.service.prismaRepository as any).isOnWhatsapp.upsert({
+                where: { remoteJid: contact.id },
+                update: { lid: cleanLid },
+                create: { remoteJid: contact.id, lid: cleanLid, jidOptions: '{}' },
+              });
+            } catch (err) {
+              this.service.logger.error(`Error mapping contact LID in contacts.upsert: ${err}`);
+            }
+          }
+        }
+      }
+
+      if (events['contacts.update']) {
+        const updates = events['contacts.update'];
+        for (const contact of updates) {
+          if (contact.id && contact.id.includes('@s.whatsapp.net') && (contact as any).lid) {
+            try {
+              const cleanLid = (contact as any).lid.split('@')[0];
+              await (this.service.prismaRepository as any).isOnWhatsapp.upsert({
+                where: { remoteJid: contact.id },
+                update: { lid: cleanLid },
+                create: { remoteJid: contact.id, lid: cleanLid, jidOptions: '{}' },
+              });
+            } catch (err) {
+              this.service.logger.error(`Error mapping contact LID in contacts.update: ${err}`);
+            }
+          }
         }
       }
 

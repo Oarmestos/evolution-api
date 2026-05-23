@@ -16,7 +16,7 @@ export const Form: React.FC<LibraryProps> = ({ block, Renderer }) => (
         <span className="text-[9px] font-black uppercase tracking-widest">Arrastra campos aquí</span>
       </div>
     ) : (
-      block.children?.map(child => <Renderer key={child.id} block={child} />)
+      block.children?.map((child: any) => <Renderer key={child.id} block={child} />)
     )}
   </form>
 );

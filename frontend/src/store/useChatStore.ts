@@ -197,12 +197,13 @@ export const useChatStore = create<ChatState>((set) => ({
 
   sendMessage: async (instanceName, remoteJid, text) => {
     const token = localStorage.getItem('avri_token');
+    const isLocalUrl = text.includes('localhost') || text.includes('127.0.0.1');
     try {
       const response = await axios.post(`/message/sendText/${instanceName}`, {
         number: remoteJid,
         text,
         delay: 0,
-        linkPreview: true
+        linkPreview: !isLocalUrl
       }, {
         headers: { apikey: token }
       });
@@ -226,6 +227,7 @@ export const useChatStore = create<ChatState>((set) => ({
       });
     } catch (error) {
       console.error('Error sending message:', error);
+      throw error;
     }
   },
 

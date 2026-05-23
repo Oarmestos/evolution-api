@@ -16,21 +16,21 @@ Built with **Node.js 20+**, **TypeScript 5+**, and **Express.js**, it provides e
 ### Build and Run
 ```bash
 # Development
-npm run dev:server    # Run in development with hot reload (tsx watch)
+pnpm run dev:server    # Run in development with hot reload (tsx watch)
 
 # Production
-npm run build        # TypeScript check + tsup build
-npm run start:prod   # Run production build
+pnpm run build        # TypeScript check + tsup build
+pnpm run start:prod   # Run production build
 
 # Direct execution
-npm start           # Run with tsx
+pnpm start           # Run with tsx
 ```
 
 ### Code Quality
 ```bash
-npm run lint        # ESLint with auto-fix
-npm run lint:check  # ESLint check only
-npm run commit      # Interactive commit with commitizen
+pnpm run lint        # ESLint with auto-fix
+pnpm run lint:check  # ESLint check only
+pnpm run commit      # Interactive commit with commitizen
 ```
 
 ### Database Management
@@ -39,27 +39,27 @@ npm run commit      # Interactive commit with commitizen
 export DATABASE_PROVIDER=postgresql  # or mysql
 
 # Generate Prisma client (automatically uses DATABASE_PROVIDER env)
-npm run db:generate
+pnpm run db:generate
 
 # Deploy migrations (production)
-npm run db:deploy      # Unix/Mac
-npm run db:deploy:win  # Windows
+pnpm run db:deploy      # Unix/Mac
+pnpm run db:deploy:win  # Windows
 
 # Development migrations (with sync to provider folder)
-npm run db:migrate:dev      # Unix/Mac
-npm run db:migrate:dev:win  # Windows
+pnpm run db:migrate:dev      # Unix/Mac
+pnpm run db:migrate:dev:win  # Windows
 
 # Open Prisma Studio
-npm run db:studio
+pnpm run db:studio
 
 # Development migrations
-npm run db:migrate:dev      # Unix/Mac
-npm run db:migrate:dev:win  # Windows
+pnpm run db:migrate:dev      # Unix/Mac
+pnpm run db:migrate:dev:win  # Windows
 ```
 
 ### Testing
 ```bash
-npm test    # Run tests with watch mode
+pnpm test    # Run tests with watch mode
 ```
 
 ## Architecture Overview
@@ -206,7 +206,7 @@ Currently, the project has minimal formal testing infrastructure:
 - **Integration testing** in development environment
 - **No unit test suite** currently implemented
 - Test files can be placed in `test/` directory as `*.test.ts`
-- Run `npm test` for watch mode development testing
+- Run `pnpm test` for watch mode development testing
 
 ### Recommended Testing Strategy
 - Focus on **critical business logic** in services

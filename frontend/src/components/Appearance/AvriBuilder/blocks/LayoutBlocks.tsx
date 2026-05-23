@@ -13,7 +13,7 @@ export const Container: React.FC<LibraryProps> = ({ block, Renderer }) => (
         Contenedor Vacío
       </div>
     ) : (
-      block.children?.map(child => <Renderer key={child.id} block={child} />)
+      block.children?.map((child: any) => <Renderer key={child.id} block={child} />)
     )}
   </div>
 );
@@ -44,7 +44,7 @@ export const Hero: React.FC<LibraryProps> = ({ block, Renderer, readOnly }) => {
         className="relative overflow-hidden w-full py-20"
       >
         <div className="relative z-10 flex flex-col items-center justify-center gap-10 max-w-4xl px-6 w-full mx-auto text-center">
-          {block.children.map(child => <Renderer key={child.id} block={child} />)}
+          {block.children.map((child: any) => <Renderer key={child.id} block={child} />)}
         </div>
         {block.props.bgImage && <div className="absolute inset-0 bg-black/50 z-0" />}
       </div>
@@ -164,7 +164,7 @@ export const Footer: React.FC<LibraryProps> = ({ block, Renderer, readOnly }) =>
   if (block.children && block.children.length > 0) {
     return (
       <footer style={getBlockStyles(block)} className="w-full">
-        {block.children.map(child => <Renderer key={child.id} block={child} />)}
+        {block.children.map((child: any) => <Renderer key={child.id} block={child} />)}
       </footer>
     );
   }

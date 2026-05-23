@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { AVRI_LUXURY_LAYOUT } from './defaultLayout';
-import type { Block, AvriBuilderState } from '../types/builder.types';
+import type { Block, AvriBuilderState, BlockType, ViewportDevice } from '../types/builder.types';
+export type { Block, AvriBuilderState, BlockType, ViewportDevice };
 import { generateId, createPresetBlock, upgradeBlockLogic } from './builderPresets';
 
 let historyTimeout: ReturnType<typeof setTimeout> | null = null;

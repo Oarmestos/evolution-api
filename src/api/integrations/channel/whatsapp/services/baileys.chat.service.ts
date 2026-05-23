@@ -138,19 +138,67 @@ export class BaileysChatService {
     });
 
     const contactJids = chats.map((c) => c.remoteJid);
+
+    // Resolver mapeos de LID a Phone JID dinámicamente
+    const lids = contactJids.filter((jid) => jid.includes('@lid'));
+    const cleanLids = lids.map((jid) => jid.split('@')[0]);
+
+    const mappings = await (this.prismaRepository as any).isOnWhatsapp.findMany({
+      where: {
+        OR: [{ lid: { in: cleanLids } }, { lid: { in: lids } }],
+      },
+    });
+
+    const jidMap = new Map<string, string>();
+    mappings.forEach((m) => {
+      if (m.lid) {
+        jidMap.set(m.lid, m.remoteJid);
+        if (!m.lid.includes('@lid')) {
+          jidMap.set(`${m.lid}@lid`, m.remoteJid);
+        }
+      }
+    });
+
+    const searchJids = [...contactJids];
+    contactJids.forEach((jid) => {
+      const mapped = jidMap.get(jid);
+      if (mapped) searchJids.push(mapped);
+    });
+
     const contacts = await this.prismaRepository.contact.findMany({
       where: {
         instanceId: instance.instanceId,
-        remoteJid: { in: contactJids },
+        remoteJid: { in: searchJids },
       },
     });
 
     return chats.map((chat) => {
-      const contact = contacts.find((c) => c.remoteJid === chat.remoteJid);
+      let contact = contacts.find((c) => c.remoteJid === chat.remoteJid);
+      if (!contact) {
+        const mappedJid = jidMap.get(chat.remoteJid);
+        if (mappedJid) {
+          contact = contacts.find((c) => c.remoteJid === mappedJid);
+        }
+      }
+
+      let phoneNumber = contact?.phoneNumber;
+      if (!phoneNumber && contact?.remoteJid && contact.remoteJid.endsWith('@s.whatsapp.net')) {
+        phoneNumber = contact.remoteJid.split('@')[0];
+      }
+      if (!phoneNumber) {
+        phoneNumber = chat.remoteJid.split('@')[0];
+      }
+
+      const isLid = chat.remoteJid.includes('@lid');
+      let fallbackName = chat.remoteJid.split('@')[0];
+      if (isLid && phoneNumber && phoneNumber !== fallbackName) {
+        fallbackName = `+${phoneNumber}`;
+      }
+
       return {
         id: contact?.id || null,
         remoteJid: chat.remoteJid,
-        pushName: contact?.pushName || chat.name || chat.remoteJid.split('@')[0],
+        pushName: contact?.pushName || chat.name || fallbackName,
         profilePicUrl: contact?.profilePicUrl,
         updatedAt: chat.updatedAt,
         windowStart: chat.createdAt,
@@ -159,7 +207,7 @@ export class BaileysChatService {
         lastMessage: chat.lastMessage ? instance.cleanMessageData(chat.lastMessage) : undefined,
         unreadCount: chat.unreadMessages,
         controlMode: chat.controlMode,
-        phoneNumber: contact?.phoneNumber || chat.remoteJid.split('@')[0],
+        phoneNumber,
         email: contact?.email || null,
         isSaved: !!contact?.id,
       };
@@ -235,19 +283,47 @@ export class BaileysChatService {
 
     if (!chat) return null;
 
-    const contact = await this.prismaRepository.contact.findUnique({
-      where: {
-        instanceId_remoteJid: {
-          instanceId: instance.instanceId,
-          remoteJid,
+    // Resolver LID a JID telefónico dinámicamente si aplica
+    const searchJids = [remoteJid];
+    if (remoteJid.includes('@lid')) {
+      const cleanLid = remoteJid.split('@')[0];
+      const mapping = await (this.prismaRepository as any).isOnWhatsapp.findFirst({
+        where: {
+          OR: [{ lid: cleanLid }, { lid: remoteJid }],
         },
+      });
+      if (mapping) {
+        searchJids.push(mapping.remoteJid);
+      }
+    }
+
+    const contact = await this.prismaRepository.contact.findFirst({
+      where: {
+        instanceId: instance.instanceId,
+        remoteJid: { in: searchJids },
       },
     });
 
+    let phoneNumber = contact?.phoneNumber;
+    if (!phoneNumber && contact?.remoteJid && contact.remoteJid.endsWith('@s.whatsapp.net')) {
+      phoneNumber = contact.remoteJid.split('@')[0];
+    }
+    if (!phoneNumber) {
+      phoneNumber = remoteJid.split('@')[0];
+    }
+
+    const isLid = remoteJid.includes('@lid');
+    let fallbackName = remoteJid.split('@')[0];
+    if (isLid && phoneNumber && phoneNumber !== fallbackName) {
+      fallbackName = `+${phoneNumber}`;
+    }
+
     return {
       ...chat,
-      pushName: contact?.pushName || chat.name || remoteJid.split('@')[0],
+      pushName: contact?.pushName || chat.name || fallbackName,
       profilePicUrl: contact?.profilePicUrl,
+      phoneNumber,
+      email: contact?.email || null,
     };
   }
 
@@ -261,6 +337,20 @@ export class BaileysChatService {
           gte: Math.floor(new Date(query.where.messageTimestamp['gte']).getTime() / 1000),
           lte: Math.floor(new Date(query.where.messageTimestamp['lte']).getTime() / 1000),
         };
+      }
+    }
+
+    // Resolver LID a JID telefónico dinámicamente si aplica
+    let remoteJidAlt = undefined;
+    if (keyFilters?.remoteJid && keyFilters.remoteJid.includes('@lid')) {
+      const cleanLid = keyFilters.remoteJid.split('@')[0];
+      const mapping = await (this.prismaRepository as any).isOnWhatsapp.findFirst({
+        where: {
+          OR: [{ lid: cleanLid }, { lid: keyFilters.remoteJid }],
+        },
+      });
+      if (mapping) {
+        remoteJidAlt = mapping.remoteJid;
       }
     }
 
@@ -278,6 +368,7 @@ export class BaileysChatService {
           {
             OR: [
               keyFilters?.remoteJid ? { key: { path: ['remoteJid'], equals: keyFilters?.remoteJid } } : {},
+              remoteJidAlt ? { key: { path: ['remoteJid'], equals: remoteJidAlt } } : {},
               keyFilters?.remoteJidAlt ? { key: { path: ['remoteJidAlt'], equals: keyFilters?.remoteJidAlt } } : {},
             ],
           },
@@ -302,6 +393,7 @@ export class BaileysChatService {
           {
             OR: [
               keyFilters?.remoteJid ? { key: { path: ['remoteJid'], equals: keyFilters?.remoteJid } } : {},
+              remoteJidAlt ? { key: { path: ['remoteJid'], equals: remoteJidAlt } } : {},
               keyFilters?.remoteJidAlt ? { key: { path: ['remoteJidAlt'], equals: keyFilters?.remoteJidAlt } } : {},
             ],
           },

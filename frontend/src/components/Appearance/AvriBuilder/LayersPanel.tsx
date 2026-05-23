@@ -98,7 +98,7 @@ const LayerItem: React.FC<LayerItemProps> = ({ block, depth }) => {
 
       {hasChildren && (
         <div className="flex flex-col">
-          {block.children!.map((child) => (
+          {block.children!.map((child: Block) => (
             <LayerItem key={child.id} block={child} depth={depth + 1} />
           ))}
         </div>

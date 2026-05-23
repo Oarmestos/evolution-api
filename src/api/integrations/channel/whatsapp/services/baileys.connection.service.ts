@@ -227,6 +227,30 @@ export class BaileysConnectionService {
       `,
       );
 
+      // Purgar chats viejos de la base de datos si el número telefónico cambió o es un login QR fresco
+      const currentNumber = service.instance.wuid?.split('@')?.[0] || null;
+      try {
+        const dbInstance = await this.prismaRepository.instance.findUnique({
+          where: { id: service.instanceId },
+        });
+        if (
+          dbInstance &&
+          (dbInstance.connectionStatus === 'connecting' ||
+            !dbInstance.number ||
+            (dbInstance.number && currentNumber && dbInstance.number !== currentNumber))
+        ) {
+          service.logger.warn(
+            `Clean QR scan session detected (previous status: ${dbInstance.connectionStatus}, number: ${dbInstance.number}). Purging old database tables for clean sync...`,
+          );
+          await this.prismaRepository.chat.deleteMany({ where: { instanceId: service.instanceId } });
+          await this.prismaRepository.contact.deleteMany({ where: { instanceId: service.instanceId } });
+          await this.prismaRepository.message.deleteMany({ where: { instanceId: service.instanceId } });
+          await this.prismaRepository.messageUpdate.deleteMany({ where: { instanceId: service.instanceId } });
+        }
+      } catch (purgeError) {
+        service.logger.error(`Error purging old instance database tables: ${purgeError}`);
+      }
+
       await this.prismaRepository.instance.update({
         where: { id: service.instanceId },
         data: {

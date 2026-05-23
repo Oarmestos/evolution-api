@@ -82,8 +82,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
     const storeUrl = `${window.location.origin}/store/${activeInstance}`;
     const message = `¡Hola! 👋 Te comparto nuestro catálogo completo actualizado. Puedes verlo y hacer tu pedido directamente aquí: \n\n${storeUrl}`;
     
-    await sendMessage(activeInstance, selectedChat.remoteJid, message);
-    setShowCatalogModal(false);
+    try {
+      await sendMessage(activeInstance, selectedChat.remoteJid, message);
+    } catch (error) {
+      console.error('Error al enviar catálogo link:', error);
+      alert('Error al enviar el link del catálogo');
+    } finally {
+      setShowCatalogModal(false);
+    }
   };
 
   const handleQuickStoreSend = async () => {
@@ -92,9 +98,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
     const storeUrl = `${window.location.origin}/store/${activeInstance}`;
     const message = `¡Hola! 👋 Te invito a conocer nuestra tienda oficial. Aquí podrás realizar tus compras de forma rápida y segura: \n\n${storeUrl}`;
 
-    setStoreCopied(true);
-    await sendMessage(activeInstance, selectedChat.remoteJid, message);
-    setTimeout(() => setStoreCopied(false), 2000);
+    try {
+      setStoreCopied(true);
+      await sendMessage(activeInstance, selectedChat.remoteJid, message);
+    } catch (error) {
+      console.error('Error al enviar link de tienda:', error);
+      alert('Error al enviar el link de la tienda');
+      setStoreCopied(false);
+    } finally {
+      setTimeout(() => setStoreCopied(false), 2000);
+    }
   };
 
   return (
