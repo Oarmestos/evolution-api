@@ -6,6 +6,7 @@ import { cn } from '../../utils/cn';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import { ProductSelectorModal } from './ProductSelectorModal';
+import { MessageMedia } from './MessageMedia';
 
 interface ChatAreaProps {
   activeInstance: string | undefined;
@@ -32,6 +33,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showCatalogModal, setShowCatalogModal] = useState(false);
   const [storeCopied, setStoreCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const menuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,15 +45,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
         setShowMoreOptions(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !activeInstance || !selectedChat) return;
 
@@ -125,7 +127,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
       ) : (
         <>
           {/* Header */}
-          <div className="theme-surface-deep h-16 px-6 border-b border-white/5 flex items-center justify-between backdrop-blur-md relative z-10">
+          <div className="theme-surface-deep h-16 px-6 border-b border-white/5 flex items-center justify-between backdrop-blur-md relative z-20">
             <div className="flex items-center gap-3">
               <div className={cn(
                 "w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border border-border-soft shrink-0",
@@ -163,7 +165,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                 {showMoreOptions && (
                   <div className="absolute right-0 mt-2 w-48 theme-surface-alt border border-border-strong rounded-xl shadow-2xl z-[100] py-2 animate-in fade-in slide-in-from-top-2">
                     <button 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
                         setShowContactInfo(true);
                         setShowMoreOptions(false);
                       }}
@@ -172,10 +176,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                       <MoreVertical size={14} /> Ver Detalles
                     </button>
                     <button 
-                      onClick={() => {
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
                         if (activeInstance && selectedChat) {
-                          muteChat(activeInstance, selectedChat.remoteJid);
-                          setShowMoreOptions(false);
+                          try {
+                            await muteChat(activeInstance, selectedChat.remoteJid);
+                          } catch (err) {
+                            console.error('Error al silenciar:', err);
+                          } finally {
+                            setShowMoreOptions(false);
+                          }
                         }
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs font-bold text-theme-muted hover:text-theme-text hover:bg-surface-hover transition-colors flex items-center gap-2"
@@ -184,7 +195,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                     </button>
                     <div className="h-px bg-white/5 my-2"></div>
                     <button 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
                         setSelectedChat(null);
                         setShowMoreOptions(false);
                       }}
@@ -193,11 +206,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                       <X size={14} /> Cerrar Chat
                     </button>
                     <button 
-                      onClick={() => {
-                        if (activeInstance && selectedChat && confirm('Estas seguro de que deseas eliminar este chat? Esta accion no se puede deshacer.')) {
-                          deleteChat(activeInstance, selectedChat.remoteJid);
-                          setShowMoreOptions(false);
-                        }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setShowMoreOptions(false);
+                        setShowDeleteConfirm(true);
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2"
                     >
@@ -248,7 +261,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                               ? "bg-primary text-black font-medium rounded-tr-none shadow-primary/10" 
                               : "theme-surface-alt text-theme-text border border-border-soft rounded-tl-none hover:border-border-strong shadow-soft/5"
                           )}>
-                            {extractMessagePreview(msg.message)}
+                            {['imageMessage', 'videoMessage', 'audioMessage'].includes(msg.messageType) && activeInstance ? (
+                              <MessageMedia msg={msg} activeInstance={activeInstance} />
+                            ) : (
+                              extractMessagePreview(msg.message)
+                            )}
                           </div>
                           <div className={cn("flex items-center gap-2 px-1", fromMe ? "justify-end" : "justify-start")}>
                             <span className="text-[10px] text-gray-600 font-bold">
@@ -357,6 +374,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
                   placeholder={inputTab === 'reply' ? "Escribe un mensaje aqui..." : "Escribe una nota interna para el equipo..."}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSend(e);
+                    }
+                  }}
                   className={cn(
                     "theme-input w-full rounded-2xl py-5 pl-[220px] pr-[100px] text-sm focus:ring-2 transition-all outline-none border-white/5",
                     inputTab === 'reply' ? "focus:ring-primary/20" : "focus:ring-secondary/20"
@@ -396,6 +419,46 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ activeInstance, setShowConta
           onSendCatalogLink={handleSendCatalogLink}
           instanceName={activeInstance}
         />
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative z-10 w-full max-w-md p-8 flex flex-col items-center text-center theme-surface border border-border-strong rounded-[32px] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+              <X className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="text-lg font-black uppercase tracking-widest italic mb-2 theme-text">¿Eliminar Conversación?</h3>
+            <p className="text-xs theme-muted leading-relaxed mb-8">
+              Esta acción eliminará de forma permanente el chat y todos sus mensajes tanto en la base de datos como en WhatsApp. <strong>Esta acción no se puede deshacer.</strong>
+            </p>
+            <div className="flex gap-4 w-full">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-4 bg-surface-muted hover:bg-surface-hover border border-border-soft text-theme-muted hover:text-theme-text text-xs font-black uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={async () => {
+                  if (activeInstance && selectedChat) {
+                    try {
+                      await deleteChat(activeInstance, selectedChat.remoteJid);
+                    } catch (err) {
+                      console.error('Error al eliminar:', err);
+                    } finally {
+                      setShowDeleteConfirm(false);
+                    }
+                  }
+                }}
+                className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-red-500/20 border border-red-600"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

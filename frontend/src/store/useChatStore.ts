@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 type MessageKey = {
   remoteJid: string;
@@ -260,7 +261,7 @@ export const useChatStore = create<ChatState>((set) => ({
       });
     } catch (error) {
       console.error('Error sending product:', error);
-      alert('Error al enviar el producto');
+      toast.error('Error al enviar el producto');
     }
   },
  
@@ -296,10 +297,10 @@ export const useChatStore = create<ChatState>((set) => ({
       await axios.post(`/chat/muteChat/${instanceName}`, { remoteJid, muteTime }, {
         headers: { apikey: token }
       });
-      alert('Chat silenciado');
+      toast.success('Chat silenciado');
     } catch (error) {
       console.error('Error muting chat:', error);
-      alert('Error al silenciar el chat');
+      toast.error('Error al silenciar el chat');
     }
   },
 
@@ -313,10 +314,10 @@ export const useChatStore = create<ChatState>((set) => ({
         chats: state.chats.filter((c) => c.remoteJid !== remoteJid),
         selectedChat: state.selectedChat?.remoteJid === remoteJid ? null : state.selectedChat
       }));
-      alert('Chat eliminado');
+      toast.success('Chat eliminado');
     } catch (error) {
       console.error('Error deleting chat:', error);
-      alert('Error al eliminar el chat');
+      toast.error('Error al eliminar el chat');
     }
   }
 }));

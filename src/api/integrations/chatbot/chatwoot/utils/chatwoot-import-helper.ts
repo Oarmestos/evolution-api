@@ -2,16 +2,17 @@ import { InstanceDto } from '@api/dto/instance.dto';
 import { ChatwootDto } from '@api/integrations/chatbot/chatwoot/dto/chatwoot.dto';
 import { postgresClient } from '@api/integrations/chatbot/chatwoot/libs/postgres.client';
 import { ChatwootService } from '@api/integrations/chatbot/chatwoot/services/chatwoot.service';
-import { Chatwoot, configService } from '@config/env.config';
 import { Logger } from '@config/logger.config';
 import { inbox } from '@figuro/chatwoot-sdk';
 import { Chatwoot as ChatwootModel, Contact, Message } from '@prisma/client';
-import { proto } from 'baileys';
 
-type ChatwootUser = {
-  user_type: string;
-  user_id: number;
-};
+import {
+  createMessagesMapByPhoneNumber,
+  getChatwootUser,
+  getContentMessage,
+  isIgnorePhoneNumber,
+  sliceIntoChunks,
+} from './chatwoot-import.utils';
 
 type FksChatwoot = {
   phone_number: string;
@@ -23,8 +24,6 @@ type firstLastTimestamp = {
   first: number;
   last: number;
 };
-
-type IWebMessageInfo = Omit<proto.IWebMessageInfo, 'key'> & Partial<Pick<proto.IWebMessageInfo, 'key'>>;
 
 class ChatwootImport {
   private logger = new Logger('ChatwootImport');
@@ -93,7 +92,7 @@ class ChatwootImport {
         return 0;
       }
 
-      let contactsChunk: Contact[] = this.sliceIntoChunks(contacts, 3000);
+      let contactsChunk: Contact[] = sliceIntoChunks(contacts, 3000);
       while (contactsChunk.length > 0) {
         const labelSql = `SELECT id FROM labels WHERE title = '${provider.nameInbox}' AND account_id = ${provider.accountId} LIMIT 1`;
 
@@ -112,14 +111,14 @@ class ChatwootImport {
         const bindInsert = [provider.accountId];
 
         for (const contact of contactsChunk) {
-          const isGroup = this.isIgnorePhoneNumber(contact.remoteJid);
+          const isGroupContact = isIgnorePhoneNumber(contact.remoteJid);
 
-          const contactName = isGroup ? `${contact.pushName} (GROUP)` : contact.pushName;
+          const contactName = isGroupContact ? `${contact.pushName} (GROUP)` : contact.pushName;
           bindInsert.push(contactName);
           const bindName = `$${bindInsert.length}`;
 
           let bindPhoneNumber: string;
-          if (!isGroup) {
+          if (!isGroupContact) {
             bindInsert.push(`+${contact.remoteJid.split('@')[0]}`);
             bindPhoneNumber = `$${bindInsert.length}`;
           } else {
@@ -165,7 +164,7 @@ class ChatwootImport {
 
         await pgClient.query(sqlInsertLabel, [tagId, 'Contact', 'labels']);
 
-        contactsChunk = this.sliceIntoChunks(contacts, 3000);
+        contactsChunk = sliceIntoChunks(contacts, 3000);
       }
 
       this.deleteHistoryContacts(instance);
@@ -215,7 +214,7 @@ class ChatwootImport {
     try {
       const pgClient = postgresClient.getChatwootConnection();
 
-      const chatwootUser = await this.getChatwootUser(provider);
+      const chatwootUser = await getChatwootUser(provider);
       if (!chatwootUser) {
         throw new Error('User not found to import messages.');
       }
@@ -243,7 +242,7 @@ class ChatwootImport {
         return parseInt(aKey.remoteJid) - parseInt(bKey.remoteJid) || aMessageTimestamp - bMessageTimestamp;
       });
 
-      const allMessagesMappedByPhoneNumber = this.createMessagesMapByPhoneNumber(messagesOrdered);
+      const allMessagesMappedByPhoneNumber = createMessagesMapByPhoneNumber(messagesOrdered);
       // Map structure: +552199999999 => { first message timestamp from number, last message timestamp from number}
       const phoneNumbersWithTimestamp = new Map<string, firstLastTimestamp>();
       allMessagesMappedByPhoneNumber.forEach((messages: Message[], phoneNumber: string) => {
@@ -257,10 +256,10 @@ class ChatwootImport {
       messagesOrdered = messagesOrdered.filter((message: any) => !existingSourceIds.has(message.key.id));
       // processing messages in batch
       const batchSize = 4000;
-      let messagesChunk: Message[] = this.sliceIntoChunks(messagesOrdered, batchSize);
+      let messagesChunk: Message[] = sliceIntoChunks(messagesOrdered, batchSize);
       while (messagesChunk.length > 0) {
         // Map structure: +552199999999 => Message[]
-        const messagesByPhoneNumber = this.createMessagesMapByPhoneNumber(messagesChunk);
+        const messagesByPhoneNumber = createMessagesMapByPhoneNumber(messagesChunk);
 
         if (messagesByPhoneNumber.size > 0) {
           const fksByNumber = await this.selectOrCreateFksFromChatwoot(
@@ -288,7 +287,7 @@ class ChatwootImport {
                 return;
               }
 
-              const contentMessage = this.getContentMessage(chatwootService, message);
+              const contentMessage = getContentMessage(chatwootService, message);
               if (!contentMessage) {
                 return;
               }
@@ -325,7 +324,7 @@ class ChatwootImport {
             totalMessagesImported += (await pgClient.query(sqlInsertMsg, bindInsertMsg))?.rowCount ?? 0;
           }
         }
-        messagesChunk = this.sliceIntoChunks(messagesOrdered, batchSize);
+        messagesChunk = sliceIntoChunks(messagesOrdered, batchSize);
       }
 
       this.deleteHistoryMessages(instance);
@@ -439,39 +438,6 @@ class ChatwootImport {
     return new Map(fksFromChatwoot.rows.map((item: FksChatwoot) => [item.phone_number, item]));
   }
 
-  public async getChatwootUser(provider: ChatwootModel): Promise<ChatwootUser> {
-    try {
-      const pgClient = postgresClient.getChatwootConnection();
-
-      const sqlUser = `SELECT owner_type AS user_type, owner_id AS user_id
-                         FROM access_tokens
-                       WHERE token = $1`;
-
-      return (await pgClient.query(sqlUser, [provider.token]))?.rows[0] || false;
-    } catch (error) {
-      this.logger.error(`Error on getChatwootUser: ${error.toString()}`);
-    }
-  }
-
-  public createMessagesMapByPhoneNumber(messages: Message[]): Map<string, Message[]> {
-    return messages.reduce((acc: Map<string, Message[]>, message: Message) => {
-      const key = message?.key as {
-        remoteJid: string;
-      };
-      if (!this.isIgnorePhoneNumber(key?.remoteJid)) {
-        const phoneNumber = key?.remoteJid?.split('@')[0];
-        if (phoneNumber) {
-          const phoneNumberPlus = `+${phoneNumber}`;
-          const messages = acc.has(phoneNumberPlus) ? acc.get(phoneNumberPlus) : [];
-          messages.push(message);
-          acc.set(phoneNumberPlus, messages);
-        }
-      }
-
-      return acc;
-    }, new Map());
-  }
-
   public async getContactsOrderByRecentConversations(
     inbox: inbox,
     provider: ChatwootModel,
@@ -492,79 +458,6 @@ class ChatwootImport {
     } catch (error) {
       this.logger.error(`Error on get recent conversations: ${error.toString()}`);
     }
-  }
-
-  public getContentMessage(chatwootService: ChatwootService, msg: IWebMessageInfo) {
-    const contentMessage = chatwootService.getConversationMessage(msg.message);
-    if (contentMessage) {
-      return contentMessage;
-    }
-
-    if (!configService.get<Chatwoot>('CHATWOOT').IMPORT.PLACEHOLDER_MEDIA_MESSAGE) {
-      return '';
-    }
-
-    const types = {
-      documentMessage: msg.message.documentMessage,
-      documentWithCaptionMessage: msg.message.documentWithCaptionMessage?.message?.documentMessage,
-      imageMessage: msg.message.imageMessage,
-      videoMessage: msg.message.videoMessage,
-      audioMessage: msg.message.audioMessage,
-      stickerMessage: msg.message.stickerMessage,
-      templateMessage: msg.message.templateMessage?.hydratedTemplate?.hydratedContentText,
-    };
-
-    const typeKey = Object.keys(types).find((key) => types[key] !== undefined && types[key] !== null);
-    switch (typeKey) {
-      case 'documentMessage': {
-        const doc = msg.message.documentMessage;
-        const fileName = doc?.fileName || 'document';
-        const caption = doc?.caption ? ` ${doc.caption}` : '';
-        return `_<File: ${fileName}${caption}>_`;
-      }
-
-      case 'documentWithCaptionMessage': {
-        const doc = msg.message.documentWithCaptionMessage?.message?.documentMessage;
-        const fileName = doc?.fileName || 'document';
-        const caption = doc?.caption ? ` ${doc.caption}` : '';
-        return `_<File: ${fileName}${caption}>_`;
-      }
-
-      case 'templateMessage': {
-        const template = msg.message.templateMessage?.hydratedTemplate;
-        return (
-          (template?.hydratedTitleText ? `*${template.hydratedTitleText}*\n` : '') +
-          (template?.hydratedContentText || '')
-        );
-      }
-
-      case 'imageMessage':
-        return '_<Image Message>_';
-
-      case 'videoMessage':
-        return '_<Video Message>_';
-
-      case 'audioMessage':
-        return '_<Audio Message>_';
-
-      case 'stickerMessage':
-        return '_<Sticker Message>_';
-
-      default:
-        return '';
-    }
-  }
-
-  public sliceIntoChunks(arr: any[], chunkSize: number) {
-    return arr.splice(0, chunkSize);
-  }
-
-  public isGroup(remoteJid: string) {
-    return remoteJid.includes('@g.us');
-  }
-
-  public isIgnorePhoneNumber(remoteJid: string) {
-    return this.isGroup(remoteJid) || remoteJid === 'status@broadcast' || remoteJid === '0@s.whatsapp.net';
   }
 
   public updateMessageSourceID(messageId: string | number, sourceId: string) {

@@ -1,3 +1,4 @@
+import { getBase64FromMediaMessageDto } from '@api/dto/chat.dto';
 import {
   ContactMessage,
   SendAudioDto,
@@ -13,22 +14,24 @@ import * as s3Service from '@api/integrations/storage/s3/libs/minio.server';
 import { PrismaRepository } from '@api/repository/repository.service';
 import { chatbotController } from '@api/server.module';
 import { Events } from '@api/types/wa.types';
-import { AudioConverter, Chatwoot, ConfigService, Database, S3 } from '@config/env.config';
+import { Chatwoot, ConfigService, Database, S3 } from '@config/env.config';
 import { Logger } from '@config/logger.config';
-import { BadRequestException, InternalServerErrorException } from '@exceptions';
-import ffmpegPath from '@ffmpeg-installer/ffmpeg';
+import { BadRequestException } from '@exceptions';
 import { createJid } from '@utils/createJid';
-import axios from 'axios';
-import { AnyMessageContent, delay, getContentType, isJidGroup, proto, WAPresence } from 'baileys';
-import { spawn } from 'child_process';
+import { delay, isJidGroup, proto, WAPresence } from 'baileys';
 import { isBase64, isURL } from 'class-validator';
-import ffmpeg from 'fluent-ffmpeg';
-import FormData from 'form-data';
 import Long from 'long';
 import mimeTypes from 'mime-types';
 import { join } from 'path';
-import { PassThrough } from 'stream';
 
+import {
+  getBase64FromMediaMessage,
+  hasValidMediaContent,
+  mapMediaType,
+  prepareMessage,
+  processAudio,
+  sendBaileysMessage,
+} from '../utils/baileys-message.utils';
 import { BaileysStartupService } from '../whatsapp.baileys.service';
 
 export class BaileysMessageService {
@@ -111,7 +114,7 @@ export class BaileysMessageService {
     }
 
     if (data?.encoding !== false) {
-      const convert = await this.processAudio(mediaData.audio);
+      const convert = await processAudio(this.configService, mediaData.audio);
 
       if (Buffer.isBuffer(convert)) {
         return await this.sendMessageWithTyping(
@@ -324,32 +327,24 @@ export class BaileysMessageService {
           expiration: group?.ephemeralDuration || undefined,
         };
 
-        messageSent = await this.sendMessage(
-          instance,
-          sender,
-          message,
-          mentions,
-          linkPreview,
+        messageSent = await sendBaileysMessage(instance, sender, message, {
           quoted,
-          group?.ephemeralDuration,
+          linkPreview,
           contextInfo,
-        );
+          ephemeralExpiration: group?.ephemeralDuration,
+        });
       } else {
         contextInfo = {
           mentionedJid: mentions || [],
           groupMentions: [],
           disappearingMode: { initiator: 0 },
         };
-        messageSent = await this.sendMessage(
-          instance,
-          sender,
-          message,
-          mentions,
-          linkPreview,
+        messageSent = await sendBaileysMessage(instance, sender, message, {
           quoted,
-          undefined,
+          linkPreview,
           contextInfo,
-        );
+          ephemeralExpiration: undefined,
+        });
       }
 
       if (presence) {
@@ -360,7 +355,7 @@ export class BaileysMessageService {
         messageSent.messageTimestamp = (messageSent.messageTimestamp as Long).toNumber();
       }
 
-      const messageRaw = this.prepareMessage(messageSent);
+      const messageRaw = prepareMessage(messageSent);
       messageRaw.instanceId = instance.instanceId;
 
       const isMedia =
@@ -395,7 +390,7 @@ export class BaileysMessageService {
               this.logger.warn('Video upload is disabled.');
             } else {
               const message: any = messageRaw;
-              const hasRealMedia = this.hasValidMediaContent(message);
+              const hasRealMedia = hasValidMediaContent(message);
 
               if (!hasRealMedia) {
                 this.logger.warn('Message detected as media but contains no valid media content');
@@ -413,7 +408,7 @@ export class BaileysMessageService {
                     fileName,
                   );
 
-                  await s3Service.uploadFile(fullName, buffer, size.fileLength?.low || size.fileLength, {
+                  await s3Service.uploadFile(fullName, buffer, (size.fileLength as any)?.low || size.fileLength, {
                     'Content-Type': mimetype,
                   });
 
@@ -459,185 +454,19 @@ export class BaileysMessageService {
     }
   }
 
-  private async sendMessage(
-    instance: BaileysStartupService,
-    sender: string,
-    message: any,
-    mentions: any,
-    linkPreview: any,
-    quoted: any,
-    ephemeralExpiration: any,
-    contextInfo: any,
-  ) {
-    if (message.reaction) {
-      return await instance.client.sendMessage(sender, message.reaction, { quoted });
-    }
-
-    if (message.poll) {
-      return await instance.client.sendMessage(sender, message.poll, { quoted });
-    }
-
-    const options: any = {
-      quoted,
-      linkPreview,
-      contextInfo,
-      ephemeralExpiration,
-    };
-
-    return await instance.client.sendMessage(sender, message as AnyMessageContent, options);
-  }
-
   public prepareMessage(message: proto.IWebMessageInfo): any {
-    const contentType = getContentType(message.message);
-    const contentMsg = message?.message[contentType] as any;
-
-    const messageRaw: any = {
-      key: message.key,
-      pushName: message.pushName,
-      status: message.status,
-      message: this.deserializeMessageBuffers({ ...message.message }),
-      contextInfo: this.deserializeMessageBuffers(contentMsg?.contextInfo),
-      messageType: contentType || 'unknown',
-      messageTimestamp: Long.isLong(message.messageTimestamp)
-        ? (message.messageTimestamp as Long).toNumber()
-        : message.messageTimestamp,
-    };
-
-    if (messageRaw.message?.conversation) {
-      messageRaw.messageType = 'conversation';
-    } else if (messageRaw.message?.extendedTextMessage) {
-      messageRaw.messageType = 'conversation';
-      messageRaw.message.conversation = messageRaw.message.extendedTextMessage.text;
-      if (messageRaw.message.extendedTextMessage.contextInfo) {
-        messageRaw.contextInfo = messageRaw.message.extendedTextMessage.contextInfo;
-      }
-      delete messageRaw.message.extendedTextMessage;
-    }
-
-    return messageRaw;
-  }
-
-  private deserializeMessageBuffers(obj: any): any {
-    if (obj === null || obj === undefined) return obj;
-
-    if (typeof obj === 'object' && !Array.isArray(obj) && !Buffer.isBuffer(obj)) {
-      const keys = Object.keys(obj);
-      const isIndexedObject = keys.every((key) => !isNaN(Number(key)));
-      if (isIndexedObject && keys.length > 0) {
-        const values = keys.sort((a, b) => Number(a) - Number(b)).map((key) => obj[key]);
-        return new Uint8Array(values);
-      }
-      const converted = {};
-      for (const key of keys) {
-        converted[key] = this.deserializeMessageBuffers(obj[key]);
-      }
-      return converted;
-    }
-
-    if (Buffer.isBuffer(obj)) return new Uint8Array(obj);
-    return obj;
+    return prepareMessage(message);
   }
 
   public hasValidMediaContent(message: any): boolean {
-    const msg = message.message;
-    return !!(
-      msg?.imageMessage?.url ||
-      msg?.videoMessage?.url ||
-      msg?.audioMessage?.url ||
-      msg?.documentMessage?.url ||
-      msg?.stickerMessage?.url ||
-      msg?.ptvMessage?.url
-    );
-  }
-
-  public async processAudio(audio: string): Promise<Buffer> {
-    const audioConverterConfig = this.configService.get<AudioConverter>('AUDIO_CONVERTER');
-    if (audioConverterConfig.API_URL) {
-      const formData = new FormData();
-      if (isURL(audio)) formData.append('url', audio);
-      else formData.append('base64', audio);
-
-      const { data } = await axios.post(audioConverterConfig.API_URL, formData, {
-        headers: { ...formData.getHeaders(), apikey: audioConverterConfig.API_KEY },
-      });
-
-      if (!data.audio) throw new InternalServerErrorException('Failed to convert audio');
-      return Buffer.from(data.audio, 'base64');
-    } else {
-      let inputAudioStream: PassThrough;
-      if (isURL(audio)) {
-        const response = await axios.get(audio, { responseType: 'stream' });
-        inputAudioStream = response.data.pipe(new PassThrough());
-      } else {
-        inputAudioStream = new PassThrough();
-        inputAudioStream.end(Buffer.from(audio, 'base64'));
-      }
-
-      return new Promise((resolve, reject) => {
-        const outputAudioStream = new PassThrough();
-        const chunks: Buffer[] = [];
-        outputAudioStream.on('data', (chunk) => chunks.push(chunk));
-        outputAudioStream.on('end', () => resolve(Buffer.concat(chunks)));
-        outputAudioStream.on('error', reject);
-
-        ffmpeg.setFfmpegPath(ffmpegPath.path);
-        ffmpeg(inputAudioStream)
-          .outputFormat('ogg')
-          .noVideo()
-          .audioCodec('libopus')
-          .audioBitrate('128k')
-          .audioFrequency(48000)
-          .audioChannels(1)
-          .pipe(outputAudioStream, { end: true })
-          .on('error', reject);
-      });
-    }
-  }
-
-  public async processAudioMp4(audio: string) {
-    let inputStream: PassThrough;
-    if (isURL(audio)) {
-      const response = await axios.get(audio, { responseType: 'stream' });
-      inputStream = response.data;
-    } else {
-      inputStream = new PassThrough();
-      inputStream.end(Buffer.from(audio, 'base64'));
-    }
-
-    return new Promise<Buffer>((resolve, reject) => {
-      const ffmpegProcess = spawn(ffmpegPath.path, [
-        '-i',
-        'pipe:0',
-        '-vn',
-        '-ab',
-        '128k',
-        '-ar',
-        '44100',
-        '-f',
-        'mp4',
-        '-movflags',
-        'frag_keyframe+empty_moov',
-        'pipe:1',
-      ]);
-      const outputChunks: Buffer[] = [];
-      ffmpegProcess.stdout.on('data', (chunk) => outputChunks.push(chunk));
-      ffmpegProcess.on('close', (code) => {
-        if (code === 0) resolve(Buffer.concat(outputChunks));
-        else reject(new Error(`ffmpeg exited with code ${code}`));
-      });
-      inputStream.pipe(ffmpegProcess.stdin);
-    });
+    return hasValidMediaContent(message);
   }
 
   public async mapMediaType(mediaType: string) {
-    const map = {
-      imageMessage: 'image',
-      videoMessage: 'video',
-      documentMessage: 'document',
-      stickerMessage: 'sticker',
-      audioMessage: 'audio',
-      ptvMessage: 'video',
-    };
-    return map[mediaType] || null;
+    return mapMediaType(mediaType);
+  }
+
+  public async getBase64FromMediaMessage(data: getBase64FromMediaMessageDto, getBuffer = false) {
+    return getBase64FromMediaMessage(data, getBuffer);
   }
 }
