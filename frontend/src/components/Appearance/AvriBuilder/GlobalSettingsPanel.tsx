@@ -139,21 +139,44 @@ export const GlobalSettingsPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Max Content Width */}
+      {/* Max Content Width Layout Option */}
       <div className="mb-6">
         <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-2">
           <Maximize className="w-3.5 h-3.5" />
-          Ancho del Contenido ({globalSettings.maxWidth}px)
+          Diseño del Ancho
         </label>
-        <input 
-          type="range"
-          min="800"
-          max="1600"
-          step="50"
-          value={globalSettings.maxWidth}
-          onChange={(e) => updateGlobalSettings({ maxWidth: parseInt(e.target.value) })}
-          className="w-full h-1.5 bg-[#f1f5f9] rounded-lg appearance-none cursor-pointer accent-[#00E5FF]"
-        />
+        <select
+          value={globalSettings.maxWidth === '100%' ? 'full' : 'boxed'}
+          onChange={(e) => {
+            if (e.target.value === 'full') {
+              updateGlobalSettings({ maxWidth: '100%' });
+            } else {
+              updateGlobalSettings({ maxWidth: 1200 });
+            }
+          }}
+          className="w-full bg-white border border-[#e2e8f0] rounded-md h-9 px-3 text-[13px] text-[#0f172a] outline-none cursor-pointer mb-3"
+        >
+          <option value="full">Ancho Completo (100%) - Recomendado</option>
+          <option value="boxed">Ancho Limitado (Caja)</option>
+        </select>
+
+        {globalSettings.maxWidth !== '100%' && (
+          <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex justify-between text-[11px] text-[#64748b] font-bold">
+              <span>Tamaño Máximo</span>
+              <span>{globalSettings.maxWidth}px</span>
+            </div>
+            <input 
+              type="range"
+              min="800"
+              max="1600"
+              step="50"
+              value={typeof globalSettings.maxWidth === 'number' ? globalSettings.maxWidth : 1200}
+              onChange={(e) => updateGlobalSettings({ maxWidth: parseInt(e.target.value) })}
+              className="w-full h-1.5 bg-[#f1f5f9] rounded-lg appearance-none cursor-pointer accent-[#00E5FF]"
+            />
+          </div>
+        )}
       </div>
 
       {/* Global Font */}

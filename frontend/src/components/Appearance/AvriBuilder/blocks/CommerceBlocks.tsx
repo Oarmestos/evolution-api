@@ -56,31 +56,18 @@ export const ProductGrid: React.FC<LibraryProps> = ({ block, Renderer, readOnly 
   }
 
   const hasProducts = products.length > 0;
-  const itemsToRender = hasProducts
-    ? products
-    : [
-        {
-          id: 'placeholder-1',
-          name: 'Reloj de Lujo - Edición Avri',
-          price: 199,
-          imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80&id=1',
-          category: 'Categoría'
-        },
-        {
-          id: 'placeholder-2',
-          name: 'Reloj de Lujo - Edición Avri',
-          price: 199,
-          imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80&id=2',
-          category: 'Categoría'
-        },
-        {
-          id: 'placeholder-3',
-          name: 'Reloj de Lujo - Edición Avri',
-          price: 199,
-          imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80&id=3',
-          category: 'Categoría'
-        }
-      ];
+
+  if (!hasProducts && !loading) {
+    if (readOnly) return null;
+    return (
+      <div id="products-grid" style={getBlockStyles(block)} className="space-y-6 px-8 py-6 text-center border-2 border-dashed border-gray-200 rounded-2xl mx-8 my-4">
+        <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">No hay productos activos en esta tienda</p>
+        <p className="text-xs text-gray-400">Importa tus productos desde la sección de Productos para verlos aquí.</p>
+      </div>
+    );
+  }
+
+  const itemsToRender = products;
 
   return (
     <div id="products-grid" style={getBlockStyles(block)} className="space-y-12 px-8 py-6">

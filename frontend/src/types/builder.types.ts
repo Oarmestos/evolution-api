@@ -30,7 +30,7 @@ export type ViewportDevice = 'desktop' | 'tablet' | 'mobile';
 
 export interface GlobalSettings {
   siteName: string;
-  maxWidth: number;
+  maxWidth: number | string;
   primaryFont: string;
   logoUrl: string;
   heroImageUrl: string;

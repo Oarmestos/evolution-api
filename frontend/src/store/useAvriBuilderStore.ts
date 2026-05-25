@@ -16,7 +16,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
   loadedInstanceId: null,
   globalSettings: {
     siteName: 'Mi Tienda Online',
-    maxWidth: 1200,
+    maxWidth: '100%',
     primaryFont: 'Inter',
     logoUrl: '',
     heroImageUrl: '',
@@ -189,7 +189,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
             loadedInstanceId: instanceId,
             globalSettings: {
               siteName: theme.storeName || 'Mi Tienda Online',
-              maxWidth: theme.layout?.props?.maxWidth || 1200,
+              maxWidth: theme.layout?.props?.maxWidth || '100%',
               primaryFont: theme.fontFamily || 'Inter',
               logoUrl: theme.logoUrl || '',
               heroImageUrl: theme.heroImageUrl || '',
@@ -212,7 +212,7 @@ export const useAvriBuilderStore = create<AvriBuilderState>((set, get) => ({
         loadedInstanceId: instanceId,
         globalSettings: {
           siteName: theme.storeName || 'Mi Tienda Online',
-          maxWidth: 1200,
+          maxWidth: '100%',
           primaryFont: theme.fontFamily || 'Inter',
           logoUrl: theme.logoUrl || '',
           heroImageUrl: theme.heroImageUrl || '',

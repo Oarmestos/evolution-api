@@ -4,6 +4,8 @@ import axios from 'axios';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import { CheckoutModal } from '../components/Store/CheckoutModal';
 import { BlockRenderer } from '../components/Appearance/AvriBuilder/BlockRenderer';
+import { AVRI_LUXURY_LAYOUT } from '../store/defaultLayout';
+import { toCSSValue } from '../utils/toCSSValue';
 
 interface Product {
   id: string;
@@ -172,6 +174,14 @@ export const PublicStore: React.FC = () => {
   const isLightBg = isLightColor(theme.bgColor || '#0f1016');
   const textColor = theme.textColor || (isLightBg ? '#111827' : '#ffffff');
 
+  const serverLayout = theme.layout;
+  const hasContent = serverLayout && (
+    (Array.isArray(serverLayout.content) && serverLayout.content.length > 0) ||
+    (Array.isArray(serverLayout.children) && serverLayout.children.length > 0) ||
+    (serverLayout.id === 'root' && serverLayout.type === 'Container')
+  );
+  const activeLayout = hasContent ? serverLayout : AVRI_LUXURY_LAYOUT;
+
   return (
     <div 
       className="min-h-screen transition-colors duration-500 overflow-x-hidden"
@@ -186,27 +196,36 @@ export const PublicStore: React.FC = () => {
     >
       <ForceWhiteStyles isLightBg={isLightBg} />
       
-      {theme.layout ? (
-        <div className="w-full">
-          <BlockRenderer 
-            block={
-              theme.layout.id === 'root' 
-                ? theme.layout 
-                : { 
-                    id: 'root', 
-                    type: 'Container', 
-                    props: theme.layout.root?.props || {
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'flex-start',
-                      minHeight: '100vh',
-                      backgroundColor: theme.bgColor || '#ffffff'
-                    }, 
-                    children: theme.layout.children || theme.layout.content || [] 
-                  }
-            } 
-            readOnly={true} 
-          />
+      {activeLayout ? (
+        <div className="w-full flex justify-center">
+          <div 
+            className="w-full"
+            style={{ 
+              maxWidth: activeLayout.props?.maxWidth && activeLayout.props.maxWidth !== '100%' 
+                ? toCSSValue(activeLayout.props.maxWidth) 
+                : '100%' 
+            }}
+          >
+            <BlockRenderer 
+              block={
+                activeLayout.id === 'root' 
+                  ? activeLayout 
+                  : { 
+                      id: 'root', 
+                      type: 'Container', 
+                      props: activeLayout.root?.props || {
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        minHeight: '100vh',
+                        backgroundColor: theme.bgColor || '#ffffff'
+                      }, 
+                      children: activeLayout.children || activeLayout.content || [] 
+                    }
+              } 
+              readOnly={true} 
+            />
+          </div>
         </div>
       ) : (
         <div className="min-h-screen flex items-center justify-center p-10 text-center">
