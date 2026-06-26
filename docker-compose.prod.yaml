@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres-prod:
+    image: postgres:15-alpine
+    container_name: postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secure_password_here # Reemplazar con clave segura
+      POSTGRES_DB: avri_db
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  redis-prod:
+    image: redis:7-alpine
+    container_name: redis-prod
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_prod_data:/data
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  api-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-prod
+    restart: always
+    depends_on:
+      - postgres-prod
+      - redis-prod
+    env_file:
+      - .env.production
+    environment:
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:secure_password_here@postgres-prod:5432/avri_db?schema=avri_api
+      - CACHE_REDIS_URI=redis://redis-prod:6379/0
+    ports:
+      - "8080:8080"
+    volumes:
+      - api_prod_instances:/instances
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  api_prod_instances:
+    driver: local
